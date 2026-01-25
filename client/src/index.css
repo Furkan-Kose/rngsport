@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+.Toastify__toast--error {
+  background: linear-gradient(
+    135deg,
+    #450a0a,
+    #7f1d1d,
+    #be123c
+  ) !important;
+  color: #fff !important;
+}
+
+.Toastify__toast--success {
+  background: linear-gradient(
+    135deg,
+    #022c22,
+    #065f46,
+    #0f766e
+  ) !important;
+  color: #ecfdf5 !important;
+}
+
+.Toastify__toast--info {
+  background: linear-gradient(
+    135deg,
+    #020617,   /* slate-950 */
+    #1e3a8a,   /* blue-900 */
+    #2563eb    /* blue-600 */
+  ) !important;
+  color: #eff6ff !important;
+}
+

@@ -1,0 +1,513 @@
+import { useState, useEffect, useRef } from "react";
+import { ShoppingCart, ArrowLeft, PackageX, Trash2, Minus, Plus, X, User, Phone, Building, CalendarDays, MessageSquare, Loader2, CreditCard, Mail } from "lucide-react";
+import { Link, useSearchParams } from "react-router";
+import { useCart, type CartItem } from "../context/CartContext";
+import api from "../lib/api";
+
+// iyzico ödeme modu: "popup" = modal içinde, "redirect" = iyzico sayfasına yönlendir
+const IYZICO_MODE: "popup" | "redirect" = "redirect";
+
+// iyzico checkout form'unu render eden component
+const IyzicoCheckoutForm = ({ html }: { html: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || !html) return;
+
+    // HTML'i container'a ekle
+    containerRef.current.innerHTML = html;
+
+    // Script tag'lerini bul ve çalıştır
+    const scripts = containerRef.current.querySelectorAll("script");
+    scripts.forEach((oldScript) => {
+      const newScript = document.createElement("script");
+      
+      // Tüm attributeleri kopyala
+      Array.from(oldScript.attributes).forEach((attr) => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      
+      // Script içeriğini kopyala
+      newScript.textContent = oldScript.textContent;
+      
+      // Eski script'i yenisiyle değiştir
+      oldScript.parentNode?.replaceChild(newScript, oldScript);
+    });
+
+    // iframe yüklendikten sonra boyutlarını ayarla
+    const checkIframe = setInterval(() => {
+      const iframe = containerRef.current?.querySelector("iframe");
+      if (iframe) {
+        iframe.style.width = "100%";
+        iframe.style.minWidth = "100%";
+        iframe.style.height = "600px";
+        iframe.style.minHeight = "600px";
+        iframe.style.maxWidth = "100%";
+        iframe.style.border = "none";
+        clearInterval(checkIframe);
+      }
+    }, 100);
+
+    return () => clearInterval(checkIframe);
+  }, [html]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="iyzico-container"
+      style={{
+        minHeight: "600px",
+        width: "100%",
+      }}
+    />
+  );
+};
+
+const CartItemCard = ({ item }: { item: CartItem }) => {
+  const { removeFromCart, updateQuantity, updateSeriesCount, getItemPrice } = useCart();
+  const { package: pkg, seriesCount, quantity } = item;
+
+  const handleSeriesChange = (newSeries: 1 | 2 | 3) => {
+    if (newSeries !== seriesCount) {
+      updateSeriesCount(pkg.id, seriesCount, newSeries);
+    }
+  };
+
+  return (
+    <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl overflow-hidden">
+      <div className="flex flex-col sm:flex-row">
+        <div className="relative w-full sm:w-40 h-40 sm:h-auto shrink-0">
+          <img src={pkg.image} alt={pkg.name} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-linear-to-r from-transparent to-zinc-900/60 hidden sm:block" />
+        </div>
+
+        <div className="flex-1 p-5">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-1">{pkg.name}</h3>
+              <p className="text-sm text-zinc-500">
+                {pkg.category === "photo" ? "Fotoğraf" : pkg.category === "video" ? "Video" : "Komple"} Paketi
+              </p>
+            </div>
+            <button
+              onClick={() => removeFromCart(pkg.id, seriesCount)}
+              className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="mb-4">
+            <span className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Seri Sayısı</span>
+            <div className="flex gap-2">
+              {([1, 2, 3] as const).map((s) => {
+                const price = s === 1 ? pkg.price : pkg.discounts[s];
+                const isSelected = seriesCount === s;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => handleSeriesChange(s)}
+                    className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
+                      isSelected
+                        ? "bg-fuchsia-500/20 border-fuchsia-500 text-fuchsia-400"
+                        : "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                    }`}
+                  >
+                    <span className="block">{s} Seri</span>
+                    <span className="block text-xs mt-0.5 opacity-75">₺{price.toLocaleString("tr-TR")}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-zinc-500 uppercase tracking-wider">Adet</span>
+              <div className="flex items-center gap-1 bg-zinc-800 rounded-lg">
+                <button onClick={() => updateQuantity(pkg.id, seriesCount, quantity - 1)} className="p-2 text-zinc-400 hover:text-white transition-colors">
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="w-8 text-center text-white font-medium">{quantity}</span>
+                <button onClick={() => updateQuantity(pkg.id, seriesCount, quantity + 1)} className="p-2 text-zinc-400 hover:text-white transition-colors">
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-xs text-zinc-500 block">Toplam</span>
+              <span className="text-xl font-bold text-white">₺{getItemPrice(item).toLocaleString("tr-TR")}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CartPage = () => {
+  const { items, getTotalPrice, clearCart } = useCart();
+  const [searchParams] = useSearchParams();
+  const isEmpty = items.length === 0;
+
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [step, setStep] = useState<"form" | "payment">("form");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [paymentHtml, setPaymentHtml] = useState("");
+
+  const [form, setForm] = useState({
+    athleteName: "",
+    clubName: "",
+    birthYear: "",
+    customerPhone: "",
+    customerEmail: "",
+    notes: "",
+  });
+
+  // URL'den hata mesajı kontrolü
+  useEffect(() => {
+    const errorMsg = searchParams.get("error");
+    if (errorMsg) {
+      setError(decodeURIComponent(errorMsg));
+      setShowCheckout(true);
+    }
+  }, [searchParams]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!form.athleteName.trim() || !form.clubName.trim() || !form.birthYear.trim() || !form.customerPhone.trim() || !form.customerEmail.trim()) {
+      setError("Lütfen tüm zorunlu alanları doldurun");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 1. Sipariş oluştur
+      const { data: orderData } = await api.post('/api/orders', {
+        ...form,
+        items: items.map((item) => ({
+          package: {
+            id: item.package.id,
+            name: item.package.name,
+            category: item.package.category,
+            price: item.package.price,
+            discounts: item.package.discounts,
+          },
+          seriesCount: item.seriesCount,
+          quantity: item.quantity,
+        })),
+        totalPrice: getTotalPrice(),
+      });
+
+      // 2. Ödeme formu al
+      const { data: paymentData } = await api.post('/api/payment/checkout', {
+        orderId: orderData.order.id,
+      });
+
+      // Sepeti temizle
+      clearCart();
+
+      // iyzico moduna göre işlem yap
+      if (IYZICO_MODE === "redirect" && paymentData.paymentPageUrl) {
+        // iyzico'nun kendi sayfasına yönlendir
+        window.location.href = paymentData.paymentPageUrl;
+        return;
+      }
+
+      // Popup modu: modal içinde göster
+      setPaymentHtml(paymentData.checkoutFormContent);
+      setStep("payment");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bir hata oluştu");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowCheckout(false);
+    setStep("form");
+    setError("");
+    setPaymentHtml("");
+    setForm({ athleteName: "", clubName: "", birthYear: "", customerPhone: "", customerEmail: "", notes: "" });
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="flex items-center gap-4 mb-10">
+          <Link to="/" className="flex items-center gap-2 text-zinc-400 hover:text-fuchsia-400 transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-sm font-medium">Ana Sayfa</span>
+          </Link>
+        </div>
+
+        <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center">
+              <ShoppingCart className="w-7 h-7 text-zinc-300" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Sepetim</h1>
+              <p className="text-zinc-500 text-sm">{isEmpty ? "Sepetiniz boş" : `${items.length} paket`}</p>
+            </div>
+          </div>
+
+          {!isEmpty && (
+            <button
+              onClick={clearCart}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Sepeti Temizle
+            </button>
+          )}
+        </div>
+
+        {isEmpty ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-linear-to-r from-fuchsia-500/20 to-violet-500/20 rounded-full blur-2xl scale-150" />
+              <div className="relative w-32 h-32 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <PackageX className="w-16 h-16 text-zinc-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold text-zinc-300 mb-3">Sepetiniz Boş</h2>
+            <p className="text-zinc-500 text-center max-w-md mb-8">
+              Henüz sepetinize bir paket eklemediniz. Paketlerimizi inceleyerek size uygun olanı seçebilirsiniz.
+            </p>
+            <Link
+              to="/#packages"
+              className="inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              Paketleri İncele
+            </Link>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
+              {items.map((item) => (
+                <CartItemCard key={`${item.package.id}-${item.seriesCount}`} item={item} />
+              ))}
+            </div>
+
+            <div className="lg:col-span-1">
+              <div className="sticky top-28 bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-6">Sipariş Özeti</h3>
+
+                <div className="space-y-3 mb-6">
+                  {items.map((item) => (
+                    <div key={`${item.package.id}-${item.seriesCount}`} className="flex justify-between text-sm">
+                      <span className="text-zinc-400">
+                        {item.package.name} ({item.seriesCount} Seri) x{item.quantity}
+                      </span>
+                      <span className="text-zinc-200">
+                        ₺{((item.seriesCount === 1 ? item.package.price : item.package.discounts[item.seriesCount]) * item.quantity).toLocaleString("tr-TR")}
+                      </span>
+                    </div>
+                  ))}
+
+                  <div className="border-t border-zinc-800 pt-4 mt-4">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-white">Toplam</span>
+                      <span className="text-2xl font-bold bg-linear-to-r from-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
+                        ₺{getTotalPrice().toLocaleString("tr-TR")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  disabled // şimdilik pasif
+                  onClick={() => setShowCheckout(true)}
+                  className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  {/* Ödemeye Geç */}
+                  Ödeme Yakında Aktifleşecektir
+                </button>
+
+                <p className="text-xs text-zinc-500 text-center mt-4">Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Checkout Modal */}
+      {showCheckout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-h-[95vh] overflow-y-auto transition-all duration-300 ${
+            step === "payment" ? "max-w-4xl" : "max-w-lg"
+          }`}>
+            {step === "form" ? (
+              <>
+                <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+                  <h3 className="text-lg font-semibold text-white">Sipariş Bilgileri</h3>
+                  <button onClick={closeModal} className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                  {error && <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>}
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                      <User className="w-4 h-4" />
+                      Sporcu Adı Soyadı <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="athleteName"
+                      value={form.athleteName}
+                      onChange={handleChange}
+                      placeholder="Sporcu adı soyadı"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                      <Building className="w-4 h-4" />
+                      Kulüp / Şube <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="clubName"
+                      value={form.clubName}
+                      onChange={handleChange}
+                      placeholder="Kulüp veya şube adı"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                      <CalendarDays className="w-4 h-4" />
+                      Sporcu Doğum Yılı <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="birthYear"
+                      value={form.birthYear}
+                      onChange={handleChange}
+                      placeholder="Örn: 2015"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                      <Phone className="w-4 h-4" />
+                      İletişim için Telefon <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="customerPhone"
+                      value={form.customerPhone}
+                      onChange={handleChange}
+                      placeholder="0532 123 45 67"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                      <Mail className="w-4 h-4" />
+                      İletişim için E-posta <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      name="customerEmail"
+                      value={form.customerEmail}
+                      onChange={handleChange}
+                      placeholder="ornek@gmail.com"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                      <MessageSquare className="w-4 h-4" />
+                      Notlar <span className="text-zinc-600">(opsiyonel)</span>
+                    </label>
+                    <textarea
+                      name="notes"
+                      value={form.notes}
+                      onChange={handleChange}
+                      placeholder="Eklemek istediğiniz notlar..."
+                      rows={3}
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors resize-none"
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t border-zinc-800">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-zinc-400">Toplam Tutar</span>
+                      <span className="text-xl font-bold text-fuchsia-400">₺{getTotalPrice().toLocaleString("tr-TR")}</span>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          İşleniyor...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-5 h-5" />
+                          Ödemeye Geç
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-fuchsia-400" />
+                    Ödeme
+                  </h3>
+                  <button onClick={closeModal} className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  {/* iyzico checkout form */}
+                  <IyzicoCheckoutForm html={paymentHtml} />
+                  <p className="text-xs text-zinc-500 text-center mt-4">
+                    🔒 Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CartPage;

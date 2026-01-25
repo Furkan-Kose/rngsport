@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  athleteName   String
+  clubName      String
+  birthYear     String
+  customerPhone String
+  customerEmail String?
+  notes         String?
+  totalPrice    Float
+  status        OrderStatus @default(PENDING)
+  paymentId     String?
+  conversationId String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String @id @default(cuid())
+  orderId     String
+  packageId   String
+  packageName String
+  category    String
+  price       Float
+  seriesCount Int
+  quantity    Int
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Package {
+  id          String   @id @default(cuid())
+  slug        String   @unique // photo-basic, video-full gibi
+  name        String
+  category    String   // photo, video, full
+  price       Float
+  image       String
+  features    String[] // PostgreSQL array
+  discount2   Float    // 2 seri indirimi
+  discount3   Float    // 3 seri indirimi
+  // Rezervasyon fiyatları (elden nakit için)
+  reservationPrice     Float?   // Rezervasyon baz fiyatı (null ise price kullanılır)
+  reservationDiscount2 Float?   // 2 seri rezervasyon fiyatı
+  reservationDiscount3 Float?   // 3 seri rezervasyon fiyatı
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("packages")
+}
+
+model Reservation {
+  id            String            @id @default(cuid())
+  athleteName   String
+  clubName      String
+  birthYear     String
+  customerPhone String
+  customerEmail String
+  notes         String?
+  totalPrice    Float
+  status        ReservationStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  items ReservationItem[]
+
+  @@map("reservations")
+}
+
+model ReservationItem {
+  id            String @id @default(cuid())
+  reservationId String
+  packageId     String
+  packageName   String
+  category      String
+  price         Float
+  seriesCount   Int
+  quantity      Int
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("reservation_items")
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
+}
