@@ -11,7 +11,7 @@ import reservationRoutes from "./routes/reservation.route.js";
 const app = express();
 
 const corsOptions = {
-  origin: 'http://localhost:5173', 
+  origin: 'https://ritmikacup.netlify.app', 
   credentials: true,              
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   allowedHeaders: ['Content-Type', 'Authorization']

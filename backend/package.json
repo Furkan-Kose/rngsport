@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node --env-file=.env --watch src/index.js",
+    "dev": "node --watch src/index.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "node --env-file=.env prisma/seed.js"
+    "db:seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",
