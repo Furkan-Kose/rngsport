@@ -145,7 +145,7 @@ const ReservationPage = () => {
     setIsSubmitting(true);
 
     try {
-      const { data } = await api.post('/api/reservations', {
+      const { } = await api.post('/api/reservations', {
         ...form,
         items: selectedPackages.map((sp) => {
           const pkg = packages.find(p => p.id === sp.packageId);
