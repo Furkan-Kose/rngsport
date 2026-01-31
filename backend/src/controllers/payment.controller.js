@@ -83,6 +83,9 @@ export const createCheckoutForm = async (req, res, next) => {
       data: { conversationId },
     });
 
+    const callbackUrl = `${process.env.BACKEND_URL}/api/payment/callback`;
+    console.log("=== IYZICO CALLBACK URL ===:", callbackUrl);
+
     // iyzico checkout form request
     const request = {
       locale: Iyzipay.LOCALE.TR,
@@ -92,7 +95,7 @@ export const createCheckoutForm = async (req, res, next) => {
       currency: Iyzipay.CURRENCY.TRY,
       basketId: orderId,
       paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
-      callbackUrl: `${process.env.BACKEND_URL}/api/payment/callback`,
+      callbackUrl: callbackUrl,
       enabledInstallments: [1, 2, 3, 6, 9],
       buyer: {
         id: orderId,
