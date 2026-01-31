@@ -10,25 +10,30 @@ import reservationRoutes from "./routes/reservation.route.js";
 
 const app = express();
 
-app.use("/api/payment", paymentRoutes);
-
-const corsOptions = {
-  origin: 'https://ritmikacup.netlify.app', 
-  credentials: true,              
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-
-app.use(cors(corsOptions));
-
-app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
+
+const corsOptions = {
+  origin: ["https://ritmikacup.netlify.app", "https://ritmikacup.com"],
+  credentials: true,
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// iyzico callback için CORS bypass
+app.use((req, res, next) => {
+  if (req.path === "/api/payment/callback") {
+    return next(); // CORS uygulamadan devam et
+  }
+  cors(corsOptions)(req, res, next);
+});
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/payment", paymentRoutes);
 app.use("/api/packages", packageRoutes);
 app.use("/api/reservations", reservationRoutes);
 
