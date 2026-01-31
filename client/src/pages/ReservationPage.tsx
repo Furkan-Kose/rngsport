@@ -573,7 +573,7 @@ const ReservationPage = () => {
                     className="text-violet-400 hover:text-violet-300 underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    KVKK Aydınlatma Metni
+                    6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında hazırlanan [Aydınlatma Metni]
                   </Link>
                   'ni okudum ve kabul ediyorum.{" "}
                   <span className="text-red-400">*</span>
