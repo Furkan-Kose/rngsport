@@ -1,5 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { ShoppingCart, ArrowLeft, PackageX, Trash2, Minus, Plus, X, User, Phone, Building, CalendarDays, MessageSquare, Loader2, CreditCard, Mail } from "lucide-react";
+import {
+  ShoppingCart,
+  ArrowLeft,
+  PackageX,
+  Trash2,
+  Minus,
+  Plus,
+  X,
+  User,
+  Phone,
+  Building,
+  CalendarDays,
+  MessageSquare,
+  Loader2,
+  CreditCard,
+  Mail,
+} from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { useCart, type CartItem } from "../context/CartContext";
 import api from "../lib/api";
@@ -22,15 +38,15 @@ const IyzicoCheckoutForm = ({ html }: { html: string }) => {
     const scripts = containerRef.current.querySelectorAll("script");
     scripts.forEach((oldScript) => {
       const newScript = document.createElement("script");
-      
+
       // Tüm attributeleri kopyala
       Array.from(oldScript.attributes).forEach((attr) => {
         newScript.setAttribute(attr.name, attr.value);
       });
-      
+
       // Script içeriğini kopyala
       newScript.textContent = oldScript.textContent;
-      
+
       // Eski script'i yenisiyle değiştir
       oldScript.parentNode?.replaceChild(newScript, oldScript);
     });
@@ -53,8 +69,8 @@ const IyzicoCheckoutForm = ({ html }: { html: string }) => {
   }, [html]);
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="iyzico-container"
       style={{
         minHeight: "600px",
@@ -65,7 +81,8 @@ const IyzicoCheckoutForm = ({ html }: { html: string }) => {
 };
 
 const CartItemCard = ({ item }: { item: CartItem }) => {
-  const { removeFromCart, updateQuantity, updateSeriesCount, getItemPrice } = useCart();
+  const { removeFromCart, updateQuantity, updateSeriesCount, getItemPrice } =
+    useCart();
   const { package: pkg, seriesCount, quantity } = item;
 
   const handleSeriesChange = (newSeries: 1 | 2 | 3) => {
@@ -78,16 +95,27 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
     <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl overflow-hidden">
       <div className="flex flex-col sm:flex-row">
         <div className="relative w-full sm:w-40 h-40 sm:h-auto shrink-0">
-          <img src={pkg.image} alt={pkg.name} className="w-full h-full object-cover" />
+          <img
+            src={pkg.image}
+            alt={pkg.name}
+            className="w-full h-full object-cover"
+          />
           <div className="absolute inset-0 bg-linear-to-r from-transparent to-zinc-900/60 hidden sm:block" />
         </div>
 
         <div className="flex-1 p-5">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">{pkg.name}</h3>
+              <h3 className="text-lg font-semibold text-white mb-1">
+                {pkg.name}
+              </h3>
               <p className="text-sm text-zinc-500">
-                {pkg.category === "photo" ? "Fotoğraf" : pkg.category === "video" ? "Video" : "Komple"} Paketi
+                {pkg.category === "photo"
+                  ? "Fotoğraf"
+                  : pkg.category === "video"
+                    ? "Video"
+                    : "Komple"}{" "}
+                Paketi
               </p>
             </div>
             <button
@@ -99,7 +127,9 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
           </div>
 
           <div className="mb-4">
-            <span className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">Seri Sayısı</span>
+            <span className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">
+              Seri Sayısı
+            </span>
             <div className="flex gap-2">
               {([1, 2, 3] as const).map((s) => {
                 const price = s === 1 ? pkg.price : pkg.discounts[s];
@@ -115,7 +145,9 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
                     }`}
                   >
                     <span className="block">{s} Seri</span>
-                    <span className="block text-xs mt-0.5 opacity-75">₺{price.toLocaleString("tr-TR")}</span>
+                    <span className="block text-xs mt-0.5 opacity-75">
+                      ₺{price.toLocaleString("tr-TR")}
+                    </span>
                   </button>
                 );
               })}
@@ -124,20 +156,36 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-xs text-zinc-500 uppercase tracking-wider">Adet</span>
+              <span className="text-xs text-zinc-500 uppercase tracking-wider">
+                Adet
+              </span>
               <div className="flex items-center gap-1 bg-zinc-800 rounded-lg">
-                <button onClick={() => updateQuantity(pkg.id, seriesCount, quantity - 1)} className="p-2 text-zinc-400 hover:text-white transition-colors">
+                <button
+                  onClick={() =>
+                    updateQuantity(pkg.id, seriesCount, quantity - 1)
+                  }
+                  className="p-2 text-zinc-400 hover:text-white transition-colors"
+                >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="w-8 text-center text-white font-medium">{quantity}</span>
-                <button onClick={() => updateQuantity(pkg.id, seriesCount, quantity + 1)} className="p-2 text-zinc-400 hover:text-white transition-colors">
+                <span className="w-8 text-center text-white font-medium">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() =>
+                    updateQuantity(pkg.id, seriesCount, quantity + 1)
+                  }
+                  className="p-2 text-zinc-400 hover:text-white transition-colors"
+                >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
             <div className="text-right">
               <span className="text-xs text-zinc-500 block">Toplam</span>
-              <span className="text-xl font-bold text-white">₺{getItemPrice(item).toLocaleString("tr-TR")}</span>
+              <span className="text-xl font-bold text-white">
+                ₺{getItemPrice(item).toLocaleString("tr-TR")}
+              </span>
             </div>
           </div>
         </div>
@@ -166,6 +214,8 @@ const CartPage = () => {
     notes: "",
   });
 
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
   // URL'den hata mesajı kontrolü
   useEffect(() => {
     const errorMsg = searchParams.get("error");
@@ -175,7 +225,9 @@ const CartPage = () => {
     }
   }, [searchParams]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -183,7 +235,13 @@ const CartPage = () => {
     e.preventDefault();
     setError("");
 
-    if (!form.athleteName.trim() || !form.clubName.trim() || !form.birthYear.trim() || !form.customerPhone.trim() || !form.customerEmail.trim()) {
+    if (
+      !form.athleteName.trim() ||
+      !form.clubName.trim() ||
+      !form.birthYear.trim() ||
+      !form.customerPhone.trim() ||
+      !form.customerEmail.trim()
+    ) {
       setError("Lütfen tüm zorunlu alanları doldurun");
       return;
     }
@@ -192,7 +250,7 @@ const CartPage = () => {
 
     try {
       // 1. Sipariş oluştur
-      const { data: orderData } = await api.post('/api/orders', {
+      const { data: orderData } = await api.post("/api/orders", {
         ...form,
         items: items.map((item) => ({
           package: {
@@ -209,7 +267,7 @@ const CartPage = () => {
       });
 
       // 2. Ödeme formu al
-      const { data: paymentData } = await api.post('/api/payment/checkout', {
+      const { data: paymentData } = await api.post("/api/payment/checkout", {
         orderId: orderData.order.id,
       });
 
@@ -238,12 +296,19 @@ const CartPage = () => {
     setStep("form");
     setError("");
     setPaymentHtml("");
-    setForm({ athleteName: "", clubName: "", birthYear: "", customerPhone: "", customerEmail: "", notes: "" });
+    setForm({
+      athleteName: "",
+      clubName: "",
+      birthYear: "",
+      customerPhone: "",
+      customerEmail: "",
+      notes: "",
+    });
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO 
+      <SEO
         title="Sepet"
         description="Sepetinizi görüntüleyin ve siparişinizi tamamlayın. International Ritmika Cup profesyonel fotoğraf ve video hizmetleri."
         url="https://ritmikacup.com/cart"
@@ -255,7 +320,10 @@ const CartPage = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex items-center gap-4 mb-10">
-          <Link to="/" className="flex items-center gap-2 text-zinc-400 hover:text-fuchsia-400 transition-colors">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-zinc-400 hover:text-fuchsia-400 transition-colors"
+          >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Ana Sayfa</span>
           </Link>
@@ -268,7 +336,9 @@ const CartPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Sepetim</h1>
-              <p className="text-zinc-500 text-sm">{isEmpty ? "Sepetiniz boş" : `${items.length} paket`}</p>
+              <p className="text-zinc-500 text-sm">
+                {isEmpty ? "Sepetiniz boş" : `${items.length} paket`}
+              </p>
             </div>
           </div>
 
@@ -291,9 +361,12 @@ const CartPage = () => {
                 <PackageX className="w-16 h-16 text-zinc-600" />
               </div>
             </div>
-            <h2 className="text-2xl font-semibold text-zinc-300 mb-3">Sepetiniz Boş</h2>
+            <h2 className="text-2xl font-semibold text-zinc-300 mb-3">
+              Sepetiniz Boş
+            </h2>
             <p className="text-zinc-500 text-center max-w-md mb-8">
-              Henüz sepetinize bir paket eklemediniz. Paketlerimizi inceleyerek size uygun olanı seçebilirsiniz.
+              Henüz sepetinize bir paket eklemediniz. Paketlerimizi inceleyerek
+              size uygun olanı seçebilirsiniz.
             </p>
             <Link
               to="/#paketler"
@@ -307,22 +380,37 @@ const CartPage = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
               {items.map((item) => (
-                <CartItemCard key={`${item.package.id}-${item.seriesCount}`} item={item} />
+                <CartItemCard
+                  key={`${item.package.id}-${item.seriesCount}`}
+                  item={item}
+                />
               ))}
             </div>
 
             <div className="lg:col-span-1">
               <div className="sticky top-28 bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-6">Sipariş Özeti</h3>
+                <h3 className="text-lg font-semibold text-white mb-6">
+                  Sipariş Özeti
+                </h3>
 
                 <div className="space-y-3 mb-6">
                   {items.map((item) => (
-                    <div key={`${item.package.id}-${item.seriesCount}`} className="flex justify-between text-sm">
+                    <div
+                      key={`${item.package.id}-${item.seriesCount}`}
+                      className="flex justify-between text-sm"
+                    >
                       <span className="text-zinc-400">
-                        {item.package.name} ({item.seriesCount} Seri) x{item.quantity}
+                        {item.package.name} ({item.seriesCount} Seri) x
+                        {item.quantity}
                       </span>
                       <span className="text-zinc-200">
-                        ₺{((item.seriesCount === 1 ? item.package.price : item.package.discounts[item.seriesCount]) * item.quantity).toLocaleString("tr-TR")}
+                        ₺
+                        {(
+                          (item.seriesCount === 1
+                            ? item.package.price
+                            : item.package.discounts[item.seriesCount]) *
+                          item.quantity
+                        ).toLocaleString("tr-TR")}
                       </span>
                     </div>
                   ))}
@@ -338,15 +426,18 @@ const CartPage = () => {
                 </div>
 
                 <button
-                  disabled ={isSubmitting}
+                  disabled
                   onClick={() => setShowCheckout(true)}
                   className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 flex items-center justify-center gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
-                  Ödemeye Geç
+                  {/* Ödemeye Geç */}
+                  Ödemeye Geç (Yakında)
                 </button>
 
-                <p className="text-xs text-zinc-500 text-center mt-4">Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.</p>
+                <p className="text-xs text-zinc-500 text-center mt-4">
+                  Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.
+                </p>
               </div>
             </div>
           </div>
@@ -356,20 +447,31 @@ const CartPage = () => {
       {/* Checkout Modal */}
       {showCheckout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-h-[95vh] overflow-y-auto transition-all duration-300 ${
-            step === "payment" ? "max-w-4xl" : "max-w-lg"
-          }`}>
+          <div
+            className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-h-[95vh] overflow-y-auto transition-all duration-300 ${
+              step === "payment" ? "max-w-4xl" : "max-w-lg"
+            }`}
+          >
             {step === "form" ? (
               <>
                 <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-                  <h3 className="text-lg font-semibold text-white">Sipariş Bilgileri</h3>
-                  <button onClick={closeModal} className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors">
+                  <h3 className="text-lg font-semibold text-white">
+                    Sipariş Bilgileri
+                  </h3>
+                  <button
+                    onClick={closeModal}
+                    className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors"
+                  >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                  {error && <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">{error}</div>}
+                  {error && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                      {error}
+                    </div>
+                  )}
 
                   <div>
                     <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
@@ -419,7 +521,8 @@ const CartPage = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                       <Phone className="w-4 h-4" />
-                      İletişim için Telefon <span className="text-red-400">*</span>
+                      İletişim için Telefon{" "}
+                      <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="tel"
@@ -434,7 +537,8 @@ const CartPage = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                       <Mail className="w-4 h-4" />
-                      İletişim için E-posta <span className="text-red-400">*</span>
+                      İletişim için E-posta{" "}
+                      <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="email"
@@ -449,7 +553,8 @@ const CartPage = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                       <MessageSquare className="w-4 h-4" />
-                      Çekim istenen Seri/Alet: <span className="text-zinc-600"></span>
+                      Çekim istenen Seri/Alet:{" "}
+                      <span className="text-zinc-600"></span>
                     </label>
                     <textarea
                       name="notes"
@@ -464,12 +569,38 @@ const CartPage = () => {
                   <div className="pt-4 border-t border-zinc-800">
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-zinc-400">Toplam Tutar</span>
-                      <span className="text-xl font-bold text-fuchsia-400">₺{getTotalPrice().toLocaleString("tr-TR")}</span>
+                      <span className="text-xl font-bold text-fuchsia-400">
+                        ₺{getTotalPrice().toLocaleString("tr-TR")}
+                      </span>
+                    </div>
+
+                    {/* KVKK Onay */}
+                    <div className="mb-4">
+                      <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={kvkkAccepted}
+                          onChange={(e) => setKvkkAccepted(e.target.checked)}
+                          className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-fuchsia-500 focus:ring-fuchsia-500 focus:ring-offset-0 cursor-pointer"
+                        />
+                        <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                          <Link
+                            to="/kvkk-aydinlatma-metni"
+                            target="_blank"
+                            className="text-fuchsia-400 hover:text-fuchsia-300 underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            KVKK Aydınlatma Metni
+                          </Link>
+                          'ni okudum ve kabul ediyorum.{" "}
+                          <span className="text-red-400">*</span>
+                        </span>
+                      </label>
                     </div>
 
                     <button
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !kvkkAccepted}
                       className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
@@ -494,7 +625,10 @@ const CartPage = () => {
                     <CreditCard className="w-5 h-5 text-fuchsia-400" />
                     Ödeme
                   </h3>
-                  <button onClick={closeModal} className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors">
+                  <button
+                    onClick={closeModal}
+                    className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors"
+                  >
                     <X className="w-5 h-5" />
                   </button>
                 </div>

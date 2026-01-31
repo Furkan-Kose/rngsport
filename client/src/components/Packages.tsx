@@ -133,7 +133,7 @@ const Packages = () => {
 
   if (loading) {
     return (
-      <section id="packages" className="py-20 bg-zinc-950">
+      <section id="paketler" className="py-20 bg-zinc-950">
         <div className="container mx-auto px-4 flex justify-center items-center min-h-100">
           <Loader2 className="w-10 h-10 text-fuchsia-400 animate-spin" />
         </div>

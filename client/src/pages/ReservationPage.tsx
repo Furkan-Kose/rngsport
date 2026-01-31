@@ -1,5 +1,19 @@
 import { useState, useEffect } from "react";
-import { Calendar, ArrowLeft, User, Phone, Building, CalendarDays, MessageSquare, Loader2, Check, Trash2, Plus, Package as PackageIcon, Mail } from "lucide-react";
+import {
+  Calendar,
+  ArrowLeft,
+  User,
+  Phone,
+  Building,
+  CalendarDays,
+  MessageSquare,
+  Loader2,
+  Check,
+  Trash2,
+  Plus,
+  Package as PackageIcon,
+  Mail,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import api from "../lib/api";
 import { toast } from "react-toastify";
@@ -35,9 +49,11 @@ interface SelectedPackage {
 
 const ReservationPage = () => {
   const navigate = useNavigate();
-  
+
   const [packages, setPackages] = useState<Package[]>([]);
-  const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>([]);
+  const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>(
+    [],
+  );
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -52,16 +68,18 @@ const ReservationPage = () => {
     notes: "",
   });
 
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
   useEffect(() => {
     fetchPackages();
   }, []);
 
   const fetchPackages = async () => {
     try {
-      const { data } = await api.get('/api/packages');
+      const { data } = await api.get("/api/packages");
       setPackages(data);
     } catch (error) {
-      console.error('Failed to fetch packages:', error);
+      console.error("Failed to fetch packages:", error);
     } finally {
       setIsLoadingPackages(false);
     }
@@ -69,55 +87,65 @@ const ReservationPage = () => {
 
   const addNewPackageRow = () => {
     const newId = `temp-${Date.now()}`;
-    setSelectedPackages([...selectedPackages, {
-      id: newId,
-      packageId: "",
-      packageName: "",
-      seriesCount: 1,
-      quantity: 1,
-      price: 0,
-    }]);
+    setSelectedPackages([
+      ...selectedPackages,
+      {
+        id: newId,
+        packageId: "",
+        packageName: "",
+        seriesCount: 1,
+        quantity: 1,
+        price: 0,
+      },
+    ]);
   };
 
   const removePackageRow = (id: string) => {
-    setSelectedPackages(selectedPackages.filter(sp => sp.id !== id));
+    setSelectedPackages(selectedPackages.filter((sp) => sp.id !== id));
   };
 
   const updatePackageRow = (id: string, field: string, value: any) => {
-    setSelectedPackages(selectedPackages.map(sp => {
-      if (sp.id === id) {
-        if (field === 'packageId') {
-          const pkg = packages.find(p => p.id === value);
-          if (pkg) {
-            return {
-              ...sp,
-              packageId: value,
-              packageName: pkg.name,
-              price: pkg.reservationPrice, // Rezervasyon fiyatı kullan
-            };
+    setSelectedPackages(
+      selectedPackages.map((sp) => {
+        if (sp.id === id) {
+          if (field === "packageId") {
+            const pkg = packages.find((p) => p.id === value);
+            if (pkg) {
+              return {
+                ...sp,
+                packageId: value,
+                packageName: pkg.name,
+                price: pkg.reservationPrice, // Rezervasyon fiyatı kullan
+              };
+            }
           }
-        }
-        if (field === 'seriesCount') {
-          const pkg = packages.find(p => p.id === sp.packageId);
-          if (pkg) {
-            // Rezervasyon fiyatlarını kullan
-            const price = value === 1 ? pkg.reservationPrice : pkg.reservationDiscounts[value as 2 | 3];
-            return { ...sp, seriesCount: value, price };
+          if (field === "seriesCount") {
+            const pkg = packages.find((p) => p.id === sp.packageId);
+            if (pkg) {
+              // Rezervasyon fiyatlarını kullan
+              const price =
+                value === 1
+                  ? pkg.reservationPrice
+                  : pkg.reservationDiscounts[value as 2 | 3];
+              return { ...sp, seriesCount: value, price };
+            }
           }
+          return { ...sp, [field]: value };
         }
-        return { ...sp, [field]: value };
-      }
-      return sp;
-    }));
+        return sp;
+      }),
+    );
   };
 
   const calculateTotal = () => {
     return selectedPackages.reduce((total, sp) => {
-      return total + (sp.price * sp.quantity);
+      return total + sp.price * sp.quantity;
     }, 0);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -126,7 +154,13 @@ const ReservationPage = () => {
     setError("");
     toast.dismiss();
 
-    if (!form.athleteName.trim() || !form.clubName.trim() || !form.birthYear.trim() || !form.customerPhone.trim() || !form.customerEmail.trim()) {
+    if (
+      !form.athleteName.trim() ||
+      !form.clubName.trim() ||
+      !form.birthYear.trim() ||
+      !form.customerPhone.trim() ||
+      !form.customerEmail.trim()
+    ) {
       setError("Lütfen tüm zorunlu alanları doldurun");
       return;
     }
@@ -137,19 +171,19 @@ const ReservationPage = () => {
     }
 
     // Paket seçimi kontrolü
-    const invalidPackages = selectedPackages.filter(sp => !sp.packageId);
+    const invalidPackages = selectedPackages.filter((sp) => !sp.packageId);
     if (invalidPackages.length > 0) {
       setError("Lütfen tüm satırlarda paket seçimi yapın");
       return;
     }
-    
+
     setIsSubmitting(true);
 
     try {
-      const { } = await api.post('/api/reservations', {
+      const {} = await api.post("/api/reservations", {
         ...form,
         items: selectedPackages.map((sp) => {
-          const pkg = packages.find(p => p.id === sp.packageId);
+          const pkg = packages.find((p) => p.id === sp.packageId);
           if (!pkg) {
             throw new Error(`Paket bulunamadı: ${sp.packageId}`);
           }
@@ -172,10 +206,10 @@ const ReservationPage = () => {
       // Başarılı
       setSuccess(true);
       toast.success("Rezervasyon başarıyla oluşturuldu!");
-      
+
       // 5 saniye sonra ana sayfaya yönlendir
       setTimeout(() => {
-        navigate('/');
+        navigate("/");
       }, 5000);
     } catch (err: any) {
       setError(err.response?.data?.message || "Bir hata oluştu");
@@ -192,11 +226,16 @@ const ReservationPage = () => {
           <div className="w-20 h-20 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center mx-auto mb-4">
             <Check className="w-10 h-10 text-green-500" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Rezervasyon Başarılı!</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Rezervasyon Başarılı!
+          </h2>
           <p className="text-zinc-400 mb-4">
-            Rezervasyonunuz alınmıştır. En kısa sürede sizinle iletişime geçeceğiz.
+            Rezervasyonunuz alınmıştır. En kısa sürede sizinle iletişime
+            geçeceğiz.
           </p>
-          <p className="text-sm text-zinc-500">Ana sayfaya yönlendiriliyorsunuz...</p>
+          <p className="text-sm text-zinc-500">
+            Ana sayfaya yönlendiriliyorsunuz...
+          </p>
         </div>
       </div>
     );
@@ -204,7 +243,7 @@ const ReservationPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO 
+      <SEO
         title="Rezervasyon"
         description="International Ritmika Cup için fotoğraf ve video çekim rezervasyonunuzu yapın. Profesyonel ekibimizle performansınızı ölümsüzleştirin."
         keywords="ritmika cup rezervasyon, cimnastik fotoğraf rezervasyon, video çekim, spor fotoğrafçılığı"
@@ -217,7 +256,10 @@ const ReservationPage = () => {
 
       <div className="container mx-auto px-4 relative z-10 max-w-6xl">
         <div className="flex items-center gap-4 mb-8">
-          <Link to="/" className="flex items-center gap-2 text-zinc-400 hover:text-violet-400 transition-colors">
+          <Link
+            to="/"
+            className="flex items-center gap-2 text-zinc-400 hover:text-violet-400 transition-colors"
+          >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Ana Sayfa</span>
           </Link>
@@ -229,7 +271,9 @@ const ReservationPage = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-white">Rezervasyon Formu</h1>
-            <p className="text-zinc-500 text-sm">Paketleri seçin ve bilgilerinizi girin</p>
+            <p className="text-zinc-500 text-sm">
+              Paketleri seçin ve bilgilerinizi girin
+            </p>
           </div>
         </div>
 
@@ -247,7 +291,7 @@ const ReservationPage = () => {
                 Paket Ekle
               </button>
             </div>
-            
+
             {isLoadingPackages ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
@@ -257,25 +301,41 @@ const ReservationPage = () => {
                 {selectedPackages.length === 0 ? (
                   <div className="text-center py-8 text-zinc-500">
                     <PackageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Henüz paket eklenmedi. "Paket Ekle" butonuna tıklayın.</p>
+                    <p>
+                      Henüz paket eklenmedi. "Paket Ekle" butonuna tıklayın.
+                    </p>
                   </div>
                 ) : (
                   selectedPackages.map((sp) => {
-                    const selectedPkg = packages.find(p => p.id === sp.packageId);
+                    const selectedPkg = packages.find(
+                      (p) => p.id === sp.packageId,
+                    );
                     return (
-                      <div key={sp.id} className="grid md:grid-cols-12 gap-3 p-4 bg-zinc-800/50 border border-zinc-700 rounded-xl">
+                      <div
+                        key={sp.id}
+                        className="grid md:grid-cols-12 gap-3 p-4 bg-zinc-800/50 border border-zinc-700 rounded-xl"
+                      >
                         {/* Paket Seçimi */}
                         <div className="md:col-span-4">
-                          <label className="text-xs text-zinc-500 mb-1 block">Paket</label>
+                          <label className="text-xs text-zinc-500 mb-1 block">
+                            Paket
+                          </label>
                           <select
                             value={sp.packageId}
-                            onChange={(e) => updatePackageRow(sp.id, 'packageId', e.target.value)}
+                            onChange={(e) =>
+                              updatePackageRow(
+                                sp.id,
+                                "packageId",
+                                e.target.value,
+                              )
+                            }
                             className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
                           >
                             <option value="">Paket Seçin</option>
                             {packages.map((pkg) => (
                               <option key={pkg.id} value={pkg.id}>
-                                {pkg.name} - ₺{pkg.reservationPrice.toLocaleString("tr-TR")}
+                                {pkg.name} - ₺
+                                {pkg.reservationPrice.toLocaleString("tr-TR")}
                               </option>
                             ))}
                           </select>
@@ -283,27 +343,58 @@ const ReservationPage = () => {
 
                         {/* Seri Sayısı */}
                         <div className="md:col-span-3">
-                          <label className="text-xs text-zinc-500 mb-1 block">Seri Sayısı</label>
+                          <label className="text-xs text-zinc-500 mb-1 block">
+                            Seri Sayısı
+                          </label>
                           <select
                             value={sp.seriesCount}
-                            onChange={(e) => updatePackageRow(sp.id, 'seriesCount', Number(e.target.value))}
+                            onChange={(e) =>
+                              updatePackageRow(
+                                sp.id,
+                                "seriesCount",
+                                Number(e.target.value),
+                              )
+                            }
                             disabled={!sp.packageId}
                             className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <option value={1}>1 Seri - ₺{(selectedPkg?.reservationPrice || 0).toLocaleString("tr-TR")}</option>
-                            <option value={2}>2 Seri - ₺{(selectedPkg?.reservationDiscounts?.[2] || 0).toLocaleString("tr-TR")}</option>
-                            <option value={3}>3 Seri - ₺{(selectedPkg?.reservationDiscounts?.[3] || 0).toLocaleString("tr-TR")}</option>
+                            <option value={1}>
+                              1 Seri - ₺
+                              {(
+                                selectedPkg?.reservationPrice || 0
+                              ).toLocaleString("tr-TR")}
+                            </option>
+                            <option value={2}>
+                              2 Seri - ₺
+                              {(
+                                selectedPkg?.reservationDiscounts?.[2] || 0
+                              ).toLocaleString("tr-TR")}
+                            </option>
+                            <option value={3}>
+                              3 Seri - ₺
+                              {(
+                                selectedPkg?.reservationDiscounts?.[3] || 0
+                              ).toLocaleString("tr-TR")}
+                            </option>
                           </select>
                         </div>
 
                         {/* Adet */}
                         <div className="md:col-span-2">
-                          <label className="text-xs text-zinc-500 mb-1 block">Adet</label>
+                          <label className="text-xs text-zinc-500 mb-1 block">
+                            Adet
+                          </label>
                           <input
                             type="number"
                             min="1"
                             value={sp.quantity}
-                            onChange={(e) => updatePackageRow(sp.id, 'quantity', Number(e.target.value))}
+                            onChange={(e) =>
+                              updatePackageRow(
+                                sp.id,
+                                "quantity",
+                                Number(e.target.value),
+                              )
+                            }
                             disabled={!sp.packageId}
                             className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           />
@@ -311,7 +402,9 @@ const ReservationPage = () => {
 
                         {/* Toplam */}
                         <div className="md:col-span-2 flex flex-col justify-end">
-                          <label className="text-xs text-zinc-500 mb-1 block">Toplam</label>
+                          <label className="text-xs text-zinc-500 mb-1 block">
+                            Toplam
+                          </label>
                           <div className="text-base font-bold text-violet-400">
                             ₺{(sp.price * sp.quantity).toLocaleString("tr-TR")}
                           </div>
@@ -337,8 +430,10 @@ const ReservationPage = () => {
 
           {/* Sporcu Bilgileri */}
           <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Sporcu Bilgileri</h2>
-            
+            <h2 className="text-xl font-semibold text-white mb-4">
+              Sporcu Bilgileri
+            </h2>
+
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
                 {error}
@@ -424,7 +519,8 @@ const ReservationPage = () => {
               <div className="md:col-span-2">
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <MessageSquare className="w-4 h-4" />
-                  Çekim istenen Seri/Alet: <span className="text-zinc-600"></span>
+                  Çekim istenen Seri/Alet:{" "}
+                  <span className="text-zinc-600"></span>
                 </label>
                 <textarea
                   name="notes"
@@ -442,8 +538,12 @@ const ReservationPage = () => {
           <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">Toplam Tutar</h3>
-                <p className="text-sm text-zinc-500">{selectedPackages.length} paket seçildi</p>
+                <h3 className="text-lg font-semibold text-white">
+                  Toplam Tutar
+                </h3>
+                <p className="text-sm text-zinc-500">
+                  {selectedPackages.length} paket seçildi
+                </p>
               </div>
               <div className="text-3xl font-bold bg-linear-to-r from-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
                 ₺{calculateTotal().toLocaleString("tr-TR")}
@@ -452,13 +552,40 @@ const ReservationPage = () => {
 
             <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
               <p className="text-xs text-amber-400 text-center">
-                💡 Rezervasyonunuzu şimdi tamamlayın; ödeme işlemini yarışma günü alandaki standımızda gerçekleştirin."
+                💡 Rezervasyonunuzu şimdi tamamlayın; ödeme işlemini yarışma
+                günü alandaki standımızda gerçekleştirin."
               </p>
+            </div>
+
+            {/* KVKK Onay */}
+            <div className="mb-4">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={kvkkAccepted}
+                  onChange={(e) => setKvkkAccepted(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-violet-500 focus:ring-violet-500 focus:ring-offset-0 cursor-pointer"
+                />
+                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                  <Link
+                    to="/kvkk-aydinlatma-metni"
+                    target="_blank"
+                    className="text-violet-400 hover:text-violet-300 underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    KVKK Aydınlatma Metni
+                  </Link>
+                  'ni okudum ve kabul ediyorum.{" "}
+                  <span className="text-red-400">*</span>
+                </span>
+              </label>
             </div>
 
             <button
               type="submit"
-              disabled={isSubmitting || selectedPackages.length === 0}
+              disabled={
+                isSubmitting || selectedPackages.length === 0 || !kvkkAccepted
+              }
               className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (

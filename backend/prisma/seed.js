@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+/*
 const packages = [
   {
     slug: "photo-basic",
@@ -108,8 +109,10 @@ const packages = [
     sortOrder: 1, // En üstte göster
   },
 ];
+*/
 
 async function main() {
+  /*
   console.log("Seeding packages...");
 
   for (const pkg of packages) {
@@ -120,21 +123,22 @@ async function main() {
     });
     console.log(`  ✓ ${pkg.name}`);
   }
+  */
 
   // Admin kullanıcı oluştur
   console.log("\nSeeding admin user...");
-  const hashedPassword = await bcrypt.hash("admin123", 10);
-  
+  const hashedPassword = await bcrypt.hash("hakobaba34", 10);
+
   await prisma.user.upsert({
-    where: { username: "admin" },
+    where: { username: "hakobaba55" },
     update: {},
     create: {
-      username: "admin",
+      username: "hakobaba55",
       password: hashedPassword,
-      role: "admin"
-    }
+      role: "admin",
+    },
   });
-  console.log("  ✓ Admin user created (username: admin, password: admin123)");
+  console.log("  ✓ Admin user created");
 
   console.log("\nSeeding completed!");
 }

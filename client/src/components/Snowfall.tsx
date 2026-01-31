@@ -30,14 +30,14 @@ const Snowfall = () => {
     }
 
     const snowflakes: Snowflake[] = [];
-    const snowflakeCount = 25;
+    const snowflakeCount = 15;
 
     const createSnowflake = (initialY?: number): Snowflake => {
       return {
         x: Math.random() * canvas.width,
         y: initialY !== undefined ? initialY : -10,
         radius: 1 + Math.random() * 3,
-        speed: 0.3 + Math.random() * 1,
+        speed: 0.6 + Math.random() * 1.2,
         wind: (Math.random() - 0.5) * 0.5,
         opacity: 0.3 + Math.random() * 0.5,
       };

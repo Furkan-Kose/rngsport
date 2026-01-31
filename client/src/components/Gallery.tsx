@@ -19,7 +19,7 @@ const galleryItems = [
     id: 1,
     type: "video",
     vimeoId: "1160466956", // Vimeo video ID'sini buraya yazın
-    thumbnail: "", // Boş bırakırsanız Vimeo thumbnail'ı kullanılır
+    thumbnail: "/video/1.jpeg", // Boş bırakırsanız Vimeo thumbnail'ı kullanılır
     title: "Ritmika Cup 2025",
     category: "Video",
   },
@@ -27,7 +27,7 @@ const galleryItems = [
     id: 2,
     type: "video",
     vimeoId: "1160467514",
-    thumbnail: "",
+    thumbnail: "/video/2.jpeg",
     title: "Ritmika Cup 2025",
     category: "Video",
   },

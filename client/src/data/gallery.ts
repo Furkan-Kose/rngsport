@@ -12,8 +12,8 @@ export const galleryItems: GalleryItem[] = [
   {
     id: 1,
     type: "video",
-    vimeoId: "1160466956", // Vimeo video ID'sini buraya yazın
-    thumbnail: "",
+    vimeoId: "1160466956", 
+    thumbnail: "/video/1.jpeg",
     title: "Ritmika Cup 2025",
     category: "Video",
   },
@@ -21,7 +21,7 @@ export const galleryItems: GalleryItem[] = [
     id: 2,
     type: "video",
     vimeoId: "1160467514",
-    thumbnail: "",
+    thumbnail: "/video/2.jpeg",
     title: "Ritmika Cup 2025",
     category: "Video",
   },
