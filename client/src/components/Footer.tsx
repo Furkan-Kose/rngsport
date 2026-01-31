@@ -5,8 +5,9 @@ const Footer = () => {
 
   const navLinks = [
     { name: "Ana Sayfa", href: "/#" },
+    { name: "Hakkımızda", href: "/hakkimizda" },
+    { name: "Galeri", href: "/galeri" },
     { name: "Paketler", href: "/#paketler" },
-    { name: "Galeri", href: "/#galeri" },
     { name: "Süreç", href: "/#surec" },
     { name: "SSS", href: "/#sss" },
   ];

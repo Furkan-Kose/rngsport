@@ -10,6 +10,8 @@ import reservationRoutes from "./routes/reservation.route.js";
 
 const app = express();
 
+app.use("/api/payment", paymentRoutes);
+
 const corsOptions = {
   origin: 'https://ritmikacup.netlify.app', 
   credentials: true,              
@@ -27,7 +29,6 @@ app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/payment", paymentRoutes);
 app.use("/api/packages", packageRoutes);
 app.use("/api/reservations", reservationRoutes);
 

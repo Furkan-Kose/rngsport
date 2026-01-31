@@ -11,7 +11,7 @@ const Header = () => {
 
   const navLinks = [
     { name: "Ana Sayfa", href: "/#" },
-    { name: "Hakkında", href: "/hakkimizda" },
+    { name: "Hakkımızda", href: "/hakkimizda" },
     { name: "Galeri", href: "/galeri" },
     { name: "Paketler", href: "/#paketler" },
     { name: "Süreç", href: "/#surec" },
