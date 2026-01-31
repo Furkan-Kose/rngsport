@@ -1,13 +1,14 @@
 import { Instagram, Facebook } from "lucide-react";
+import { Link } from "react-router";
 
 const Footer = () => {
 
   const navLinks = [
-    { name: "Ana Sayfa", href: "/#home" },
-    { name: "Paketler", href: "/#packages" },
-    { name: "Galeri", href: "/#gallery" },
-    { name: "Süreç", href: "/#process" },
-    { name: "SSS", href: "/#faq" },
+    { name: "Ana Sayfa", href: "/#" },
+    { name: "Paketler", href: "/#paketler" },
+    { name: "Galeri", href: "/#galeri" },
+    { name: "Süreç", href: "/#surec" },
+    { name: "SSS", href: "/#sss" },
   ];
 
   return (
@@ -83,9 +84,11 @@ const Footer = () => {
             className="text-sm text-gray-400 hover:underline transition-colors">
             © 2026 Range Media Tüm hakları saklıdır.
           </a>
-          <div className="flex gap-6 text-sm text-gray-400">
-            <a href="#" className="hover:text-fuchsia-500 transition-colors">Gizlilik Politikası</a>
-            <a href="#" className="hover:text-fuchsia-500 transition-colors">Kullanım Şartları</a>
+          <div className="flex flex-col md:flex-row gap-2 md:gap-6 text-sm text-gray-400">
+            <Link to="/gizlilik-ve-guvenlik-politikasi" className="hover:text-fuchsia-500 transition-colors">Gizlilik Politikası</Link>
+            <Link to="/kvkk-aydinlatma-metni" className="hover:text-fuchsia-500 transition-colors">KVKK Aydınlatma Metni</Link>
+            <Link to="/mesafeli-satis-sozlesmesi" className="hover:text-fuchsia-500 transition-colors">Mesafeli Satış Sözleşmesi</Link>
+            <Link to="/iptal-ve-iade-kosullari" className="hover:text-fuchsia-500 transition-colors">İptal ve İade Koşulları</Link>
           </div>
         </div>
       </div>

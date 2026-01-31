@@ -1,23 +1,32 @@
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, Camera, Play } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Link } from "react-router";
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Camera,
+  Play,
+  ArrowRight,
+} from "lucide-react";
 
-// YouTube video ID'sinden thumbnail URL'i oluştur
-const getYoutubeThumbnail = (videoId: string) => 
-  `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+// Vimeo video ID'sinden thumbnail URL'i oluştur
+const getVimeoThumbnail = (videoId: string) =>
+  `https://vumbnail.com/${videoId}.jpg`;
 
 const galleryItems = [
   {
     id: 1,
     type: "video",
-    youtubeId: "4YqjW0LaNxc", // YouTube video ID'sini buraya yazın
-    thumbnail: "", // Boş bırakırsanız YouTube thumbnail'ı kullanılır
+    vimeoId: "1160466956", // Vimeo video ID'sini buraya yazın
+    thumbnail: "", // Boş bırakırsanız Vimeo thumbnail'ı kullanılır
     title: "Ritmika Cup 2025",
     category: "Video",
   },
   {
     id: 2,
     type: "video",
-    youtubeId: "LxsuspJmM6A",
+    vimeoId: "1160467514",
     thumbnail: "",
     title: "Ritmika Cup 2025",
     category: "Video",
@@ -25,7 +34,7 @@ const galleryItems = [
   {
     id: 3,
     type: "video",
-    youtubeId: "1enESTwX7UQ",
+    vimeoId: "1160467257",
     thumbnail: "",
     title: "Ritmika Cup 2025",
     category: "Video",
@@ -33,7 +42,7 @@ const galleryItems = [
   {
     id: 4,
     type: "video",
-    youtubeId: "skdPXjQmPZk",
+    vimeoId: "1160469238",
     thumbnail: "",
     title: "Ritmika Cup 2025",
     category: "Video",
@@ -78,20 +87,12 @@ const galleryItems = [
     title: "Ritmika Cup 2025",
     category: "Fotoğraf",
   },
-  // {
-  //   id: 10,
-  //   type: "photo",
-  //   src: "/gallery/6.webp",
-  //   thumbnail: "/gallery/6.webp",
-  //   title: "Ritmika Cup 2025",
-  //   category: "Fotoğraf",
-  // },
 ];
 
-// Item'ın thumbnail'ını al (video ise YouTube thumbnail, değilse normal thumbnail)
-const getItemThumbnail = (item: typeof galleryItems[0]) => {
-  if (item.type === "video" && item.youtubeId) {
-    return item.thumbnail || getYoutubeThumbnail(item.youtubeId);
+// Item'ın thumbnail'ını al (video ise Vimeo thumbnail, değilse normal thumbnail)
+const getItemThumbnail = (item: (typeof galleryItems)[0]) => {
+  if (item.type === "video" && item.vimeoId) {
+    return item.thumbnail || getVimeoThumbnail(item.vimeoId);
   }
   return item.thumbnail;
 };
@@ -102,9 +103,13 @@ const Gallery = () => {
 
   const categories = ["all", "Fotoğraf", "Video"];
 
-  const filteredItems = filter === "all" 
-    ? galleryItems 
-    : galleryItems.filter(item => item.category === filter);
+  const allFilteredItems =
+    filter === "all"
+      ? galleryItems
+      : galleryItems.filter((item) => item.category === filter);
+
+  // Ana sayfada sadece 6 item göster
+  const filteredItems = allFilteredItems.slice(0, 6);
 
   const openLightbox = (index: number) => {
     setSelectedImage(index);
@@ -118,18 +123,22 @@ const Gallery = () => {
 
   const goToPrevious = () => {
     if (selectedImage !== null) {
-      setSelectedImage(selectedImage === 0 ? filteredItems.length - 1 : selectedImage - 1);
+      setSelectedImage(
+        selectedImage === 0 ? filteredItems.length - 1 : selectedImage - 1,
+      );
     }
   };
 
   const goToNext = () => {
     if (selectedImage !== null) {
-      setSelectedImage(selectedImage === filteredItems.length - 1 ? 0 : selectedImage + 1);
+      setSelectedImage(
+        selectedImage === filteredItems.length - 1 ? 0 : selectedImage + 1,
+      );
     }
   };
 
-  return (
-    <section id="gallery" className="py-24 bg-zinc-950/50">
+  const gallerySection = (
+    <section id="galeri" className="py-24 bg-zinc-950/50">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-12">
@@ -141,7 +150,8 @@ const Gallery = () => {
             Galeri
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            Geçtiğimiz yılın organizasyonunda yakaladığımız performanslardan seçilmiş örnek kareler.
+            Geçtiğimiz yılın organizasyonunda yakaladığımız performanslardan
+            seçilmiş örnek kareler.
           </p>
         </div>
 
@@ -176,7 +186,7 @@ const Gallery = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
+
               {/* Video Badge */}
               {item.type === "video" && (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -188,71 +198,110 @@ const Gallery = () => {
 
               {/* Hover Info */}
               <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                <p className="text-xs text-fuchsia-400 font-medium mb-1">{item.category}</p>
+                <p className="text-xs text-fuchsia-400 font-medium mb-1">
+                  {item.category}
+                </p>
                 <h3 className="text-white font-semibold">{item.title}</h3>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Lightbox */}
-        {selectedImage !== null && (
-          <div 
-            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
-            onClick={closeLightbox}
-          >
-            {/* Close Button */}
-            <button 
-              className="absolute top-4 right-4 p-2 text-white/70 hover:text-white transition-colors z-10"
-              onClick={closeLightbox}
+        {/* Tüm Galeriyi Gör Butonu */}
+        {allFilteredItems.length > 6 && (
+          <div className="text-center mt-10">
+            <Link
+              to="/galeri"
+              className="inline-flex items-center gap-2 bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-8 py-3 rounded-xl font-medium transition-colors"
             >
-              <X className="w-8 h-8" />
-            </button>
-
-            {/* Navigation */}
-            <button 
-              className="absolute left-4 p-2 text-white/70 hover:text-white transition-colors z-10"
-              onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-            >
-              <ChevronLeft className="w-10 h-10" />
-            </button>
-            <button 
-              className="absolute right-4 p-2 text-white/70 hover:text-white transition-colors z-10"
-              onClick={(e) => { e.stopPropagation(); goToNext(); }}
-            >
-              <ChevronRight className="w-10 h-10" />
-            </button>
-
-            {/* Content */}
-            <div className="w-full max-w-5xl max-h-[85vh] px-4 sm:px-16" onClick={(e) => e.stopPropagation()}>
-              {filteredItems[selectedImage].type === "video" && filteredItems[selectedImage].youtubeId ? (
-                // YouTube Video Player
-                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                  <iframe
-                    className="absolute inset-0 w-full h-full rounded-lg"
-                    src={`https://www.youtube.com/embed/${filteredItems[selectedImage].youtubeId}?autoplay=1&rel=0`}
-                    title={filteredItems[selectedImage].title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              ) : (
-                // Image
-                <img
-                  src={filteredItems[selectedImage].src}
-                  alt={filteredItems[selectedImage].title}
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg mx-auto"
-                />
-              )}
-              <div className="text-center mt-4">
-                <p className="text-fuchsia-400 text-sm">{filteredItems[selectedImage].category}</p>
-                <h3 className="text-white text-xl font-semibold mt-1">{filteredItems[selectedImage].title}</h3>
-              </div>
-            </div>
+              Tüm Galeriyi Gör
+              <ArrowRight className="w-5 h-5" />
+            </Link>
           </div>
         )}
       </div>
     </section>
+  );
+
+  const lightbox =
+    selectedImage !== null &&
+    createPortal(
+      <div
+        className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
+        onClick={closeLightbox}
+      >
+        {/* Close Button */}
+        <button
+          className="absolute top-6 right-6 p-3 text-white hover:text-fuchsia-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
+          onClick={closeLightbox}
+        >
+          <X className="w-8 h-8" />
+        </button>
+
+        {/* Navigation */}
+        <button
+          className="absolute left-4 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
+          onClick={(e) => {
+            e.stopPropagation();
+            goToPrevious();
+          }}
+        >
+          <ChevronLeft className="w-8 h-8" />
+        </button>
+        <button
+          className="absolute right-4 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
+          onClick={(e) => {
+            e.stopPropagation();
+            goToNext();
+          }}
+        >
+          <ChevronRight className="w-8 h-8" />
+        </button>
+
+        {/* Content */}
+        <div
+          className="w-full max-w-[95vw] lg:max-w-[90vw] px-2 sm:px-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {filteredItems[selectedImage].type === "video" &&
+          filteredItems[selectedImage].vimeoId ? (
+            <div
+              className="relative w-full max-h-[90vh]"
+              style={{ paddingBottom: "56.25%" }}
+            >
+              <iframe
+                className="absolute inset-0 w-full h-full rounded-lg"
+                src={`https://player.vimeo.com/video/${filteredItems[selectedImage].vimeoId}?autoplay=1&title=0&byline=0&portrait=0`}
+                title={filteredItems[selectedImage].title}
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <img
+              src={filteredItems[selectedImage].src}
+              alt={filteredItems[selectedImage].title}
+              className="max-w-full max-h-[80vh] object-contain rounded-lg mx-auto"
+            />
+          )}
+          <div className="text-center mt-4">
+            <p className="text-fuchsia-400 text-sm">
+              {filteredItems[selectedImage].category}
+            </p>
+            <h3 className="text-white text-xl font-semibold mt-1">
+              {filteredItems[selectedImage].title}
+            </h3>
+          </div>
+        </div>
+      </div>,
+      document.body,
+    );
+
+  return (
+    <>
+      {gallerySection}
+      {lightbox}
+    </>
   );
 };
 

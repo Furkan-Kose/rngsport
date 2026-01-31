@@ -6,15 +6,16 @@ import { useCart } from "../context/CartContext";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { getTotalItems } = useCart();
-  
+
   const cartItemCount = getTotalItems();
 
   const navLinks = [
-    { name: "Ana Sayfa", href: "/#home" },
-    { name: "Paketler", href: "/#packages" },
-    { name: "Galeri", href: "/#gallery" },
-    { name: "Süreç", href: "/#process" },
-    { name: "SSS", href: "/#faq" },
+    { name: "Ana Sayfa", href: "/#" },
+    { name: "Hakkında", href: "/hakkimizda" },
+    { name: "Galeri", href: "/galeri" },
+    { name: "Paketler", href: "/#paketler" },
+    { name: "Süreç", href: "/#surec" },
+    { name: "SSS", href: "/#sss" },
   ];
 
   return (
@@ -23,14 +24,18 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <img 
-              src="/logo.webp" 
-              alt="Ritmika Cimnastik" 
+            <img
+              src="/logo.webp"
+              alt="Ritmika Cimnastik"
               className="w-12 h-12 transition-transform duration-300 group-hover:scale-110"
             />
             <div className="hidden md:block">
-              <span className="text-lg font-bold text-white">International</span>
-              <span className="text-lg font-light text-fuchsia-500 ml-2">Ritmika Cup</span>
+              <span className="text-lg font-bold text-white">
+                International
+              </span>
+              <span className="text-lg font-light text-fuchsia-500 ml-2">
+                Ritmika Cup
+              </span>
             </div>
           </Link>
 
@@ -50,8 +55,8 @@ const Header = () => {
           {/* Action Buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Reservation Button */}
-            <Link 
-              to="/reservation" 
+            <Link
+              to="/rezervasyon"
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-violet-500/50 transition-all duration-300 group"
             >
               <Calendar className="w-4 h-4 text-zinc-300 group-hover:text-violet-400 transition-colors" />
@@ -59,10 +64,10 @@ const Header = () => {
                 Rezervasyon Yap
               </span>
             </Link>
-            
+
             {/* Reservation Button Mobile */}
-            <Link 
-              to="/reservation" 
+            <Link
+              to="/rezervasyon"
               className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-violet-500/50 transition-all duration-300 group"
               title="Rezervasyon Yap"
             >
@@ -70,8 +75,8 @@ const Header = () => {
             </Link>
 
             {/* Cart Button */}
-            <Link 
-              to="/cart" 
+            <Link
+              to="/sepet"
               className="relative p-2 sm:p-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-fuchsia-500/50 transition-all duration-300 group"
             >
               <ShoppingCart className="w-5 h-5 text-zinc-300 group-hover:text-fuchsia-400 transition-colors" />

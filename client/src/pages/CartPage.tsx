@@ -3,6 +3,7 @@ import { ShoppingCart, ArrowLeft, PackageX, Trash2, Minus, Plus, X, User, Phone,
 import { Link, useSearchParams } from "react-router";
 import { useCart, type CartItem } from "../context/CartContext";
 import api from "../lib/api";
+import SEO from "../components/SEO";
 
 // iyzico ödeme modu: "popup" = modal içinde, "redirect" = iyzico sayfasına yönlendir
 const IYZICO_MODE: "popup" | "redirect" = "redirect";
@@ -242,6 +243,11 @@ const CartPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+      <SEO 
+        title="Sepet"
+        description="Sepetinizi görüntüleyin ve siparişinizi tamamlayın. International Ritmika Cup profesyonel fotoğraf ve video hizmetleri."
+        url="https://ritmikacup.com/cart"
+      />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
@@ -290,7 +296,7 @@ const CartPage = () => {
               Henüz sepetinize bir paket eklemediniz. Paketlerimizi inceleyerek size uygun olanı seçebilirsiniz.
             </p>
             <Link
-              to="/#packages"
+              to="/#paketler"
               className="inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -332,13 +338,12 @@ const CartPage = () => {
                 </div>
 
                 <button
-                  disabled // şimdilik pasif
+                  disabled ={isSubmitting}
                   onClick={() => setShowCheckout(true)}
                   className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 flex items-center justify-center gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
-                  {/* Ödemeye Geç */}
-                  Ödeme Yakında Aktifleşecektir
+                  Ödemeye Geç
                 </button>
 
                 <p className="text-xs text-zinc-500 text-center mt-4">Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.</p>
@@ -444,13 +449,13 @@ const CartPage = () => {
                   <div>
                     <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                       <MessageSquare className="w-4 h-4" />
-                      Notlar <span className="text-zinc-600">(opsiyonel)</span>
+                      Çekim istenen Seri/Alet: <span className="text-zinc-600"></span>
                     </label>
                     <textarea
                       name="notes"
                       value={form.notes}
                       onChange={handleChange}
-                      placeholder="Eklemek istediğiniz notlar..."
+                      placeholder="Serbest seri, Kurdele, Labut vb"
                       rows={3}
                       className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors resize-none"
                     />

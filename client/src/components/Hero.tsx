@@ -3,7 +3,7 @@ import { Link } from "react-router";
 
 const Hero = () => {
   return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section id="" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
@@ -31,7 +31,7 @@ const Hero = () => {
           <h1 className="text-[2rem] leading-[1.2] md:text-5xl lg:text-7xl font-display font-bold text-white md:text-gray-200 md:leading-tight mb-5 md:mb-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
             Sezonun
             <span className="block text-fuchsia-500">En Büyük Buluşmasına,</span>
-            Yakışır Bir Hatıra.
+            Yakışan Bir Hatıra.
           </h1>
 
           {/* Description */}
@@ -42,7 +42,7 @@ const Hero = () => {
           {/* Buttons */}
           <div className="flex flex-row justify-center md:justify-start gap-3 md:gap-4 animate-fade-in" style={{ animationDelay: "0.6s" }}>
             <a 
-              href="#packages" 
+              href="#paketler" 
               className="bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-colors text-sm md:text-base"
             >
               <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
@@ -50,7 +50,7 @@ const Hero = () => {
               <ArrowRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1" />
             </a>
             <Link 
-              to="/reservation" 
+              to="/rezervasyon" 
               className="bg-white/10 md:bg-black/30 hover:bg-violet-600/20 border border-white/20 md:border-white/10 hover:border-violet-500/50 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-all text-sm md:text-base"
             >
               <Calendar className="w-4 h-4 md:w-5 md:h-5 group-hover:text-violet-400 transition-colors" />

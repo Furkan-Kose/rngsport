@@ -143,7 +143,7 @@ const Packages = () => {
 
   if (error) {
     return (
-      <section id="packages" className="py-20 bg-zinc-950">
+      <section id="paketler" className="py-20 bg-zinc-950">
         <div className="container mx-auto px-4 text-center">
           <p className="text-red-400">{error}</p>
         </div>
@@ -152,7 +152,7 @@ const Packages = () => {
   }
 
   return (
-    <section id="packages" className="py-20 bg-zinc-950">
+    <section id="paketler" className="py-20 bg-zinc-950">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-16">

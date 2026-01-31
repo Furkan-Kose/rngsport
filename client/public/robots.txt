@@ -1,0 +1,10 @@
+# Robots.txt for International Ritmika Cup
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://ritmikacup.com/sitemap.xml
+
+# Disallow admin pages
+Disallow: /admin/
+Disallow: /api/

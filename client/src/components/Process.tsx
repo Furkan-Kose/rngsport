@@ -6,16 +6,21 @@ const steps = [
   },
   {
     number: "02",
-    title: "Ödeme ve Çekim",
-    description: "Yarışma günü standımıza gelerek ödemenizi tamamlayın. Siz sahnedeyken ekibimiz performansınızı kayıt altına alsın.",
+    title: "Ödeme Tercihi",
+    description: "Güvenli ödeme ile online satın alabilir veya nakit/kart seçeneğiyle ödemeyi yarışma alanında yapabilirsiniz.",
   },
   {
     number: "03",
+    title: "Performans ve Çekim",
+    description: "Sıra size geldiğinde ekibimiz hazır bulunur; sahne performansınız eksiksiz olarak kayıt altına alınır."
+  },
+  {
+    number: "04",
     title: "Düzenleme ve Kurgu",
     description: "Çekilen görüntüler teknik ekibimizce işlenir; fotoğraflar düzenlenir, videolar kurgu aşamasından geçer.",
   },
   {
-    number: "04",
+    number: "05",
     title: "Dijital Teslimat",
     description: "Hazırlanan tüm dosyalar, yüksek kalitede ve dijital bağlantı (link) ile tarafınıza iletilir.",
   }
@@ -23,7 +28,7 @@ const steps = [
 
 const Process = () => {
   return (
-    <section id="process" className="py-24">
+    <section id="surec" className="py-24">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -34,7 +39,7 @@ const Process = () => {
         </div>
 
         {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mx-auto">
           {steps.map((step, index) => (
             <div key={index} className="relative text-center group">
               {/* Connector Line */}

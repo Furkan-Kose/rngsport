@@ -96,7 +96,7 @@ const DiscountBanner = () => {
 
             {/* CTA Button */}
             <Link
-              to="/reservation"
+              to="/rezervasyon"
               className="inline-flex items-center gap-2 px-8 py-4 lg:px-12 lg:py-5 bg-linear-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-600 hover:to-violet-600 text-white rounded-xl lg:rounded-2xl font-semibold lg:text-lg transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 hover:-translate-y-0.5"
             >
               <Calendar className="w-5 h-5 lg:w-6 lg:h-6" />

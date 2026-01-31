@@ -3,6 +3,7 @@ import { Calendar, ArrowLeft, User, Phone, Building, CalendarDays, MessageSquare
 import { Link, useNavigate } from "react-router";
 import api from "../lib/api";
 import { toast } from "react-toastify";
+import SEO from "../components/SEO";
 
 interface Package {
   id: string;
@@ -203,6 +204,12 @@ const ReservationPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+      <SEO 
+        title="Rezervasyon"
+        description="International Ritmika Cup için fotoğraf ve video çekim rezervasyonunuzu yapın. Profesyonel ekibimizle performansınızı ölümsüzleştirin."
+        keywords="ritmika cup rezervasyon, cimnastik fotoğraf rezervasyon, video çekim, spor fotoğrafçılığı"
+        url="https://ritmikacup.com/reservation"
+      />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
