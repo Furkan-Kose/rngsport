@@ -232,7 +232,7 @@ const Gallery = () => {
       >
         {/* Close Button */}
         <button
-          className="absolute top-6 right-6 p-3 text-white hover:text-fuchsia-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
+          className="absolute top-6 right-6 z-50 p-3 text-white hover:text-fuchsia-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
           onClick={closeLightbox}
         >
           <X className="w-8 h-8" />
@@ -240,7 +240,7 @@ const Gallery = () => {
 
         {/* Navigation */}
         <button
-          className="absolute left-4 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
+          className="absolute left-4 z-50 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
           onClick={(e) => {
             e.stopPropagation();
             goToPrevious();
@@ -249,7 +249,7 @@ const Gallery = () => {
           <ChevronLeft className="w-8 h-8" />
         </button>
         <button
-          className="absolute right-4 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
+          className="absolute right-4 z-50 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
           onClick={(e) => {
             e.stopPropagation();
             goToNext();
@@ -260,15 +260,12 @@ const Gallery = () => {
 
         {/* Content */}
         <div
-          className="w-full max-w-[95vw] lg:max-w-[90vw] px-2 sm:px-4"
+          className="w-full max-w-[95vw] lg:max-w-[85vw] px-2 sm:px-4"
           onClick={(e) => e.stopPropagation()}
         >
           {filteredItems[selectedImage].type === "video" &&
           filteredItems[selectedImage].vimeoId ? (
-            <div
-              className="relative w-full max-h-[90vh]"
-              style={{ paddingBottom: "56.25%" }}
-            >
+            <div className="relative w-full h-[70vh] lg:h-[85vh]">
               <iframe
                 className="absolute inset-0 w-full h-full rounded-lg"
                 src={`https://player.vimeo.com/video/${filteredItems[selectedImage].vimeoId}?autoplay=1&title=0&byline=0&portrait=0`}

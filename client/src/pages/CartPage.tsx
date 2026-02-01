@@ -435,7 +435,15 @@ const CartPage = () => {
                   Ödemeye Geç (Yakında)
                 </button>
 
-                <p className="text-xs text-zinc-500 text-center mt-4">
+                <div className="flex justify-center mt-4">
+                  <img
+                    src="/iyzico.png"
+                    alt="iyzico ile güvenli ödeme"
+                    className="h-8 opacity-70"
+                  />
+                </div>
+
+                <p className="text-xs text-zinc-500 text-center mt-2">
                   Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.
                 </p>
               </div>
