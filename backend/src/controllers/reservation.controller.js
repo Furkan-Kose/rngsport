@@ -305,7 +305,7 @@ export const getReservationStats = async (req, res, next) => {
         },
       }),
       prisma.reservation.aggregate({
-        where: { status: "PAID" },
+        where: { status: { in: ["CONFIRMED", "PAID"] } },
         _sum: { totalPrice: true },
       }),
     ]);
