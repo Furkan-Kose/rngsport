@@ -426,13 +426,12 @@ const CartPage = () => {
                 </div>
 
                 <button
-                  disabled
+                  disabled={isSubmitting}
                   onClick={() => setShowCheckout(true)}
                   className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 flex items-center justify-center gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
-                  {/* Ödemeye Geç */}
-                  Ödemeye Geç (Yakında)
+                  {isSubmitting ? "İşleniyor..." : "Ödemeye Geç"}
                 </button>
 
                 <div className="flex justify-center mt-4">
