@@ -96,7 +96,7 @@ export const createCheckoutForm = async (req, res, next) => {
       basketId: orderId,
       paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
       callbackUrl: callbackUrl,
-      enabledInstallments: [1, 2, 3, 6, 9],
+      enabledInstallments: [1],
       buyer: {
         id: orderId,
         name: order.athleteName.split(" ")[0] || "Müşteri",
@@ -248,7 +248,7 @@ export const paymentCallback = async (req, res) => {
       const paidAmount = parseFloat(result.paidPrice);
       const expectedAmount = order.totalPrice;
 
-      if (isNaN(paidAmount) || Math.abs(paidAmount - expectedAmount) > 0.01) {
+      if (isNaN(paidAmount) || paidAmount < expectedAmount) {
         console.error(
           `Tutar uyuşmazlığı! Order: ${order.id}, Expected: ${expectedAmount}, Paid: ${paidAmount}`,
         );
