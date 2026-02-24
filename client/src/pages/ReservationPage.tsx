@@ -219,6 +219,44 @@ const ReservationPage = () => {
     }
   };
 
+  // Rezervasyonlar geçici olarak kapalı
+  const isReservationsClosed = true;
+
+  if (isReservationsClosed) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <SEO
+          title="Rezervasyon"
+          description="International Ritmika Cup için fotoğraf ve video çekim rezervasyonunuzu yapın."
+          url="https://ritmikacup.com/reservation"
+        />
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+        </div>
+        <div className="text-center relative z-10">
+          <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-10 h-10 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Rezervasyonlar Şu Anda Kapalı
+          </h2>
+          <p className="text-zinc-400 mb-6 max-w-md">
+            Rezervasyon sistemi geçici olarak kapatılmıştır. Lütfen daha sonra
+            tekrar deneyiniz.
+          </p>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Ana Sayfaya Dön
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
@@ -573,7 +611,8 @@ const ReservationPage = () => {
                     className="text-violet-400 hover:text-violet-300 underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında hazırlanan [Aydınlatma Metni]
+                    6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)
+                    kapsamında hazırlanan [Aydınlatma Metni]
                   </Link>
                   'ni okudum ve kabul ediyorum.{" "}
                   <span className="text-red-400">*</span>
