@@ -220,7 +220,7 @@ const ReservationPage = () => {
   };
 
   // Rezervasyonlar geçici olarak kapalı
-  const isReservationsClosed = true;
+  const isReservationsClosed = false;
 
   if (isReservationsClosed) {
     return (
