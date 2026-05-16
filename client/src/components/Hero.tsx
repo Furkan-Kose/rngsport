@@ -7,7 +7,7 @@ const Hero = () => {
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
-          src="/hero.png"
+          src="/hero.webp"
           alt="Ritmik Cimnastik"
           className="w-full h-full object-cover"
         />
@@ -22,28 +22,28 @@ const Hero = () => {
         <div className="max-w-4xl text-center md:text-left">
 
           {/* Badge - mobile only */}
-          <div className="inline-flex items-center gap-2 bg-fuchsia-500/20 border border-fuchsia-500/30 rounded-full px-4 py-1.5 mb-6 md:hidden">
-            <Sparkles className="w-4 h-4 text-fuchsia-400" />
-            <span className="text-fuchsia-300 text-sm font-medium">Ritmika Cup 2026</span>
+          <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 mb-6 md:hidden">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span className="text-emerald-300 text-sm font-medium">RNG Sport</span>
           </div>
 
           {/* Heading */}
           <h1 className="text-[2rem] leading-[1.2] md:text-5xl lg:text-7xl font-display font-bold text-white md:text-gray-200 md:leading-tight mb-5 md:mb-6 animate-fade-in" style={{ animationDelay: "0.2s" }}>
-            Sezonun
-            <span className="block text-fuchsia-500">En Büyük Buluşmasına,</span>
-            Yakışan Bir Hatıra.
+            Sporcunun
+            <span className="block text-emerald-500">En Değerli Anlarını,</span>
+            Profesyonel Bir Hikayeye Dönüştürüyoruz.
           </h1>
 
           {/* Description */}
           <p className="text-gray-300 md:text-gray-400 text-base md:text-xl max-w-md md:max-w-xl mx-auto md:mx-0 mb-8 md:mb-10 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            Performansın birkaç dakika sürer; ama o kusursuz duruş, doğru anda yakalandığında yıllarca seninle kalır. Ritmika Cup boyunca profesyonel ekibimizle en net, en güçlü anlarını yakalıyoruz.
+            RNG Sport olarak ritmik cimnastik başta olmak üzere spor organizasyonlarında fotoğraf ve video prodüksiyon hizmeti sunuyoruz.
           </p>
 
           {/* Buttons */}
           <div className="flex flex-row justify-center md:justify-start gap-3 md:gap-4 animate-fade-in" style={{ animationDelay: "0.6s" }}>
             <a 
               href="#paketler" 
-              className="bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-colors text-sm md:text-base"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-colors text-sm md:text-base"
             >
               <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
               <span className="hidden sm:inline">Paketleri </span>İncele
@@ -51,10 +51,10 @@ const Hero = () => {
             </a>
             <Link 
               to="/rezervasyon" 
-              className="bg-white/10 md:bg-black/30 hover:bg-violet-600/20 border border-white/20 md:border-white/10 hover:border-violet-500/50 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-all text-sm md:text-base"
+              className="bg-white/10 md:bg-black/30 hover:bg-emerald-600/20 border border-white/20 md:border-white/10 hover:border-emerald-500/50 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-all text-sm md:text-base"
             >
-              <Calendar className="w-4 h-4 md:w-5 md:h-5 group-hover:text-violet-400 transition-colors" />
-              <span className="group-hover:text-violet-400 transition-colors">Rezervasyon</span>
+              <Calendar className="w-4 h-4 md:w-5 md:h-5 group-hover:text-emerald-400 transition-colors" />
+              <span className="group-hover:text-emerald-400 transition-colors">Rezervasyon</span>
             </Link>
           </div>
 

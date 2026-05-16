@@ -32,7 +32,7 @@ const Process = () => {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <span className="text-fuchsia-500 font-semibold uppercase tracking-wider text-sm">Süreç</span>
+          <span className="text-emerald-500 font-semibold uppercase tracking-wider text-sm">Süreç</span>
           <h2 className="text-3xl sm:text-5xl font-bold text-gray-200 mt-4 mb-6">
             Sipariş ve Teslimat Süreci
           </h2>
@@ -44,11 +44,11 @@ const Process = () => {
             <div key={index} className="relative text-center group">
               {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-12 left-1/2 w-full h-0.5 bg-linear-to-r from-fuchsia-500/50 to-transparent" />
+                <div className="hidden md:block absolute top-12 left-1/2 w-full h-0.5 bg-linear-to-r from-emerald-500/50 to-transparent" />
               )}
               
               {/* Number */}
-              <div className="relative inline-flex items-center justify-center w-24 h-24 rounded-full bg-linear-to-br from-fuchsia-500 to-fuchsia-700 mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <div className="relative inline-flex items-center justify-center w-24 h-24 rounded-full bg-linear-to-br from-emerald-500 to-emerald-700 mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <span className="text-3xl font-bold text-white">{step.number}</span>
               </div>
               

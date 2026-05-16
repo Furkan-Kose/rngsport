@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Plus, Pencil } from 'lucide-react';
 import api from '../../lib/api';
+import ReservationFormModal from '../../components/admin/ReservationFormModal';
+import { getApparatusLabel } from '../../constants/apparatuses';
 
 interface ReservationItem {
   packageId: string;
@@ -9,6 +11,7 @@ interface ReservationItem {
   price: number;
   seriesCount: number;
   quantity: number;
+  apparatuses: string[];
 }
 
 interface Reservation {
@@ -49,6 +52,9 @@ const ReservationsPage = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [editTarget, setEditTarget] = useState<Reservation | null>(null);
 
   const fetchReservations = useCallback(async (page: number = 1) => {
     setIsLoading(true);
@@ -136,6 +142,25 @@ const ReservationsPage = () => {
     }
   };
 
+  const openCreateModal = () => {
+    setEditTarget(null);
+    setFormMode('create');
+    setFormModalOpen(true);
+  };
+
+  const openEditModal = (reservation: Reservation) => {
+    setEditTarget(reservation);
+    setFormMode('edit');
+    setFormModalOpen(true);
+  };
+
+  const handleFormSaved = () => {
+    fetchReservations(pagination.page);
+    if (selectedReservation) {
+      setSelectedReservation(null);
+    }
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
@@ -215,11 +240,11 @@ const ReservationsPage = () => {
     };
 
     return (
-      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-t border-gray-700">
         <div className="text-sm text-gray-400">
           Toplam <span className="text-white font-medium">{total}</span> kayıt
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           <button
             onClick={() => handlePageChange(page - 1)}
             disabled={page === 1}
@@ -259,9 +284,18 @@ const ReservationsPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Rezervasyonlar</h1>
-        <p className="text-gray-400 mt-1">Tüm rezervasyonları görüntüleyin ve yönetin.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Rezervasyonlar</h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">Tüm rezervasyonları görüntüleyin ve yönetin.</p>
+        </div>
+        <button
+          onClick={openCreateModal}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors self-start sm:self-auto"
+        >
+          <Plus className="w-4 h-4" />
+          Yeni Rezervasyon
+        </button>
       </div>
 
       {/* Filters */}
@@ -326,7 +360,50 @@ const ReservationsPage = () => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-700/50">
+              {reservations.map((reservation) => (
+                <div key={reservation.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-medium truncate">{reservation.athleteName}</p>
+                      <p className="text-gray-400 text-xs truncate">
+                        {reservation.clubName} {reservation.birthYear ? `• ${reservation.birthYear}` : ''}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-1">{reservation.customerPhone}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-white font-semibold">{formatPrice(reservation.totalPrice)}</p>
+                      <div className="mt-1.5">{getStatusBadge(reservation.status)}</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-500 text-xs mt-2">{formatDate(reservation.createdAt)}</p>
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => setSelectedReservation(reservation)}
+                      className="px-3 py-1.5 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-300 rounded-md text-xs font-medium transition-colors"
+                    >
+                      Detay
+                    </button>
+                    <button
+                      onClick={() => openEditModal(reservation)}
+                      className="px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 rounded-md text-xs font-medium transition-colors"
+                    >
+                      Düzenle
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(reservation.id)}
+                      className="px-3 py-1.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 rounded-md text-xs font-medium transition-colors"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-gray-400 text-sm bg-gray-900/50">
@@ -362,6 +439,12 @@ const ReservationsPage = () => {
                             Detay
                           </button>
                           <button
+                            onClick={() => openEditModal(reservation)}
+                            className="text-emerald-400 hover:text-emerald-300 text-sm font-medium"
+                          >
+                            Düzenle
+                          </button>
+                          <button
                             onClick={() => setDeleteConfirmId(reservation.id)}
                             className="text-red-400 hover:text-red-300 text-sm font-medium"
                           >
@@ -381,10 +464,10 @@ const ReservationsPage = () => {
 
       {/* Reservation Detail Modal */}
       {selectedReservation && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-3 sm:p-4 z-50">
           <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Rezervasyon Detayı</h2>
+            <div className="p-4 sm:p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-lg sm:text-xl font-semibold text-white">Rezervasyon Detayı</h2>
               <button
                 onClick={() => setSelectedReservation(null)}
                 className="text-gray-400 hover:text-white"
@@ -395,12 +478,12 @@ const ReservationsPage = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6">
               {/* Reservation Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
                   <p className="text-gray-400 text-sm">Rezervasyon ID</p>
-                  <p className="text-white font-mono text-sm">{selectedReservation.id}</p>
+                  <p className="text-white font-mono text-xs sm:text-sm break-all">{selectedReservation.id}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Durum</p>
@@ -422,12 +505,12 @@ const ReservationsPage = () => {
                   <p className="text-gray-400 text-sm">Telefon</p>
                   <p className="text-white">{selectedReservation.customerPhone}</p>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <p className="text-gray-400 text-sm">Tarih</p>
                   <p className="text-white">{formatDate(selectedReservation.createdAt)}</p>
                 </div>
                 {selectedReservation.notes && (
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <p className="text-gray-400 text-sm">Notlar</p>
                     <p className="text-white">{selectedReservation.notes}</p>
                   </div>
@@ -441,15 +524,27 @@ const ReservationsPage = () => {
                   {selectedReservation.items.map((item, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between bg-gray-900/50 rounded-lg p-3"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-900/50 rounded-lg p-3"
                     >
-                      <div>
-                        <p className="text-white font-medium">{item.packageName}</p>
-                        <p className="text-gray-400 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white font-medium truncate">{item.packageName}</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           {getCategoryLabel(item.category)} • {item.seriesCount} Seri x {item.quantity} Adet
                         </p>
+                        {item.apparatuses && item.apparatuses.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {item.apparatuses.map((slug) => (
+                              <span
+                                key={slug}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-violet-500/20 text-violet-300 border border-violet-500/30"
+                              >
+                                {getApparatusLabel(slug)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-white font-medium">{formatPrice(item.price * item.quantity)}</p>
+                      <p className="text-white font-medium shrink-0">{formatPrice(item.price * item.quantity)}</p>
                     </div>
                   ))}
                 </div>
@@ -484,11 +579,18 @@ const ReservationsPage = () => {
                 ))}
               </div>
 
-              {/* Silme Butonu */}
-              <div className="pt-4 border-t border-gray-700">
+              {/* Düzenle / Sil Butonları */}
+              <div className="pt-4 border-t border-gray-700 flex gap-2">
+                <button
+                  onClick={() => openEditModal(selectedReservation)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Düzenle
+                </button>
                 <button
                   onClick={() => setDeleteConfirmId(selectedReservation.id)}
-                  className="w-full px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-sm font-medium transition-colors"
+                  className="flex-1 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg text-sm font-medium transition-colors"
                 >
                   Rezervasyonu Sil
                 </button>
@@ -497,6 +599,15 @@ const ReservationsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Yeni / Düzenle Modal */}
+      <ReservationFormModal
+        isOpen={formModalOpen}
+        mode={formMode}
+        initialData={editTarget}
+        onClose={() => setFormModalOpen(false)}
+        onSaved={handleFormSaved}
+      />
 
       {/* Silme Onay Modal */}
       {deleteConfirmId && (

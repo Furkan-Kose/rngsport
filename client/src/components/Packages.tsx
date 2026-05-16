@@ -19,13 +19,13 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
     <div 
       className={`group relative bg-zinc-900/60 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1 flex flex-col ${
         featured 
-          ? "border-2 border-fuchsia-500/50 hover:border-fuchsia-500" 
+          ? "border-2 border-emerald-500/50 hover:border-emerald-500" 
           : "border border-zinc-800 hover:border-zinc-700"
       }`}
     >
       {/* Featured Badge */}
       {featured && (
-        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-fuchsia-500 px-2.5 py-1 rounded-full">
+        <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-emerald-500 px-2.5 py-1 rounded-full">
           <Star className="w-3 h-3 text-white fill-white" />
           <span className="text-xs font-semibold text-white">Popüler</span>
         </div>
@@ -51,7 +51,7 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
 
       {/* Content */}
       <div className="p-5 flex flex-col flex-1">
-        <h3 className={`text-lg font-semibold mb-3 ${featured ? 'text-fuchsia-100' : 'text-zinc-100'}`}>
+        <h3 className={`text-lg font-semibold mb-3 ${featured ? 'text-emerald-100' : 'text-zinc-100'}`}>
           {pkg.name}
         </h3>
         
@@ -59,7 +59,7 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
         <div className="mb-4 space-y-1.5 text-sm">
           <div className="flex items-center justify-between py-1.5 border-b border-zinc-800">
             <span className="text-zinc-400">1 Seri</span>
-            <span className={`text-lg font-bold ${featured ? 'text-fuchsia-400' : 'text-zinc-100'}`}>
+            <span className={`text-lg font-bold ${featured ? 'text-emerald-400' : 'text-zinc-100'}`}>
               ₺{pkg.price.toLocaleString('tr-TR')}
             </span>
           </div>
@@ -82,7 +82,7 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
         <ul className="space-y-2 mb-5 flex-1">
           {pkg.features.map((feature, index) => (
             <li key={index} className="flex items-start gap-2 text-sm text-zinc-400">
-              <Check className={`w-4 h-4 mt-0.5 shrink-0 ${featured ? 'text-fuchsia-400' : 'text-emerald-500'}`} />
+              <Check className={`w-4 h-4 mt-0.5 shrink-0 ${featured ? 'text-emerald-400' : 'text-emerald-500'}`} />
               <span>{feature}</span>
             </li>
           ))}
@@ -92,7 +92,7 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
           onClick={() => addToCart(pkg, 1)}
           className={`w-full py-2.5 px-4 rounded-xl font-medium transition-colors duration-200 flex items-center justify-center gap-2 ${
             featured 
-              ? "bg-fuchsia-500 hover:bg-fuchsia-600 text-white" 
+              ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
               : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
           }`}
         >
@@ -135,7 +135,7 @@ const Packages = () => {
     return (
       <section id="paketler" className="py-20 bg-zinc-950">
         <div className="container mx-auto px-4 flex justify-center items-center min-h-100">
-          <Loader2 className="w-10 h-10 text-fuchsia-400 animate-spin" />
+          <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
         </div>
       </section>
     );
@@ -156,7 +156,7 @@ const Packages = () => {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 text-fuchsia-500 font-semibold uppercase tracking-wider text-sm">
+          <span className="inline-flex items-center gap-2 text-emerald-500 font-semibold uppercase tracking-wider text-sm">
             <Sparkles className="w-4 h-4" />
             Fiyatlandırma
           </span>
@@ -172,8 +172,8 @@ const Packages = () => {
         {fullPackage && (
           <div className="mb-16">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-fuchsia-500/20 border border-fuchsia-500/30 flex items-center justify-center">
-                <Star className="w-5 h-5 text-fuchsia-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                <Star className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Komple Paket</h3>

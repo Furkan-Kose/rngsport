@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
+import { getApparatusLabel } from '../../constants/apparatuses';
 
 interface OrderItem {
   packageId: string;
@@ -9,6 +10,7 @@ interface OrderItem {
   price: number;
   seriesCount: number;
   quantity: number;
+  apparatuses: string[];
 }
 
 interface Order {
@@ -185,11 +187,11 @@ const OrdersPage = () => {
     };
 
     return (
-      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-t border-gray-700">
         <div className="text-sm text-gray-400">
           Toplam <span className="text-white font-medium">{total}</span> kayıt
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap">
           <button
             onClick={() => handlePageChange(page - 1)}
             disabled={page === 1}
@@ -230,8 +232,8 @@ const OrdersPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Siparişler</h1>
-        <p className="text-gray-400 mt-1">Tüm siparişleri görüntüleyin ve yönetin.</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Siparişler</h1>
+        <p className="text-gray-400 mt-1 text-sm sm:text-base">Tüm siparişleri görüntüleyin ve yönetin.</p>
       </div>
 
       {/* Filters */}
@@ -296,7 +298,35 @@ const OrdersPage = () => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-700/50">
+              {orders.map((order) => (
+                <button
+                  key={order.id}
+                  type="button"
+                  onClick={() => setSelectedOrder(order)}
+                  className="w-full text-left p-4 hover:bg-gray-700/20 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-medium truncate">{order.athleteName}</p>
+                      <p className="text-gray-400 text-xs truncate">
+                        {order.clubName} {order.birthYear ? `• ${order.birthYear}` : ''}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-1">{order.customerPhone}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-white font-semibold">{formatPrice(order.totalPrice)}</p>
+                      <div className="mt-1.5">{getStatusBadge(order.status)}</div>
+                    </div>
+                  </div>
+                  <p className="text-gray-500 text-xs mt-2">{formatDate(order.createdAt)}</p>
+                </button>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="text-left text-gray-400 text-sm bg-gray-900/50">
@@ -343,10 +373,10 @@ const OrdersPage = () => {
 
       {/* Order Detail Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-3 sm:p-4 z-50">
           <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Sipariş Detayı</h2>
+            <div className="p-4 sm:p-6 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="text-lg sm:text-xl font-semibold text-white">Sipariş Detayı</h2>
               <button
                 onClick={() => setSelectedOrder(null)}
                 className="text-gray-400 hover:text-white"
@@ -357,12 +387,12 @@ const OrdersPage = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-4 sm:p-6 space-y-6">
               {/* Order Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
                   <p className="text-gray-400 text-sm">Sipariş ID</p>
-                  <p className="text-white font-mono text-sm">{selectedOrder.id}</p>
+                  <p className="text-white font-mono text-xs sm:text-sm break-all">{selectedOrder.id}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Durum</p>
@@ -384,12 +414,12 @@ const OrdersPage = () => {
                   <p className="text-gray-400 text-sm">Telefon</p>
                   <p className="text-white">{selectedOrder.customerPhone}</p>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <p className="text-gray-400 text-sm">Tarih</p>
                   <p className="text-white">{formatDate(selectedOrder.createdAt)}</p>
                 </div>
                 {selectedOrder.notes && (
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <p className="text-gray-400 text-sm">Notlar</p>
                     <p className="text-white">{selectedOrder.notes}</p>
                   </div>
@@ -403,15 +433,27 @@ const OrdersPage = () => {
                   {selectedOrder.items.map((item, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between bg-gray-900/50 rounded-lg p-3"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-900/50 rounded-lg p-3"
                     >
-                      <div>
-                        <p className="text-white font-medium">{item.packageName}</p>
-                        <p className="text-gray-400 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-white font-medium truncate">{item.packageName}</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           {getCategoryLabel(item.category)} • {item.seriesCount} Seri x {item.quantity} Adet
                         </p>
+                        {item.apparatuses && item.apparatuses.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {item.apparatuses.map((slug) => (
+                              <span
+                                key={slug}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                              >
+                                {getApparatusLabel(slug)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-white font-medium">{formatPrice(item.price * item.quantity)}</p>
+                      <p className="text-white font-medium shrink-0">{formatPrice(item.price * item.quantity)}</p>
                     </div>
                   ))}
                 </div>

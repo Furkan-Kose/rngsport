@@ -57,9 +57,9 @@ const GalleryPage = () => {
     <div className="min-h-screen">
       <SEO
         title="Galeri"
-        description="International Ritmika Cup organizasyonundan profesyonel fotoğraf ve video çekimleri. Ritmik cimnastik performanslarının en güzel anları."
-        keywords="ritmika cup galeri, ritmik cimnastik fotoğrafları, ritmik cimnastik videoları, spor fotoğrafçılığı"
-        url="https://ritmikacup.com/galeri"
+        description="RNG Sport'un yarışma ve turnuvalardaki profesyonel fotoğraf ve video çekimlerinden örnekler. Ritmik cimnastik ve spor performanslarının en güzel anları."
+        keywords="rng sport galeri, ritmik cimnastik fotoğrafları, ritmik cimnastik videoları, spor fotoğrafçılığı, yarışma çekim örnekleri"
+        url="https://rngsport.com/galeri"
       />
 
       {/* Hero Section */}
@@ -75,9 +75,9 @@ const GalleryPage = () => {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <span className="inline-flex items-center gap-2 bg-fuchsia-500/20 border border-fuchsia-500/30 rounded-full px-4 py-1.5 mb-6">
-              <Camera className="w-4 h-4 text-fuchsia-400" />
-              <span className="text-fuchsia-300 text-sm font-medium">
+            <span className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 mb-6">
+              <Camera className="w-4 h-4 text-emerald-400" />
+              <span className="text-emerald-300 text-sm font-medium">
                 Portföy
               </span>
             </span>
@@ -103,7 +103,7 @@ const GalleryPage = () => {
                 onClick={() => setFilter(category)}
                 className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
                   filter === category
-                    ? "bg-fuchsia-500 text-white"
+                    ? "bg-emerald-500 text-white"
                     : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 hover:text-white"
                 }`}
               >
@@ -115,13 +115,13 @@ const GalleryPage = () => {
           {/* Stats */}
           <div className="flex justify-center gap-8 mb-10">
             <div className="text-center">
-              <div className="text-2xl font-bold text-fuchsia-400">
+              <div className="text-2xl font-bold text-emerald-400">
                 {galleryItems.filter((i) => i.type === "photo").length}
               </div>
               <div className="text-sm text-gray-400">Fotoğraf</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-fuchsia-400">
+              <div className="text-2xl font-bold text-emerald-400">
                 {galleryItems.filter((i) => i.type === "video").length}
               </div>
               <div className="text-sm text-gray-400">Video</div>
@@ -146,7 +146,7 @@ const GalleryPage = () => {
                 {/* Video Badge */}
                 {item.type === "video" && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-14 h-14 rounded-full bg-fuchsia-500/90 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-14 h-14 rounded-full bg-emerald-500/90 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <Play className="w-6 h-6 text-white fill-white ml-1" />
                     </div>
                   </div>
@@ -154,7 +154,7 @@ const GalleryPage = () => {
 
                 {/* Hover Info */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                  <p className="text-xs text-fuchsia-400 font-medium mb-1">
+                  <p className="text-xs text-emerald-400 font-medium mb-1">
                     {item.category}
                   </p>
                   <h3 className="text-white font-semibold">{item.title}</h3>
@@ -184,7 +184,7 @@ const GalleryPage = () => {
           >
             {/* Close Button */}
             <button
-              className="absolute top-6 right-6 z-50 p-3 text-white hover:text-fuchsia-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
+              className="absolute top-6 right-6 z-50 p-3 text-white hover:text-emerald-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
               onClick={closeLightbox}
             >
               <X className="w-8 h-8" />
@@ -234,7 +234,7 @@ const GalleryPage = () => {
                 />
               )}
               <div className="text-center mt-4">
-                <p className="text-fuchsia-400 text-sm">
+                <p className="text-emerald-400 text-sm">
                   {filteredItems[selectedImage].category}
                 </p>
                 <h3 className="text-white text-xl font-semibold mt-1">

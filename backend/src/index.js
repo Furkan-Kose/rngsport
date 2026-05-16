@@ -7,6 +7,8 @@ import paymentRoutes from "./routes/payment.route.js";
 import packageRoutes from "./routes/package.route.js";
 import authRoutes from "./routes/auth.route.js";
 import reservationRoutes from "./routes/reservation.route.js";
+import shootingListRoutes from "./routes/shootingList.route.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -15,7 +17,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 const corsOptions = {
-  origin: ["https://ritmikacup.netlify.app", "https://ritmikacup.com"],
+  origin: ["https://ritmikacup.netlify.app", "https://ritmikacup.com", "http://localhost:5173"],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -36,13 +38,9 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/packages", packageRoutes);
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/shooting-list", shootingListRoutes);
 
-app.use((error, req, res, next) => {
-  console.error(error);
-  res.status(error.status || 500).json({
-    message: error.message || "Sunucu hatası",
-  });
-});
+app.use(errorHandler);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {

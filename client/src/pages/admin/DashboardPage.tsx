@@ -129,8 +129,8 @@ const DashboardPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1">Hoş geldiniz! İşte genel bakış.</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard</h1>
+        <p className="text-gray-400 mt-1 text-sm sm:text-base">Hoş geldiniz! İşte genel bakış.</p>
       </div>
 
       {/* Sipariş Stats */}
@@ -141,59 +141,59 @@ const DashboardPage = () => {
           </svg>
           Online Siparişler
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-blue-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Toplam Sipariş</p>
-                <p className="text-2xl font-bold text-white">{stats.totalOrders}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Toplam Sipariş</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats.totalOrders}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-green-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Ödenen</p>
-                <p className="text-2xl font-bold text-white">{stats.paidOrders}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Ödenen</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats.paidOrders}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-yellow-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Bekleyen</p>
-                <p className="text-2xl font-bold text-white">{stats.pendingOrders}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Bekleyen</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats.pendingOrders}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-amber-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-amber-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Toplam Gelir</p>
-                <p className="text-2xl font-bold text-white">{formatPrice(stats.totalRevenue)}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Toplam Gelir</p>
+                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.totalRevenue)}</p>
               </div>
             </div>
           </div>
@@ -208,59 +208,59 @@ const DashboardPage = () => {
           </svg>
           Rezervasyonlar (Nakit)
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-violet-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-violet-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Toplam Rezervasyon</p>
-                <p className="text-2xl font-bold text-white">{stats.totalReservations}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Toplam Rezervasyon</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats.totalReservations}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-blue-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Onaylanan</p>
-                <p className="text-2xl font-bold text-white">{stats.confirmedReservations}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Onaylanan</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats.confirmedReservations}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-yellow-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Bekleyen</p>
-                <p className="text-2xl font-bold text-white">{stats.pendingReservations}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Bekleyen</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats.pendingReservations}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500/20 rounded-lg">
-                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-green-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Nakit Gelir</p>
-                <p className="text-2xl font-bold text-white">{formatPrice(stats.reservationRevenue)}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Nakit Gelir</p>
+                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.reservationRevenue)}</p>
               </div>
             </div>
           </div>
@@ -270,8 +270,8 @@ const DashboardPage = () => {
       {/* Recent Tables Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Recent Orders */}
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
@@ -310,8 +310,8 @@ const DashboardPage = () => {
         </div>
 
         {/* Recent Reservations */}
-        <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>

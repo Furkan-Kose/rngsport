@@ -14,17 +14,17 @@ import SEO from "../../components/SEO";
 const MesafeliSatis = () => {
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-950 via-gray-900 to-gray-950">
-      <SEO 
+      <SEO
         title="Mesafeli Satış Sözleşmesi"
-        description="International Ritmika Cup mesafeli satış sözleşmesi. Online sipariş ve satış koşulları hakkında bilgi."
-        url="https://ritmikacup.com/mesafeli-satis-sozlesmesi"
+        description="RNG Sport mesafeli satış sözleşmesi. Online sipariş ve satış koşulları hakkında bilgi."
+        url="https://rngsport.com/mesafeli-satis-sozlesmesi"
       />
       {/* Header */}
       <div className="bg-black/30 backdrop-blur-xl border-b border-white/10">
         <div className="container mx-auto px-4 py-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-fuchsia-500 transition-colors"
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-emerald-500 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Ana Sayfaya Dön</span>
@@ -50,8 +50,8 @@ const MesafeliSatis = () => {
           <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-8 md:p-12 shadow-2xl">
             {/* MADDE 1 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <Users className="w-4 h-4" />
                 </span>
                 MADDE 1 – TARAFLAR
@@ -72,7 +72,7 @@ const MesafeliSatis = () => {
                     <p>
                       <a
                         href="tel:+905398444521"
-                        className="text-fuchsia-400 hover:text-fuchsia-300"
+                        className="text-emerald-400 hover:text-emerald-300"
                       >
                         0 539 844 45 21
                       </a>
@@ -83,7 +83,7 @@ const MesafeliSatis = () => {
                     <p>
                       <a
                         href="mailto:hakankose5534@gmail.com"
-                        className="text-fuchsia-400 hover:text-fuchsia-300"
+                        className="text-emerald-400 hover:text-emerald-300"
                       >
                         hakankose5534@gmail.com
                       </a>
@@ -106,7 +106,7 @@ const MesafeliSatis = () => {
                 </h4>
                 <p className="text-gray-300 leading-relaxed">
                   İşbu sözleşme kapsamında,{" "}
-                  <span className="text-fuchsia-400">www.ritmikacup.com</span>{" "}
+                  <span className="text-emerald-400">www.ritmikacup.com</span>{" "}
                   üzerinden sipariş veren, hizmeti satın alan ve ödemeyi
                   gerçekleştiren gerçek veya tüzel kişidir. İlgili kişinin ödeme
                   esnasında beyan ettiği Ad, Soyad ve İletişim bilgileri esas
@@ -120,8 +120,8 @@ const MesafeliSatis = () => {
 
             {/* MADDE 2 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <FileText className="w-4 h-4" />
                 </span>
                 MADDE 2 – KONU
@@ -145,17 +145,17 @@ const MesafeliSatis = () => {
 
             {/* MADDE 3 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <Package className="w-4 h-4" />
                 </span>
                 MADDE 3 – SÖZLEŞME KONUSU HİZMET
               </h3>
 
-              <div className="bg-linear-to-r from-fuchsia-500/10 to-purple-500/10 rounded-xl p-6 border border-fuchsia-500/20">
+              <div className="bg-linear-to-r from-emerald-500/10 to-teal-500/10 rounded-xl p-6 border border-emerald-500/20">
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-fuchsia-500 mt-2 shrink-0"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <div className="text-gray-300">
                       <strong className="text-gray-100">Hizmetin Adı:</strong>{" "}
                       International Ritmika Cup - Fotoğraf ve Video Dijital
@@ -163,7 +163,7 @@ const MesafeliSatis = () => {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-fuchsia-500 mt-2 shrink-0"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <div className="text-gray-300">
                       <strong className="text-gray-100">
                         Hizmetin Niteliği:
@@ -174,14 +174,14 @@ const MesafeliSatis = () => {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-fuchsia-500 mt-2 shrink-0"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <div className="text-gray-300">
                       <strong className="text-gray-100">Teslimat Şekli:</strong>{" "}
                       Dijital Teslimat (E-posta veya İndirme Bağlantısı yoluyla)
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-fuchsia-500 mt-2 shrink-0"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <div className="text-gray-300">
                       <strong className="text-gray-100">Toplam Tutar:</strong>{" "}
                       Ödeme sayfasında belirtilen ve ALICI tarafından onaylanan
@@ -189,7 +189,7 @@ const MesafeliSatis = () => {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-fuchsia-500 mt-2 shrink-0"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <div className="text-gray-300">
                       <strong className="text-gray-100">Ödeme Şekli:</strong>{" "}
                       Nakit / Kredi Kartı / Banka Kartı (Sanal POS)
@@ -201,8 +201,8 @@ const MesafeliSatis = () => {
 
             {/* MADDE 4 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <Scale className="w-4 h-4" />
                 </span>
                 MADDE 4 – GENEL HÜKÜMLER
@@ -210,7 +210,7 @@ const MesafeliSatis = () => {
 
               <div className="bg-white/5 rounded-xl p-6 border border-white/5 space-y-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-fuchsia-500 font-bold">4.1.</span>
+                  <span className="text-emerald-500 font-bold">4.1.</span>
                   <p className="text-gray-300 leading-relaxed">
                     ALICI, internet sitesinde sözleşme konusu hizmetin temel
                     nitelikleri, satış fiyatı, ödeme şekli ve ifasına ilişkin ön
@@ -219,7 +219,7 @@ const MesafeliSatis = () => {
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-fuchsia-500 font-bold">4.2.</span>
+                  <span className="text-emerald-500 font-bold">4.2.</span>
                   <p className="text-gray-300 leading-relaxed">
                     Sözleşme konusu hizmet, ALICI tarafından belirtilen e-posta
                     adresine veya GSM numarasına dijital bağlantı (link) olarak
@@ -228,7 +228,7 @@ const MesafeliSatis = () => {
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-fuchsia-500 font-bold">4.3.</span>
+                  <span className="text-emerald-500 font-bold">4.3.</span>
                   <p className="text-gray-300 leading-relaxed">
                     Hizmetin ifası, etkinlik bitimini takip eden ve SATICI
                     tarafından taahhüt edilen makul süre (kurgu/edit süreci)
@@ -241,21 +241,21 @@ const MesafeliSatis = () => {
 
             {/* MADDE 5 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <Shield className="w-4 h-4" />
                 </span>
                 MADDE 5 – CAYMA HAKKI VE İSTİSNALARI
               </h3>
 
-              <div className="bg-linear-to-r from-yellow-500/10 to-orange-500/10 rounded-xl p-6 border border-yellow-500/20 space-y-4">
+              <div className="bg-linear-to-r from-emerald-500/10 to-teal-500/10 rounded-xl p-6 border border-emerald-500/20 space-y-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-yellow-500 font-bold">5.1.</span>
+                  <span className="text-emerald-500 font-bold">5.1.</span>
                   <p className="text-gray-300 leading-relaxed">
                     İşbu sözleşme konusu hizmet; 27.11.2014 tarihli Mesafeli
                     Sözleşmeler Yönetmeliği'nin "Cayma Hakkının İstisnaları"
                     başlıklı{" "}
-                    <strong className="text-yellow-400">
+                    <strong className="text-emerald-400">
                       15. maddesinin (ğ) bendi
                     </strong>{" "}
                     uyarınca; "Elektronik ortamda anında ifa edilen hizmetler
@@ -264,19 +264,19 @@ const MesafeliSatis = () => {
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-yellow-500 font-bold">5.2.</span>
+                  <span className="text-emerald-500 font-bold">5.2.</span>
                   <p className="text-gray-300 leading-relaxed">
                     Satın alınan fotoğraf ve video paketleri, kişiye özel
                     (sporcunun performansına ait) üretilen ve dijital ortamda
                     erişime açılan içerikler olduğundan,{" "}
-                    <strong className="text-yellow-400">
+                    <strong className="text-emerald-400">
                       hizmet ifa edildikten (içerik linki gönderildikten) sonra
                       ALICI'nın cayma ve iade hakkı bulunmamaktadır.
                     </strong>
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="text-yellow-500 font-bold">5.3.</span>
+                  <span className="text-emerald-500 font-bold">5.3.</span>
                   <p className="text-gray-300 leading-relaxed">
                     Etkinlik gerçekleşmeden önce yapılan iptal taleplerinde,
                     SATICI'nın belirlediği iptal koşulları geçerlidir. Etkinlik
@@ -289,8 +289,8 @@ const MesafeliSatis = () => {
 
             {/* MADDE 6 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center text-sm">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">
                   6
                 </span>
                 KİŞİSEL VERİLERİN KORUNMASI
@@ -302,7 +302,7 @@ const MesafeliSatis = () => {
                 saklanmasına ve{" "}
                 <Link
                   to="/kvkk-aydinlatma-metni"
-                  className="text-fuchsia-400 hover:text-fuchsia-300 underline"
+                  className="text-emerald-400 hover:text-emerald-300 underline"
                 >
                   KVKK Aydınlatma Metni
                 </Link>
@@ -312,8 +312,8 @@ const MesafeliSatis = () => {
 
             {/* MADDE 7 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <Gavel className="w-4 h-4" />
                 </span>
                 MADDE 7 – YETKİLİ MAHKEME
@@ -329,8 +329,8 @@ const MesafeliSatis = () => {
 
             {/* MADDE 8 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <CheckCircle className="w-4 h-4" />
                 </span>
                 MADDE 8 – YÜRÜRLÜK

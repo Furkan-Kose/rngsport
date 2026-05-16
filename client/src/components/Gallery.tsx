@@ -142,7 +142,7 @@ const Gallery = () => {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-2 text-fuchsia-500 font-semibold uppercase tracking-wider text-sm">
+          <span className="inline-flex items-center gap-2 text-emerald-500 font-semibold uppercase tracking-wider text-sm">
             <Camera className="w-4 h-4" />
             Portföy
           </span>
@@ -163,7 +163,7 @@ const Gallery = () => {
               onClick={() => setFilter(category)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                 filter === category
-                  ? "bg-fuchsia-500 text-white"
+                  ? "bg-emerald-500 text-white"
                   : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-700/50 hover:text-white"
               }`}
             >
@@ -190,7 +190,7 @@ const Gallery = () => {
               {/* Video Badge */}
               {item.type === "video" && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-fuchsia-500/90 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/90 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <Play className="w-7 h-7 text-white fill-white ml-1" />
                   </div>
                 </div>
@@ -198,7 +198,7 @@ const Gallery = () => {
 
               {/* Hover Info */}
               <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                <p className="text-xs text-fuchsia-400 font-medium mb-1">
+                <p className="text-xs text-emerald-400 font-medium mb-1">
                   {item.category}
                 </p>
                 <h3 className="text-white font-semibold">{item.title}</h3>
@@ -212,7 +212,7 @@ const Gallery = () => {
           <div className="text-center mt-10">
             <Link
               to="/galeri"
-              className="inline-flex items-center gap-2 bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-8 py-3 rounded-xl font-medium transition-colors"
+              className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-colors"
             >
               Tüm Galeriyi Gör
               <ArrowRight className="w-5 h-5" />
@@ -232,7 +232,7 @@ const Gallery = () => {
       >
         {/* Close Button */}
         <button
-          className="absolute top-6 right-6 z-50 p-3 text-white hover:text-fuchsia-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
+          className="absolute top-6 right-6 z-50 p-3 text-white hover:text-emerald-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
           onClick={closeLightbox}
         >
           <X className="w-8 h-8" />
@@ -282,7 +282,7 @@ const Gallery = () => {
             />
           )}
           <div className="text-center mt-4">
-            <p className="text-fuchsia-400 text-sm">
+            <p className="text-emerald-400 text-sm">
               {filteredItems[selectedImage].category}
             </p>
             <h3 className="text-white text-xl font-semibold mt-1">

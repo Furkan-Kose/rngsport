@@ -18,6 +18,7 @@ import { Link, useNavigate } from "react-router";
 import api from "../lib/api";
 import { toast } from "react-toastify";
 import SEO from "../components/SEO";
+import { APPARATUSES } from "../constants/apparatuses";
 
 interface Package {
   id: string;
@@ -45,6 +46,7 @@ interface SelectedPackage {
   seriesCount: 1 | 2 | 3;
   quantity: number;
   price: number;
+  apparatuses: string[];
 }
 
 const ReservationPage = () => {
@@ -69,6 +71,21 @@ const ReservationPage = () => {
   });
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
+  const toggleApparatusOnRow = (rowId: string, slug: string) => {
+    setSelectedPackages((prev) =>
+      prev.map((sp) => {
+        if (sp.id !== rowId) return sp;
+        const exists = sp.apparatuses.includes(slug);
+        if (exists) {
+          return { ...sp, apparatuses: sp.apparatuses.filter((s) => s !== slug) };
+        }
+        // Slot dolu mu kontrol et
+        if (sp.apparatuses.length >= sp.seriesCount) return sp;
+        return { ...sp, apparatuses: [...sp.apparatuses, slug] };
+      }),
+    );
+  };
 
   useEffect(() => {
     fetchPackages();
@@ -96,6 +113,7 @@ const ReservationPage = () => {
         seriesCount: 1,
         quantity: 1,
         price: 0,
+        apparatuses: [],
       },
     ]);
   };
@@ -121,14 +139,24 @@ const ReservationPage = () => {
           }
           if (field === "seriesCount") {
             const pkg = packages.find((p) => p.id === sp.packageId);
+            const newCount = value as 1 | 2 | 3;
             if (pkg) {
-              // Rezervasyon fiyatlarını kullan
               const price =
-                value === 1
+                newCount === 1
                   ? pkg.reservationPrice
-                  : pkg.reservationDiscounts[value as 2 | 3];
-              return { ...sp, seriesCount: value, price };
+                  : pkg.reservationDiscounts[newCount as 2 | 3];
+              return {
+                ...sp,
+                seriesCount: newCount,
+                price,
+                apparatuses: sp.apparatuses.slice(0, newCount),
+              };
             }
+            return {
+              ...sp,
+              seriesCount: newCount,
+              apparatuses: sp.apparatuses.slice(0, newCount),
+            };
           }
           return { ...sp, [field]: value };
         }
@@ -177,6 +205,14 @@ const ReservationPage = () => {
       return;
     }
 
+    const incompleteRow = selectedPackages.find(
+      (sp) => sp.apparatuses.length !== sp.seriesCount,
+    );
+    if (incompleteRow) {
+      setError("Her paket için seri sayısı kadar alet seçmelisiniz");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -192,12 +228,12 @@ const ReservationPage = () => {
               id: pkg.id,
               name: pkg.name,
               category: pkg.category,
-              // Rezervasyon fiyatlarını gönder
               reservationPrice: pkg.reservationPrice,
               reservationDiscounts: pkg.reservationDiscounts,
             },
             seriesCount: sp.seriesCount,
             quantity: sp.quantity,
+            apparatuses: sp.apparatuses,
           };
         }),
         totalPrice: calculateTotal(),
@@ -220,19 +256,19 @@ const ReservationPage = () => {
   };
 
   // Rezervasyonlar geçici olarak kapalı
-  const isReservationsClosed = true;
+  const isReservationsClosed = false;
 
   if (isReservationsClosed) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <SEO
           title="Rezervasyon"
-          description="International Ritmika Cup için fotoğraf ve video çekim rezervasyonunuzu yapın."
-          url="https://ritmikacup.com/reservation"
+          description="RNG Sport ile yarışma ve turnuvalarınız için fotoğraf ve video çekim rezervasyonunuzu yapın."
+          url="https://rngsport.com/rezervasyon"
         />
         <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/5 rounded-full blur-3xl" />
         </div>
         <div className="text-center relative z-10">
           <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto mb-4">
@@ -247,7 +283,7 @@ const ReservationPage = () => {
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             Ana Sayfaya Dön
@@ -283,20 +319,20 @@ const ReservationPage = () => {
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
         title="Rezervasyon"
-        description="International Ritmika Cup için fotoğraf ve video çekim rezervasyonunuzu yapın. Profesyonel ekibimizle performansınızı ölümsüzleştirin."
-        keywords="ritmika cup rezervasyon, cimnastik fotoğraf rezervasyon, video çekim, spor fotoğrafçılığı"
-        url="https://ritmikacup.com/reservation"
+        description="RNG Sport ile yarışma ve turnuvalarınız için fotoğraf ve video çekim rezervasyonunuzu yapın. Profesyonel ekibimizle performansınızı ölümsüzleştirin."
+        keywords="rng sport rezervasyon, spor fotoğraf rezervasyon, ritmik cimnastik çekim, yarışma video çekim, turnuva fotoğraf"
+        url="https://rngsport.com/rezervasyon"
       />
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/5 rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10 max-w-6xl">
         <div className="flex items-center gap-4 mb-8">
           <Link
             to="/"
-            className="flex items-center gap-2 text-zinc-400 hover:text-violet-400 transition-colors"
+            className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Ana Sayfa</span>
@@ -323,7 +359,7 @@ const ReservationPage = () => {
               <button
                 type="button"
                 onClick={addNewPackageRow}
-                className="flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Paket Ekle
@@ -332,7 +368,7 @@ const ReservationPage = () => {
 
             {isLoadingPackages ? (
               <div className="flex justify-center py-8">
-                <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
               </div>
             ) : (
               <div className="space-y-4">
@@ -367,7 +403,7 @@ const ReservationPage = () => {
                                 e.target.value,
                               )
                             }
-                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors"
                           >
                             <option value="">Paket Seçin</option>
                             {packages.map((pkg) => (
@@ -394,7 +430,7 @@ const ReservationPage = () => {
                               )
                             }
                             disabled={!sp.packageId}
-                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <option value={1}>
                               1 Seri - ₺
@@ -434,7 +470,7 @@ const ReservationPage = () => {
                               )
                             }
                             disabled={!sp.packageId}
-                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </div>
 
@@ -443,7 +479,7 @@ const ReservationPage = () => {
                           <label className="text-xs text-zinc-500 mb-1 block">
                             Toplam
                           </label>
-                          <div className="text-base font-bold text-violet-400">
+                          <div className="text-base font-bold text-emerald-400">
                             ₺{(sp.price * sp.quantity).toLocaleString("tr-TR")}
                           </div>
                         </div>
@@ -457,6 +493,43 @@ const ReservationPage = () => {
                           >
                             <Trash2 className="w-5 h-5" />
                           </button>
+                        </div>
+
+                        {/* Alet seçimi (seriesCount kadar zorunlu) */}
+                        <div className="md:col-span-12 mt-1">
+                          <label className="text-xs text-zinc-500 mb-2 block">
+                            Aletler{" "}
+                            <span className="text-red-400">*</span>
+                            <span className="ml-1 text-zinc-600">
+                              ({sp.apparatuses.length} / {sp.seriesCount}{" "}
+                              seçildi)
+                            </span>
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {APPARATUSES.map((a) => {
+                              const active = sp.apparatuses.includes(a.slug);
+                              const slotsFull =
+                                !active &&
+                                sp.apparatuses.length >= sp.seriesCount;
+                              return (
+                                <button
+                                  key={a.slug}
+                                  type="button"
+                                  disabled={!sp.packageId || slotsFull}
+                                  onClick={() =>
+                                    toggleApparatusOnRow(sp.id, a.slug)
+                                  }
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                    active
+                                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                      : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                                  }`}
+                                >
+                                  {a.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     );
@@ -490,7 +563,7 @@ const ReservationPage = () => {
                   value={form.athleteName}
                   onChange={handleChange}
                   placeholder="Sporcu adı soyadı"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
 
@@ -505,7 +578,7 @@ const ReservationPage = () => {
                   value={form.clubName}
                   onChange={handleChange}
                   placeholder="Kulüp veya şube adı"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
 
@@ -520,7 +593,7 @@ const ReservationPage = () => {
                   value={form.birthYear}
                   onChange={handleChange}
                   placeholder="Örn: 2015"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
 
@@ -535,7 +608,7 @@ const ReservationPage = () => {
                   value={form.customerPhone}
                   onChange={handleChange}
                   placeholder="0532 123 45 67"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
 
@@ -550,23 +623,22 @@ const ReservationPage = () => {
                   value={form.customerEmail}
                   onChange={handleChange}
                   placeholder="ornek@gmail.com"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <MessageSquare className="w-4 h-4" />
-                  Çekim istenen Seri/Alet:{" "}
-                  <span className="text-zinc-600"></span>
+                  Ek Not <span className="text-zinc-600">(opsiyonel)</span>
                 </label>
                 <textarea
                   name="notes"
                   value={form.notes}
                   onChange={handleChange}
-                  placeholder="Serbest seri, Kurdele, Labut vb."
+                  placeholder="Eklemek istediğiniz bir not varsa buraya yazabilirsiniz."
                   rows={3}
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
                 />
               </div>
             </div>
@@ -583,7 +655,7 @@ const ReservationPage = () => {
                   {selectedPackages.length} paket seçildi
                 </p>
               </div>
-              <div className="text-3xl font-bold bg-linear-to-r from-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
+              <div className="text-3xl font-bold bg-linear-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
                 ₺{calculateTotal().toLocaleString("tr-TR")}
               </div>
             </div>
@@ -602,13 +674,13 @@ const ReservationPage = () => {
                   type="checkbox"
                   checked={kvkkAccepted}
                   onChange={(e) => setKvkkAccepted(e.target.checked)}
-                  className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-violet-500 focus:ring-violet-500 focus:ring-offset-0 cursor-pointer"
+                  className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
                 />
                 <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
                   <Link
                     to="/kvkk-aydinlatma-metni"
                     target="_blank"
-                    className="text-violet-400 hover:text-violet-300 underline"
+                    className="text-emerald-400 hover:text-emerald-300 underline"
                     onClick={(e) => e.stopPropagation()}
                   >
                     6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)
@@ -623,9 +695,14 @@ const ReservationPage = () => {
             <button
               type="submit"
               disabled={
-                isSubmitting || selectedPackages.length === 0 || !kvkkAccepted
+                isSubmitting ||
+                selectedPackages.length === 0 ||
+                selectedPackages.some(
+                  (sp) => sp.apparatuses.length !== sp.seriesCount,
+                ) ||
+                !kvkkAccepted
               }
-              className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
+              className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>

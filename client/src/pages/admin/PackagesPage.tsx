@@ -202,22 +202,112 @@ const PackagesPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Paketler</h1>
-          <p className="text-gray-400 mt-1">Fotoğraf ve video paketlerini yönetin</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Paketler</h1>
+          <p className="text-gray-400 mt-1 text-sm sm:text-base">Fotoğraf ve video paketlerini yönetin</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-medium transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-medium transition-colors self-start sm:self-auto"
         >
           <Plus className="w-5 h-5" />
           Yeni Paket
         </button>
       </div>
 
-      {/* Packages Table */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+      {/* Mobile cards */}
+      <div className="lg:hidden space-y-3">
+        {packages.map((pkg) => (
+          <div key={pkg.id} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <img
+                src={pkg.image}
+                alt={pkg.name}
+                className="w-14 h-14 rounded-lg object-cover bg-gray-700 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">{pkg.name}</p>
+                <p className="text-gray-500 text-xs truncate">{pkg.slug}</p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full border ${getCategoryBadge(pkg.category)}`}>
+                    {getCategoryLabel(pkg.category)}
+                  </span>
+                  <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                    pkg.isActive
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {pkg.isActive ? 'Aktif' : 'Pasif'}
+                  </span>
+                  <span className="text-gray-500 text-[11px]">Sıra: {pkg.sortOrder}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-900/40 rounded-lg p-2">
+                <p className="text-gray-400 mb-1">Normal (Online)</p>
+                <p className="text-white">{formatPrice(pkg.price)}</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">
+                  2S: {formatPrice(pkg.discount2)} / 3S: {formatPrice(pkg.discount3)}
+                </p>
+              </div>
+              <div className="bg-violet-500/5 border border-violet-500/20 rounded-lg p-2">
+                <p className="text-gray-400 mb-1">Rezervasyon</p>
+                <p className="text-violet-400">{formatPrice(pkg.reservationPrice || pkg.price)}</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">
+                  2S: {formatPrice(pkg.reservationDiscount2 || pkg.discount2)} / 3S: {formatPrice(pkg.reservationDiscount3 || pkg.discount3)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <button
+                onClick={() => openEditModal(pkg)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 rounded-md text-xs font-medium transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Düzenle
+              </button>
+              {deleteConfirm === pkg.id ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleDelete(pkg.id)}
+                    className="px-3 py-1.5 text-xs bg-red-500 hover:bg-red-600 text-white rounded-md font-medium"
+                  >
+                    Sil
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    className="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded-md font-medium"
+                  >
+                    İptal
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setDeleteConfirm(pkg.id)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 rounded-md text-xs font-medium transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Sil
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {packages.length === 0 && (
+          <div className="bg-gray-800/50 border border-gray-700 rounded-xl text-center py-12">
+            <Package className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-400">Henüz paket eklenmemiş</p>
+          </div>
+        )}
+      </div>
+
+      {/* Packages Table (desktop) */}
+      <div className="hidden lg:block bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -327,11 +417,11 @@ const PackagesPage = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70">
           <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <h2 className="text-xl font-semibold text-white">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-700">
+              <h2 className="text-lg sm:text-xl font-semibold text-white">
                 {editingId ? 'Paketi Düzenle' : 'Yeni Paket Ekle'}
               </h2>
               <button
@@ -343,14 +433,14 @@ const PackagesPage = () => {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               {error && (
                 <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
                   {error}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Slug */}
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Slug *</label>
@@ -381,7 +471,7 @@ const PackagesPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Category */}
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Kategori *</label>

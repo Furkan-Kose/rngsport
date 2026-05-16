@@ -19,16 +19,21 @@ model Order {
   status        OrderStatus @default(PENDING)
   paymentId     String?
   conversationId String?
+  // Çekim listesi alanları
+  expectedTime   String?    // Excel'den gelecek beklenen çıkış saati ("14:23" gibi)
+  shootStartedAt DateTime?  // Çekimin gerçek başlangıç saati
+  shootEndedAt   DateTime?  // Çekimin gerçek bitiş saati
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   items OrderItem[]
+  shootingListEntries ShootingListEntry[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   orderId     String
   packageId   String
   packageName String
@@ -36,6 +41,7 @@ model OrderItem {
   price       Float
   seriesCount Int
   quantity    Int
+  apparatuses String[] @default([]) // Bu paket satırı için seçilen aletler (length === seriesCount)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -92,16 +98,21 @@ model Reservation {
   notes         String?
   totalPrice    Float
   status        ReservationStatus @default(PENDING)
+  // Çekim listesi alanları
+  expectedTime   String?
+  shootStartedAt DateTime?
+  shootEndedAt   DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
   items ReservationItem[]
+  shootingListEntries ShootingListEntry[]
 
   @@map("reservations")
 }
 
 model ReservationItem {
-  id            String @id @default(cuid())
+  id            String   @id @default(cuid())
   reservationId String
   packageId     String
   packageName   String
@@ -109,6 +120,7 @@ model ReservationItem {
   price         Float
   seriesCount   Int
   quantity      Int
+  apparatuses   String[] @default([]) // Bu paket satırı için seçilen aletler (length === seriesCount)
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -120,4 +132,27 @@ enum ReservationStatus {
   CONFIRMED
   PAID
   CANCELLED
+}
+
+model ShootingListEntry {
+  id             String    @id @default(cuid())
+  position       Int
+  athleteName    String
+  clubName       String?
+  birthYear      String?
+  category       String?
+  expectedTime   String?
+  willBeShot     Boolean   @default(false)
+  orderId        String?
+  reservationId  String?
+  shootStartedAt DateTime?
+  shootEndedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  order       Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([position])
+  @@map("shooting_list_entries")
 }

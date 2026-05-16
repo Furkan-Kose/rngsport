@@ -16,6 +16,7 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import OrdersPage from "./pages/admin/OrdersPage";
 import ReservationsPage from "./pages/admin/ReservationsPage";
 import PackagesPage from "./pages/admin/PackagesPage";
+import ShootingListPage from "./pages/admin/ShootingListPage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import KvkkMetni from "./pages/legal/KvkkMetni";
@@ -97,6 +98,10 @@ export const router = createBrowserRouter([
       {
         path: "/admin/reservations",
         element: <ReservationsPage />,
+      },
+      {
+        path: "/admin/shooting-list",
+        element: <ShootingListPage />,
       },
       {
         path: "/admin/packages",

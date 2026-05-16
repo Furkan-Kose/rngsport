@@ -25,18 +25,18 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
             <img
-              src="/logo.webp"
+              src="/logo.PNG"
               alt="Ritmika Cimnastik"
-              className="w-12 h-12 transition-transform duration-300 group-hover:scale-110"
+              className="w-30 h-30 transition-transform duration-300 group-hover:scale-110"
             />
-            <div className="hidden md:block">
+            {/* <div className="hidden md:block">
               <span className="text-lg font-bold text-white">
                 International
               </span>
               <span className="text-lg font-light text-fuchsia-500 ml-2">
                 Ritmika Cup
               </span>
-            </div>
+            </div> */}
           </Link>
 
           {/* Desktop Nav */}
@@ -45,7 +45,7 @@ const Header = () => {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-gray-400 hover:text-fuchsia-500 transition-colors duration-300 font-medium"
+                className="text-gray-400 hover:text-emerald-500 transition-colors duration-300 font-medium"
               >
                 {link.name}
               </a>
@@ -57,10 +57,10 @@ const Header = () => {
             {/* Reservation Button */}
             <Link
               to="/rezervasyon"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-violet-500/50 transition-all duration-300 group"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
             >
-              <Calendar className="w-4 h-4 text-zinc-300 group-hover:text-violet-400 transition-colors" />
-              <span className="text-sm font-medium text-zinc-300 group-hover:text-violet-400 transition-colors">
+              <Calendar className="w-4 h-4 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
+              <span className="text-sm font-medium text-zinc-300 group-hover:text-emerald-400 transition-colors">
                 Rezervasyon Yap
               </span>
             </Link>
@@ -71,17 +71,17 @@ const Header = () => {
               className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-violet-500/50 transition-all duration-300 group"
               title="Rezervasyon Yap"
             >
-              <Calendar className="w-5 h-5 text-zinc-300 group-hover:text-violet-400 transition-colors" />
+              <Calendar className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
             </Link>
 
             {/* Cart Button */}
             <Link
               to="/sepet"
-              className="relative p-2 sm:p-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-fuchsia-500/50 transition-all duration-300 group"
+              className="relative p-2 sm:p-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
             >
-              <ShoppingCart className="w-5 h-5 text-zinc-300 group-hover:text-fuchsia-400 transition-colors" />
+              <ShoppingCart className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-linear-to-r from-fuchsia-500 to-violet-500 rounded-full">
+                <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-linear-to-r from-emerald-500 to-violet-500 rounded-full">
                   {cartItemCount}
                 </span>
               )}
@@ -89,7 +89,7 @@ const Header = () => {
 
             {/* Mobile Menu Button */}
             <button
-              className="lg:hidden text-gray-400 hover:text-fuchsia-500 p-2 transition-colors duration-300"
+              className="lg:hidden text-gray-400 hover:text-emerald-500 p-2 transition-colors duration-300"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -105,7 +105,7 @@ const Header = () => {
                 <a
                   key={link.name}
                   href={link.href}
-                  className="text-gray-400 hover:text-fuchsia-500 transition-colors duration-300 font-medium py-2"
+                  className="text-gray-400 hover:text-emerald-500 transition-colors duration-300 font-medium py-2"
                   onClick={() => setIsOpen(false)}
                 >
                   {link.name}

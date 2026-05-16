@@ -19,40 +19,40 @@ const Footer = () => {
           <div className="md:col-span-2">
             <a href="#home" className="flex items-center gap-3 mb-6">
               <img
-                src="/logo.webp"
+                src="/logo.PNG"
                 alt="Ritmika Cimnastik"
-                className="w-14 h-14"
+                className="w-30 h-30"
               />
-              <div>
+              {/* <div>
                 <span className="text-xl font-bold text-gray-200">
                   International
                 </span>
                 <span className="text-xl font-light text-fuchsia-500 ml-1 md:ml-2">
                   Ritmika Cup
                 </span>
-              </div>
+              </div> */}
             </a>
             <p className="text-gray-400 max-w-md mb-6">
-              "Ritmika Spor Kulübü tarafından organize edilmektedir. Geleceğin
-              yıldızlarına, dünya standartlarında bir sahne sunmaktan gurur
-              duyuyoruz."
+              RNG Sport olarak ritmik cimnastik başta olmak üzere spor
+              organizasyonlarında fotoğraf ve video prodüksiyon hizmeti
+              sunuyoruz.
             </p>
             <div className="flex gap-4">
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-fuchsia-500 hover:border-fuchsia-500 transition-all"
+                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:border-emerald-500 transition-all"
               >
                 <Instagram className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-fuchsia-500 hover:border-fuchsia-500 transition-all"
+                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:border-emerald-500 transition-all"
               >
                 <Facebook className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-fuchsia-500 hover:border-fuchsia-500 transition-all"
+                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:border-emerald-500 transition-all"
               >
                 <svg
                   className="w-5 h-5"
@@ -73,7 +73,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-fuchsia-500 transition-colors"
+                    className="text-gray-400 hover:text-emerald-500 transition-colors"
                   >
                     {link.name}
                   </a>
@@ -114,25 +114,25 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row gap-2 md:gap-6 text-sm text-gray-400">
             <Link
               to="/gizlilik-ve-guvenlik-politikasi"
-              className="hover:text-fuchsia-500 transition-colors"
+              className="hover:text-emerald-500 transition-colors"
             >
               Gizlilik Politikası
             </Link>
             <Link
               to="/kvkk-aydinlatma-metni"
-              className="hover:text-fuchsia-500 transition-colors"
+              className="hover:text-emerald-500 transition-colors"
             >
               KVKK Aydınlatma Metni
             </Link>
             <Link
               to="/mesafeli-satis-sozlesmesi"
-              className="hover:text-fuchsia-500 transition-colors"
+              className="hover:text-emerald-500 transition-colors"
             >
               Mesafeli Satış Sözleşmesi
             </Link>
             <Link
               to="/iptal-ve-iade-kosullari"
-              className="hover:text-fuchsia-500 transition-colors"
+              className="hover:text-emerald-500 transition-colors"
             >
               İptal ve İade Koşulları
             </Link>

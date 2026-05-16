@@ -9,16 +9,16 @@ interface SEOProps {
   type?: string;
 }
 
-const SITE_NAME = "International Ritmika Cup";
+const SITE_NAME = "RNG Sport";
 const DEFAULT_DESCRIPTION =
-  "International Ritmika Cup - Ritmik cimnastik branşında uluslararası standartlarda profesyonel yarışma deneyimi. Profesyonel fotoğraf ve video hizmetleri ile performansınızı ölümsüzleştirin.";
+  "RNG Sport - Ritmik cimnastik başta olmak üzere spor organizasyonları için profesyonel fotoğraf, video ve dijital içerik üretimi sunan spor medya ajansı. Yarışma ve turnuvalarda performansınızı ölümsüzleştirin.";
 const DEFAULT_IMAGE = "/og-image.jpg";
-const SITE_URL = "https://ritmikacup.com";
+const SITE_URL = "https://rngsport.com";
 
 const SEO = ({
   title,
   description = DEFAULT_DESCRIPTION,
-  keywords = "ritmik cimnastik, ritmika cup, cimnastik yarışması, cimnastik fotoğraf, cimnastik video, spor fotoğrafçılığı, profesyonel çekim, range media",
+  keywords = "rng sport, spor fotoğrafçılığı, ritmik cimnastik fotoğraf, ritmik cimnastik video, spor video çekim, yarışma fotoğrafı, turnuva çekimi, spor medya ajansı, profesyonel spor çekim",
   image = DEFAULT_IMAGE,
   url = SITE_URL,
   type = "website",
@@ -53,7 +53,7 @@ const SEO = ({
       {/* Additional SEO Tags */}
       <meta name="robots" content="index, follow" />
       <meta name="googlebot" content="index, follow" />
-      <meta name="author" content="Range Media" />
+      <meta name="author" content="RNG Sport" />
       <meta name="language" content="Turkish" />
       <meta name="revisit-after" content="7 days" />
     </Helmet>

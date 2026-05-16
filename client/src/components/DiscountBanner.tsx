@@ -3,7 +3,7 @@ import { Percent, Clock, Calendar } from "lucide-react";
 import { Link } from "react-router";
 
 const DiscountBanner = () => {
-  const targetDate = new Date("2026-02-26T23:59:59").getTime();
+  const targetDate = new Date("2026-06-18T00:00:00").getTime();
   
   const calculateTimeLeft = () => {
     const now = new Date().getTime();
@@ -34,12 +34,12 @@ const DiscountBanner = () => {
   const TimeBlock = ({ value, label }: { value: number; label: string }) => (
     <div className="flex flex-col items-center">
       <div className="relative">
-        <div className="w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 bg-zinc-900/80 backdrop-blur-sm border border-fuchsia-500/30 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg shadow-fuchsia-500/10">
+        <div className="w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 bg-zinc-900/80 backdrop-blur-sm border border-emerald-500/30 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/10">
           <span className="text-2xl sm:text-4xl lg:text-6xl font-bold text-white font-mono">
             {value.toString().padStart(2, "0")}
           </span>
         </div>
-        <div className="hidden sm:block absolute -top-1 -right-1 w-3 h-3 bg-fuchsia-500 rounded-full animate-pulse" />
+        <div className="hidden sm:block absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
       </div>
       <span className="text-xs sm:text-sm lg:text-lg text-zinc-400 mt-2 sm:mt-3 font-medium">{label}</span>
     </div>
@@ -48,26 +48,26 @@ const DiscountBanner = () => {
   return (
     <section className="py-16 relative overflow-hidden">
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-linear-to-b from-black/50 via-fuchsia-950/20 to-black/50" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/50 via-emerald-950/20 to-black/50" />
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-72 h-72 bg-fuchsia-600/10 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-72 h-72 bg-emerald-600/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-violet-600/10 rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="mx-auto">
           {/* Main Card */}
-          <div className="bg-zinc-900/40 backdrop-blur-xl border border-fuchsia-500/20 rounded-3xl p-6 sm:p-10 lg:p-16 text-center shadow-2xl shadow-fuchsia-500/5">
+          <div className="bg-zinc-900/40 backdrop-blur-xl border border-emerald-500/20 rounded-3xl p-6 sm:p-10 lg:p-16 text-center shadow-2xl shadow-emerald-500/5">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-fuchsia-500/20 border border-fuchsia-500/30 rounded-full mb-6 lg:mb-8">
-              <Percent className="w-4 h-4 text-fuchsia-400" />
-              <span className="text-sm lg:text-base font-semibold text-fuchsia-300">Özel Kampanya</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full mb-6 lg:mb-8">
+              <Percent className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm lg:text-base font-semibold text-emerald-300">Özel Kampanya</span>
             </div>
 
             {/* Discount Text */}
             <h2 className="text-2xl sm:text-4xl lg:text-6xl font-bold text-white mb-4 lg:mb-6 leading-tight">
               Ön Rezervasyon Yapanlara{" "}
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-fuchsia-400 to-violet-400">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-emerald-400 to-violet-400">
                 %20 İndirim!
               </span>
             </h2>
@@ -85,11 +85,11 @@ const DiscountBanner = () => {
               
               <div className="flex items-center justify-center gap-2 sm:gap-4 lg:gap-8">
                 <TimeBlock value={timeLeft.days} label="Gün" />
-                <div className="text-lg sm:text-2xl lg:text-5xl text-fuchsia-500/50 font-bold self-start mt-5 sm:mt-7 lg:mt-10">:</div>
+                <div className="text-lg sm:text-2xl lg:text-5xl text-emerald-500/50 font-bold self-start mt-5 sm:mt-7 lg:mt-10">:</div>
                 <TimeBlock value={timeLeft.hours} label="Saat" />
-                <div className="text-lg sm:text-2xl lg:text-5xl text-fuchsia-500/50 font-bold self-start mt-5 sm:mt-7 lg:mt-10">:</div>
+                <div className="text-lg sm:text-2xl lg:text-5xl text-emerald-500/50 font-bold self-start mt-5 sm:mt-7 lg:mt-10">:</div>
                 <TimeBlock value={timeLeft.minutes} label="Dakika" />
-                <div className="text-lg sm:text-2xl lg:text-5xl text-fuchsia-500/50 font-bold self-start mt-5 sm:mt-7 lg:mt-10">:</div>
+                <div className="text-lg sm:text-2xl lg:text-5xl text-emerald-500/50 font-bold self-start mt-5 sm:mt-7 lg:mt-10">:</div>
                 <TimeBlock value={timeLeft.seconds} label="Saniye" />
               </div>
             </div>
@@ -97,7 +97,7 @@ const DiscountBanner = () => {
             {/* CTA Button */}
             <Link
               to="/rezervasyon"
-              className="inline-flex items-center gap-2 px-8 py-4 lg:px-12 lg:py-5 bg-linear-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-600 hover:to-violet-600 text-white rounded-xl lg:rounded-2xl font-semibold lg:text-lg transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 px-8 py-4 lg:px-12 lg:py-5 bg-linear-to-r from-emerald-500 to-violet-500 hover:from-emerald-600 hover:to-violet-600 text-white rounded-xl lg:rounded-2xl font-semibold lg:text-lg transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
             >
               <Calendar className="w-5 h-5 lg:w-6 lg:h-6" />
               Hemen Rezervasyon Yap

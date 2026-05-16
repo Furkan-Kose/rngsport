@@ -40,7 +40,7 @@ const FAQ = () => {
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-2 text-fuchsia-500 font-semibold uppercase tracking-wider text-sm">
+          <span className="inline-flex items-center gap-2 text-emerald-500 font-semibold uppercase tracking-wider text-sm">
             <HelpCircle className="w-4 h-4" />
             Yardım
           </span>
@@ -59,7 +59,7 @@ const FAQ = () => {
               key={index}
               className={`rounded-2xl border transition-all duration-300 ${
                 openIndex === index 
-                  ? "bg-zinc-900/60 border-fuchsia-500/30" 
+                  ? "bg-zinc-900/60 border-emerald-500/30" 
                   : "bg-zinc-900/30 border-zinc-800 hover:border-zinc-700"
               }`}
             >
@@ -68,14 +68,14 @@ const FAQ = () => {
                 onClick={() => toggleFAQ(index)}
               >
                 <span className={`font-semibold pr-4 transition-colors ${
-                  openIndex === index ? "text-fuchsia-400" : "text-gray-200"
+                  openIndex === index ? "text-emerald-400" : "text-gray-200"
                 }`}>
                   {faq.question}
                 </span>
                 <ChevronDown 
                   className={`w-5 h-5 shrink-0 transition-transform duration-300 ${
                     openIndex === index 
-                      ? "rotate-180 text-fuchsia-400" 
+                      ? "rotate-180 text-emerald-400" 
                       : "text-zinc-500"
                   }`} 
                 />

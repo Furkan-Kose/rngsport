@@ -1,5 +1,5 @@
 import Hero from '../components/Hero'
-// import Tournaments from '../components/Tournaments'
+import Tournaments from '../components/Tournaments'
 import DiscountBanner from '../components/DiscountBanner'
 import Packages from '../components/Packages'
 import Gallery from '../components/Gallery'
@@ -10,13 +10,13 @@ import SEO from '../components/SEO'
 const HomePage = () => {
   return (
     <div>
-        <SEO 
+        <SEO
           title="Ana Sayfa"
-          description="International Ritmika Cup - Sezonun en büyük ritmik cimnastik buluşması. Profesyonel fotoğraf ve video hizmetleri ile performansınızı ölümsüzleştirin."
-          url="https://ritmikacup.com"
+          description="RNG Sport - Ritmik cimnastik başta olmak üzere spor yarışma ve turnuvaları için profesyonel fotoğraf, video ve dijital içerik üretimi sunan spor medya ajansı."
+          url="https://rngsport.com"
         />
         <Hero />
-        {/* <Tournaments /> */}
+        <Tournaments />
         <DiscountBanner />
         <Packages />
         <Gallery />

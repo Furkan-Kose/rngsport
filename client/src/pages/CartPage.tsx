@@ -20,6 +20,7 @@ import { Link, useSearchParams } from "react-router";
 import { useCart, type CartItem } from "../context/CartContext";
 import api from "../lib/api";
 import SEO from "../components/SEO";
+import { APPARATUSES } from "../constants/apparatuses";
 
 // iyzico ödeme modu: "popup" = modal içinde, "redirect" = iyzico sayfasına yönlendir
 const IYZICO_MODE: "popup" | "redirect" = "redirect";
@@ -140,7 +141,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
                     onClick={() => handleSeriesChange(s)}
                     className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
                       isSelected
-                        ? "bg-fuchsia-500/20 border-fuchsia-500 text-fuchsia-400"
+                        ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
                         : "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600"
                     }`}
                   >
@@ -215,6 +216,26 @@ const CartPage = () => {
   });
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
+  // Sepet satırı bazlı alet seçimi: key = `${packageId}-${seriesCount}` (sepet item key'i)
+  const [itemApparatuses, setItemApparatuses] = useState<Record<string, string[]>>({});
+
+  const itemKey = (cartItem: CartItem) =>
+    `${cartItem.package.id}-${cartItem.seriesCount}`;
+
+  const toggleApparatusOnItem = (
+    key: string,
+    slug: string,
+    seriesCount: number,
+  ) => {
+    setItemApparatuses((prev) => {
+      const current = prev[key] ?? [];
+      if (current.includes(slug)) {
+        return { ...prev, [key]: current.filter((s) => s !== slug) };
+      }
+      if (current.length >= seriesCount) return prev;
+      return { ...prev, [key]: [...current, slug] };
+    });
+  };
 
   // URL'den hata mesajı kontrolü
   useEffect(() => {
@@ -246,6 +267,14 @@ const CartPage = () => {
       return;
     }
 
+    const incompleteItem = items.find(
+      (it) => (itemApparatuses[itemKey(it)] ?? []).length !== it.seriesCount,
+    );
+    if (incompleteItem) {
+      setError("Her paket için seri sayısı kadar alet seçmelisiniz");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -262,6 +291,7 @@ const CartPage = () => {
           },
           seriesCount: item.seriesCount,
           quantity: item.quantity,
+          apparatuses: itemApparatuses[itemKey(item)] ?? [],
         })),
         totalPrice: getTotalPrice(),
       });
@@ -310,19 +340,19 @@ const CartPage = () => {
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
         title="Sepet"
-        description="Sepetinizi görüntüleyin ve siparişinizi tamamlayın. International Ritmika Cup profesyonel fotoğraf ve video hizmetleri."
-        url="https://ritmikacup.com/cart"
+        description="Sepetinizi görüntüleyin ve siparişinizi tamamlayın. RNG Sport profesyonel spor fotoğraf ve video çekim hizmetleri."
+        url="https://rngsport.com/sepet"
       />
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/5 rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex items-center gap-4 mb-10">
           <Link
             to="/"
-            className="flex items-center gap-2 text-zinc-400 hover:text-fuchsia-400 transition-colors"
+            className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Ana Sayfa</span>
@@ -356,7 +386,7 @@ const CartPage = () => {
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="relative mb-8">
-              <div className="absolute inset-0 bg-linear-to-r from-fuchsia-500/20 to-violet-500/20 rounded-full blur-2xl scale-150" />
+              <div className="absolute inset-0 bg-linear-to-r from-emerald-500/20 to-teal-500/20 rounded-full blur-2xl scale-150" />
               <div className="relative w-32 h-32 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center">
                 <PackageX className="w-16 h-16 text-zinc-600" />
               </div>
@@ -370,7 +400,7 @@ const CartPage = () => {
             </p>
             <Link
               to="/#paketler"
-              className="inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40"
+              className="inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
             >
               <ShoppingCart className="w-5 h-5" />
               Paketleri İncele
@@ -379,12 +409,48 @@ const CartPage = () => {
         ) : (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => (
-                <CartItemCard
-                  key={`${item.package.id}-${item.seriesCount}`}
-                  item={item}
-                />
-              ))}
+              {items.map((item) => {
+                const key = itemKey(item);
+                const selected = itemApparatuses[key] ?? [];
+                return (
+                  <div key={key} className="space-y-2">
+                    <CartItemCard item={item} />
+                    <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
+                      <p className="text-xs text-zinc-400 mb-2">
+                        Bu paket için aletleri seçin{" "}
+                        <span className="text-red-400">*</span>
+                        <span className="text-zinc-600 ml-1">
+                          ({selected.length} / {item.seriesCount} seçildi)
+                        </span>
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {APPARATUSES.map((a) => {
+                          const active = selected.includes(a.slug);
+                          const slotsFull =
+                            !active && selected.length >= item.seriesCount;
+                          return (
+                            <button
+                              key={a.slug}
+                              type="button"
+                              disabled={slotsFull}
+                              onClick={() =>
+                                toggleApparatusOnItem(key, a.slug, item.seriesCount)
+                              }
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                active
+                                  ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                                  : "bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:border-zinc-500"
+                              }`}
+                            >
+                              {a.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="lg:col-span-1">
@@ -418,17 +484,33 @@ const CartPage = () => {
                   <div className="border-t border-zinc-800 pt-4 mt-4">
                     <div className="flex justify-between">
                       <span className="font-medium text-white">Toplam</span>
-                      <span className="text-2xl font-bold bg-linear-to-r from-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
+                      <span className="text-2xl font-bold bg-linear-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
                         ₺{getTotalPrice().toLocaleString("tr-TR")}
                       </span>
                     </div>
                   </div>
                 </div>
 
+                {items.some(
+                  (it) =>
+                    (itemApparatuses[itemKey(it)] ?? []).length !==
+                    it.seriesCount,
+                ) && (
+                  <p className="text-xs text-amber-400 mb-2 text-center">
+                    Devam etmeden önce her paket için aletleri seçin.
+                  </p>
+                )}
                 <button
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    items.some(
+                      (it) =>
+                        (itemApparatuses[itemKey(it)] ?? []).length !==
+                        it.seriesCount,
+                    )
+                  }
                   onClick={() => setShowCheckout(true)}
-                  className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 flex items-center justify-center gap-2"
+                  className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2"
                 >
                   <CreditCard className="w-5 h-5" />
                   {isSubmitting ? "İşleniyor..." : "Ödemeye Geç"}
@@ -491,7 +573,7 @@ const CartPage = () => {
                       value={form.athleteName}
                       onChange={handleChange}
                       placeholder="Sporcu adı soyadı"
-                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
 
@@ -506,7 +588,7 @@ const CartPage = () => {
                       value={form.clubName}
                       onChange={handleChange}
                       placeholder="Kulüp veya şube adı"
-                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
 
@@ -521,7 +603,7 @@ const CartPage = () => {
                       value={form.birthYear}
                       onChange={handleChange}
                       placeholder="Örn: 2015"
-                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
 
@@ -537,7 +619,7 @@ const CartPage = () => {
                       value={form.customerPhone}
                       onChange={handleChange}
                       placeholder="0532 123 45 67"
-                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
 
@@ -553,30 +635,29 @@ const CartPage = () => {
                       value={form.customerEmail}
                       onChange={handleChange}
                       placeholder="ornek@gmail.com"
-                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
 
                   <div>
                     <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                       <MessageSquare className="w-4 h-4" />
-                      Çekim istenen Seri/Alet:{" "}
-                      <span className="text-zinc-600"></span>
+                      Ek Not <span className="text-zinc-600">(opsiyonel)</span>
                     </label>
                     <textarea
                       name="notes"
                       value={form.notes}
                       onChange={handleChange}
-                      placeholder="Serbest seri, Kurdele, Labut vb"
+                      placeholder="Eklemek istediğiniz bir not varsa buraya yazabilirsiniz."
                       rows={3}
-                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-fuchsia-500 transition-colors resize-none"
+                      className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
                     />
                   </div>
 
                   <div className="pt-4 border-t border-zinc-800">
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-zinc-400">Toplam Tutar</span>
-                      <span className="text-xl font-bold text-fuchsia-400">
+                      <span className="text-xl font-bold text-emerald-400">
                         ₺{getTotalPrice().toLocaleString("tr-TR")}
                       </span>
                     </div>
@@ -588,13 +669,13 @@ const CartPage = () => {
                           type="checkbox"
                           checked={kvkkAccepted}
                           onChange={(e) => setKvkkAccepted(e.target.checked)}
-                          className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-fuchsia-500 focus:ring-fuchsia-500 focus:ring-offset-0 cursor-pointer"
+                          className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
                         />
                         <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
                           <Link
                             to="/kvkk-aydinlatma-metni"
                             target="_blank"
-                            className="text-fuchsia-400 hover:text-fuchsia-300 underline"
+                            className="text-emerald-400 hover:text-emerald-300 underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             KVKK Aydınlatma Metni
@@ -608,7 +689,7 @@ const CartPage = () => {
                     <button
                       type="submit"
                       disabled={isSubmitting || !kvkkAccepted}
-                      className="w-full py-4 px-6 bg-linear-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
+                      className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
                         <>
@@ -629,7 +710,7 @@ const CartPage = () => {
               <>
                 <div className="flex items-center justify-between p-5 border-b border-zinc-800">
                   <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-fuchsia-400" />
+                    <CreditCard className="w-5 h-5 text-emerald-400" />
                     Ödeme
                   </h3>
                   <button

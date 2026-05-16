@@ -1,6 +1,7 @@
 import Iyzipay from "iyzipay";
 import iyzipay from "../lib/iyzico.js";
 import prisma from "../lib/prisma.js";
+import bus from "../lib/events.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -273,6 +274,9 @@ export const paymentCallback = async (req, res) => {
             : null,
         },
       });
+
+      // Çekim listesi sayfaları anlık güncellenmesi için
+      bus.emit("shooting-list-changed");
 
       console.log("Ödeme başarılı, yönlendiriliyor:", order.id);
       return res.redirect(

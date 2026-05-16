@@ -13,17 +13,17 @@ import SEO from "../../components/SEO";
 const IadeKosullari = () => {
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-950 via-gray-900 to-gray-950">
-      <SEO 
+      <SEO
         title="İade Koşulları"
-        description="International Ritmika Cup iade koşulları ve cayma hakkı bilgilendirmesi."
-        url="https://ritmikacup.com/iade-kosullari"
+        description="RNG Sport iade koşulları ve cayma hakkı bilgilendirmesi."
+        url="https://rngsport.com/iade-kosullari"
       />
       {/* Header */}
       <div className="bg-black/30 backdrop-blur-xl border-b border-white/10">
         <div className="container mx-auto px-4 py-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-fuchsia-500 transition-colors"
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-emerald-500 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Ana Sayfaya Dön</span>
@@ -49,15 +49,15 @@ const IadeKosullari = () => {
           <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-8 md:p-12 shadow-2xl">
             {/* Section 1 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <BookOpen className="w-4 h-4" />
                 </span>
                 1. Genel İlkeler
               </h3>
               <p className="text-gray-300 leading-relaxed">
                 Müşteri (ALICI),{" "}
-                <span className="text-fuchsia-400">www.ritmikacup.com</span>{" "}
+                <span className="text-emerald-400">www.ritmikacup.com</span>{" "}
                 üzerinden satın aldığı hizmetlerde,{" "}
                 <strong className="text-gray-100">
                   6502 sayılı Tüketicinin Korunması Hakkında Kanun
@@ -73,8 +73,8 @@ const IadeKosullari = () => {
 
             {/* Section 2 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <XCircle className="w-4 h-4" />
                 </span>
                 2. Cayma Hakkının İstisnaları (İade Edilemeyen Durumlar)
@@ -129,8 +129,8 @@ const IadeKosullari = () => {
 
             {/* Section 3 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <CheckCircle className="w-4 h-4" />
                 </span>
                 3. İptal ve İade Kabul Edilen Durumlar
@@ -189,8 +189,8 @@ const IadeKosullari = () => {
 
             {/* Section 4 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <RotateCcw className="w-4 h-4" />
                 </span>
                 4. İade Prosedürü
@@ -202,14 +202,14 @@ const IadeKosullari = () => {
 
               <div className="bg-white/5 rounded-xl p-6 border border-white/5 space-y-3">
                 <div className="flex items-start gap-3 text-gray-300">
-                  <span className="w-2 h-2 rounded-full bg-fuchsia-500 mt-2 shrink-0"></span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                   <span>
                     İade işlemleri, ALICI'nın satın alma sırasında kullandığı
                     kredi kartına/banka hesabına yapılır.
                   </span>
                 </div>
                 <div className="flex items-start gap-3 text-gray-300">
-                  <span className="w-2 h-2 rounded-full bg-fuchsia-500 mt-2 shrink-0"></span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                   <span>
                     SATICI tarafından iade talimatı verildikten sonra, tutarın
                     ALICI'nın hesabına yansıması banka süreçlerine bağlı olarak{" "}
@@ -223,8 +223,8 @@ const IadeKosullari = () => {
 
             {/* Section 5 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <AlertTriangle className="w-4 h-4" />
                 </span>
                 5. Hatalı veya Eksik İçerik
@@ -245,14 +245,14 @@ const IadeKosullari = () => {
 
             {/* Contact Section */}
             <section>
-              <h3 className="text-xl font-bold text-fuchsia-500 mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-fuchsia-500/20 flex items-center justify-center">
+              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                   <Phone className="w-4 h-4" />
                 </span>
                 İletişim
               </h3>
 
-              <div className="bg-linear-to-r from-fuchsia-500/10 to-purple-500/10 rounded-xl p-6 border border-fuchsia-500/20">
+              <div className="bg-linear-to-r from-emerald-500/10 to-teal-500/10 rounded-xl p-6 border border-emerald-500/20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-gray-400 text-sm mb-1">Şirket Ünvanı</p>
@@ -264,7 +264,7 @@ const IadeKosullari = () => {
                     <p className="text-gray-400 text-sm mb-1">E-Posta</p>
                     <a
                       href="mailto:hakankose5534@gmail.com"
-                      className="text-fuchsia-400 hover:text-fuchsia-300 transition-colors"
+                      className="text-emerald-400 hover:text-emerald-300 transition-colors"
                     >
                       hakankose5534@gmail.com
                     </a>
@@ -285,7 +285,7 @@ const IadeKosullari = () => {
                 İptal ve iade talepleriniz için{" "}
                 <a
                   href="mailto:hakankose5534@gmail.com"
-                  className="text-fuchsia-500 hover:text-fuchsia-400 transition-colors"
+                  className="text-emerald-500 hover:text-emerald-400 transition-colors"
                 >
                   hakankose5534@gmail.com
                 </a>{" "}
