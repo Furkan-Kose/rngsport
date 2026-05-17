@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 const corsOptions = {
-  origin: ["https://ritmikacup.netlify.app", "https://ritmikacup.com", "http://localhost:5173"],
+  origin: ["https://rngsport.netlify.app", "https://rngsport.com", "http://localhost:5173"],
   credentials: true,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: ["Content-Type", "Authorization"],

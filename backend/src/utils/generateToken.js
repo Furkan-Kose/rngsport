@@ -5,7 +5,7 @@ const generateToken = (res, userId) => {
     expiresIn: '30d',
   });
 
-  const isProd = false;
+  const isProd = true;
 
   res.cookie('token', token, {
     httpOnly: true,
