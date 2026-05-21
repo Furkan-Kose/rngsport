@@ -1,13 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X, ShoppingCart, Calendar } from "lucide-react";
 import { Link } from "react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCart } from "../context/CartContext";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { getTotalItems } = useCart();
 
   const cartItemCount = getTotalItems();
+  const showBackground = scrolled || isOpen;
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 20);
+    handler();
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
 
   const navLinks = [
     { name: "Ana Sayfa", href: "/#" },
@@ -19,7 +29,20 @@ const Header = () => {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        showBackground
+          ? "bg-black/50 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.6)]"
+          : "bg-transparent border-b border-transparent"
+      }`}
+    >
+      {/* Animated bottom accent line */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent transition-opacity duration-500 ${
+          showBackground ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -27,16 +50,8 @@ const Header = () => {
             <img
               src="/logo.PNG"
               alt="Ritmika Cimnastik"
-              className="w-30 h-30 transition-transform duration-300 group-hover:scale-110"
+              className="w-30 h-30 transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(16,185,129,0.35)]"
             />
-            {/* <div className="hidden md:block">
-              <span className="text-lg font-bold text-white">
-                International
-              </span>
-              <span className="text-lg font-light text-fuchsia-500 ml-2">
-                Ritmika Cup
-              </span>
-            </div> */}
           </Link>
 
           {/* Desktop Nav */}
@@ -45,16 +60,16 @@ const Header = () => {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-gray-400 hover:text-emerald-500 transition-colors duration-300 font-medium"
+                className="relative text-gray-300 hover:text-emerald-400 transition-colors duration-300 font-medium group"
               >
                 {link.name}
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 group-hover:w-full h-px bg-emerald-500 transition-all duration-300" />
               </a>
             ))}
           </nav>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Reservation Button */}
             <Link
               to="/rezervasyon"
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
@@ -65,31 +80,37 @@ const Header = () => {
               </span>
             </Link>
 
-            {/* Reservation Button Mobile */}
             <Link
               to="/rezervasyon"
-              className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-violet-500/50 transition-all duration-300 group"
+              className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
               title="Rezervasyon Yap"
             >
               <Calendar className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
             </Link>
 
-            {/* Cart Button */}
             <Link
               to="/sepet"
               className="relative p-2 sm:p-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
             >
               <ShoppingCart className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-linear-to-r from-emerald-500 to-violet-500 rounded-full">
-                  {cartItemCount}
-                </span>
-              )}
+              <AnimatePresence>
+                {cartItemCount > 0 && (
+                  <motion.span
+                    key={cartItemCount}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                    className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-emerald-500 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.6)]"
+                  >
+                    {cartItemCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </Link>
 
-            {/* Mobile Menu Button */}
             <button
-              className="lg:hidden text-gray-400 hover:text-emerald-500 p-2 transition-colors duration-300"
+              className="lg:hidden text-gray-300 hover:text-emerald-400 p-2 transition-colors duration-300"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -98,22 +119,33 @@ const Header = () => {
         </div>
 
         {/* Mobile Menu */}
-        {isOpen && (
-          <nav className="lg:hidden py-4 border-t border-border/50">
-            <div className="flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-gray-400 hover:text-emerald-500 transition-colors duration-300 font-medium py-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
-            </div>
-          </nav>
-        )}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.nav
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as const }}
+              className="lg:hidden overflow-hidden border-t border-white/10"
+            >
+              <div className="flex flex-col gap-1 py-4">
+                {navLinks.map((link, i) => (
+                  <motion.a
+                    key={link.name}
+                    href={link.href}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors duration-300 font-medium py-2.5 px-3 rounded-lg"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.name}
+                  </motion.a>
+                ))}
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </div>
     </header>
   );

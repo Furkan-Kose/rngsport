@@ -1,4 +1,4 @@
-import { Instagram, Facebook } from "lucide-react";
+import { Instagram, Facebook, ShieldCheck } from "lucide-react";
 import { Link } from "react-router";
 
 const Footer = () => {
@@ -12,47 +12,43 @@ const Footer = () => {
   ];
 
   return (
-    <footer id="contact" className="py-16 border-t border-white/10">
+    <footer id="contact" className="relative pt-16 pb-10">
+      {/* Animated gradient top edge */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-emerald-500/50 to-transparent" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-px bg-emerald-400/60 blur-[2px]" />
+
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Logo & About */}
           <div className="md:col-span-2">
-            <a href="#home" className="flex items-center gap-3 mb-6">
+            <a href="#home" className="flex items-center gap-3 mb-6 group">
               <img
                 src="/logo.PNG"
                 alt="Ritmika Cimnastik"
-                className="w-30 h-30"
+                className="w-30 h-30 transition-transform duration-300 group-hover:scale-105"
               />
-              {/* <div>
-                <span className="text-xl font-bold text-gray-200">
-                  International
-                </span>
-                <span className="text-xl font-light text-fuchsia-500 ml-1 md:ml-2">
-                  Ritmika Cup
-                </span>
-              </div> */}
             </a>
-            <p className="text-gray-400 max-w-md mb-6">
+            <p className="text-gray-400 max-w-md mb-6 leading-relaxed">
               RNG Sport olarak ritmik cimnastik başta olmak üzere spor
               organizasyonlarında fotoğraf ve video prodüksiyon hizmeti
               sunuyoruz.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:border-emerald-500 transition-all"
+                className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
               >
                 <Instagram className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:border-emerald-500 transition-all"
+                className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
               >
                 <Facebook className="w-5 h-5" />
               </a>
               <a
                 href="#"
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-500 hover:border-emerald-500 transition-all"
+                className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
               >
                 <svg
                   className="w-5 h-5"
@@ -67,13 +63,16 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-bold text-gray-200 mb-6">Hızlı Bağlantılar</h4>
+            <h4 className="font-bold text-gray-100 mb-6 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-emerald-500" />
+              Hızlı Bağlantılar
+            </h4>
             <ul className="space-y-3">
               {navLinks.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-gray-400 hover:text-emerald-500 transition-colors"
+                    className="text-gray-400 hover:text-emerald-400 hover:translate-x-1 inline-block transition-all duration-300"
                   >
                     {link.name}
                   </a>
@@ -84,20 +83,31 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-bold text-gray-200 mb-6">İletişim</h4>
+            <h4 className="font-bold text-gray-100 mb-6 flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-emerald-500" />
+              İletişim
+            </h4>
             <ul className="space-y-3 text-gray-400">
-              <li>+90 (539) 844 45 21</li>
+              <li className="hover:text-emerald-400 transition-colors">
+                +90 (539) 844 45 21
+              </li>
               <li>İstanbul, Türkiye</li>
             </ul>
           </div>
         </div>
 
-        {/* Payment Logos */}
-        <div className="mt-12 flex justify-center">
+        {/* Secure payment + logos */}
+        <div className="mt-12 flex flex-col items-center gap-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-medium text-emerald-300">
+              Güvenli Ödeme
+            </span>
+          </div>
           <img
             src="/footerLogo.png"
             alt="Ödeme Yöntemleri - iyzico, Visa, Mastercard"
-            className="h-10 opacity-70"
+            className="h-10 opacity-70 hover:opacity-100 transition-opacity"
           />
         </div>
 
@@ -107,32 +117,32 @@ const Footer = () => {
             href="https://rangemedia.com.tr"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-gray-400 hover:underline transition-colors"
+            className="text-sm text-gray-400 hover:text-emerald-400 transition-colors"
           >
             © 2026 Range Media Tüm hakları saklıdır.
           </a>
           <div className="flex flex-col md:flex-row gap-2 md:gap-6 text-sm text-gray-400">
             <Link
               to="/gizlilik-ve-guvenlik-politikasi"
-              className="hover:text-emerald-500 transition-colors"
+              className="hover:text-emerald-400 transition-colors"
             >
               Gizlilik Politikası
             </Link>
             <Link
               to="/kvkk-aydinlatma-metni"
-              className="hover:text-emerald-500 transition-colors"
+              className="hover:text-emerald-400 transition-colors"
             >
               KVKK Aydınlatma Metni
             </Link>
             <Link
               to="/mesafeli-satis-sozlesmesi"
-              className="hover:text-emerald-500 transition-colors"
+              className="hover:text-emerald-400 transition-colors"
             >
               Mesafeli Satış Sözleşmesi
             </Link>
             <Link
               to="/iptal-ve-iade-kosullari"
-              className="hover:text-emerald-500 transition-colors"
+              className="hover:text-emerald-400 transition-colors"
             >
               İptal ve İade Koşulları
             </Link>

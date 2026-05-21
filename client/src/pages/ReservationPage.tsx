@@ -15,9 +15,11 @@ import {
   Mail,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
+import { motion } from "framer-motion";
 import api from "../lib/api";
 import { toast } from "react-toastify";
 import SEO from "../components/SEO";
+import Reveal from "../components/ui/Reveal";
 import { APPARATUSES } from "../constants/apparatuses";
 
 interface Package {
@@ -267,8 +269,7 @@ const ReservationPage = () => {
           url="https://rngsport.com/rezervasyon"
         />
         <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
         </div>
         <div className="text-center relative z-10">
           <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto mb-4">
@@ -297,10 +298,18 @@ const ReservationPage = () => {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-20 h-20 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center mx-auto mb-4">
-            <Check className="w-10 h-10 text-green-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 18 }}
+            className="relative w-24 h-24 mx-auto mb-6"
+          >
+            <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl animate-pulse" />
+            <div className="relative w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
+              <Check className="w-12 h-12 text-emerald-400" />
+            </div>
+          </motion.div>
+          <h2 className="text-2xl font-bold text-gradient-brand mb-2">
             Rezervasyon Başarılı!
           </h2>
           <p className="text-zinc-400 mb-4">
@@ -324,36 +333,46 @@ const ReservationPage = () => {
         url="https://rngsport.com/rezervasyon"
       />
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10 max-w-6xl">
-        <div className="flex items-center gap-4 mb-8">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm font-medium">Ana Sayfa</span>
-          </Link>
-        </div>
+        <Reveal>
+          <div className="flex items-center gap-4 mb-8">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Ana Sayfa</span>
+            </Link>
+          </div>
+        </Reveal>
 
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center">
-            <Calendar className="w-7 h-7 text-zinc-300" />
+        <Reveal delay={0.05}>
+          <div className="flex items-center gap-4 mb-10">
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
+              <div className="relative w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                <Calendar className="w-7 h-7 text-emerald-400" />
+              </div>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gradient-brand">
+                Rezervasyon Formu
+              </h1>
+              <p className="text-zinc-500 text-sm">
+                Paketleri seçin ve bilgilerinizi girin
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Rezervasyon Formu</h1>
-            <p className="text-zinc-500 text-sm">
-              Paketleri seçin ve bilgilerinizi girin
-            </p>
-          </div>
-        </div>
+        </Reveal>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Paket Seçimi */}
-          <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+          <Reveal delay={0.1}>
+          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white">Paket Seçimi</h2>
               <button
@@ -538,9 +557,12 @@ const ReservationPage = () => {
               </div>
             )}
           </div>
+          </Reveal>
 
           {/* Sporcu Bilgileri */}
-          <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+          <Reveal delay={0.15}>
+          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
             <h2 className="text-xl font-semibold text-white mb-4">
               Sporcu Bilgileri
             </h2>
@@ -643,9 +665,12 @@ const ReservationPage = () => {
               </div>
             </div>
           </div>
+          </Reveal>
 
           {/* Özet ve Gönder */}
-          <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+          <Reveal delay={0.2}>
+          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">
@@ -655,7 +680,7 @@ const ReservationPage = () => {
                   {selectedPackages.length} paket seçildi
                 </p>
               </div>
-              <div className="text-3xl font-bold bg-linear-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+              <div className="text-3xl font-bold text-gradient-brand">
                 ₺{calculateTotal().toLocaleString("tr-TR")}
               </div>
             </div>
@@ -717,6 +742,7 @@ const ReservationPage = () => {
               )}
             </button>
           </div>
+          </Reveal>
         </form>
       </div>
     </div>

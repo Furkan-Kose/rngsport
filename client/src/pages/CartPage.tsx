@@ -17,9 +17,11 @@ import {
   Mail,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCart, type CartItem } from "../context/CartContext";
 import api from "../lib/api";
 import SEO from "../components/SEO";
+import Reveal from "../components/ui/Reveal";
 import { APPARATUSES } from "../constants/apparatuses";
 
 // iyzico ödeme modu: "popup" = modal içinde, "redirect" = iyzico sayfasına yönlendir
@@ -93,7 +95,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
   };
 
   return (
-    <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl overflow-hidden">
+    <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 hover:border-emerald-500/30 rounded-2xl overflow-hidden transition-colors">
       <div className="flex flex-col sm:flex-row">
         <div className="relative w-full sm:w-40 h-40 sm:h-auto shrink-0">
           <img
@@ -344,44 +346,52 @@ const CartPage = () => {
         url="https://rngsport.com/sepet"
       />
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="flex items-center gap-4 mb-10">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm font-medium">Ana Sayfa</span>
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-between mb-12">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center">
-              <ShoppingCart className="w-7 h-7 text-zinc-300" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Sepetim</h1>
-              <p className="text-zinc-500 text-sm">
-                {isEmpty ? "Sepetiniz boş" : `${items.length} paket`}
-              </p>
-            </div>
-          </div>
-
-          {!isEmpty && (
-            <button
-              onClick={clearCart}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+        <Reveal>
+          <div className="flex items-center gap-4 mb-8">
+            <Link
+              to="/"
+              className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
-              Sepeti Temizle
-            </button>
-          )}
-        </div>
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Ana Sayfa</span>
+            </Link>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.05}>
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
+                <div className="relative w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                  <ShoppingCart className="w-7 h-7 text-emerald-400" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gradient-brand">
+                  Sepetim
+                </h1>
+                <p className="text-zinc-500 text-sm">
+                  {isEmpty ? "Sepetiniz boş" : `${items.length} paket`}
+                </p>
+              </div>
+            </div>
+
+            {!isEmpty && (
+              <button
+                onClick={clearCart}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded-lg transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Sepeti Temizle</span>
+              </button>
+            )}
+          </div>
+        </Reveal>
 
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center py-20">
@@ -409,11 +419,11 @@ const CartPage = () => {
         ) : (
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => {
+              {items.map((item, idx) => {
                 const key = itemKey(item);
                 const selected = itemApparatuses[key] ?? [];
                 return (
-                  <div key={key} className="space-y-2">
+                  <Reveal key={key} delay={idx * 0.06} className="space-y-2 block">
                     <CartItemCard item={item} />
                     <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
                       <p className="text-xs text-zinc-400 mb-2">
@@ -448,13 +458,16 @@ const CartPage = () => {
                         })}
                       </div>
                     </div>
-                  </div>
+                  </Reveal>
                 );
               })}
             </div>
 
             <div className="lg:col-span-1">
-              <div className="sticky top-28 bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
+              <div className="sticky top-28 relative">
+                {/* Accent line on top */}
+                <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/60 to-transparent" />
+                <div className="relative bg-zinc-900/70 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
                 <h3 className="text-lg font-semibold text-white mb-6">
                   Sipariş Özeti
                 </h3>
@@ -482,9 +495,9 @@ const CartPage = () => {
                   ))}
 
                   <div className="border-t border-zinc-800 pt-4 mt-4">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="font-medium text-white">Toplam</span>
-                      <span className="text-2xl font-bold bg-linear-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                      <span className="text-2xl font-bold text-gradient-brand">
                         ₺{getTotalPrice().toLocaleString("tr-TR")}
                       </span>
                     </div>
@@ -527,6 +540,7 @@ const CartPage = () => {
                 <p className="text-xs text-zinc-500 text-center mt-2">
                   Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.
                 </p>
+                </div>
               </div>
             </div>
           </div>
@@ -534,13 +548,24 @@ const CartPage = () => {
       </div>
 
       {/* Checkout Modal */}
-      {showCheckout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div
-            className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-h-[95vh] overflow-y-auto transition-all duration-300 ${
-              step === "payment" ? "max-w-4xl" : "max-w-lg"
-            }`}
+      <AnimatePresence>
+        {showCheckout && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
           >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
+              className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-h-[95vh] overflow-y-auto shadow-[0_0_60px_-10px_rgba(16,185,129,0.3)] ${
+                step === "payment" ? "max-w-4xl" : "max-w-lg"
+              }`}
+            >
             {step === "form" ? (
               <>
                 <div className="flex items-center justify-between p-5 border-b border-zinc-800">
@@ -730,9 +755,10 @@ const CartPage = () => {
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

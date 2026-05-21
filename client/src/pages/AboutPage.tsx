@@ -11,6 +11,42 @@ import {
 } from "lucide-react";
 import SEO from "../components/SEO";
 import { Link } from "react-router";
+import SectionHeader from "../components/ui/SectionHeader";
+import SectionDivider from "../components/ui/SectionDivider";
+import Reveal from "../components/ui/Reveal";
+import CountUp from "../components/ui/CountUp";
+
+const BLACK = "#000000";
+const ZINC = "#09090b";
+
+const visionItems = [
+  {
+    icon: Globe,
+    title: "Ritmik Cimnastik Uzmanlığı",
+    description:
+      "Sahne düzenini, seri akışını ve sporcuların kritik anlarını bilen bir çekim yaklaşımıyla çalışıyoruz.",
+  },
+  {
+    icon: Shield,
+    title: "Hızlı ve Düzenli Teslimat",
+    description:
+      "Fotoğraf ve videoları sporcu bazlı, düzenli ve kolay erişilebilir şekilde teslim ediyoruz.",
+  },
+  {
+    icon: Heart,
+    title: "Sporcu Odaklı Görsel Dil",
+    description:
+      "Her sporcunun emeğini, performansını ve sahnedeki hikâyesini özenli bir görsel arşive dönüştürüyoruz.",
+  },
+];
+
+const principles = [
+  "Ritmik cimnastik dinamiğine hâkim çekim ekibi",
+  "Seri akışına uygun fotoğraf ve video takibi",
+  "Sporcu bazlı düzenli arşivleme",
+  "Aileler için kolay erişilebilir teslimat",
+  "Organizasyon için güçlü görsel içerik üretimi",
+];
 
 const AboutPage = () => {
   return (
@@ -21,297 +57,356 @@ const AboutPage = () => {
         keywords="rng sport hakkında, spor medya ajansı, ritmik cimnastik çekim ekibi, yarışma fotoğrafçısı, turnuva video çekim"
         url="https://rngsport.com/hakkimizda"
       />
+
       {/* Hero Section */}
-      <section className="relative py-32 overflow-hidden">
+      <section className="relative py-32 pb-44 overflow-hidden">
         <div className="absolute inset-0">
           <img
             src="/about/hero.jpeg"
             alt="International Ritmika Cup"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/70 to-black" />
+          <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/65 to-black/55" />
         </div>
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-grid-dark opacity-50 pointer-events-none"
+        />
+        <div
+          aria-hidden
+          className="absolute -bottom-20 left-1/3 w-[28rem] h-[28rem] bg-emerald-600/[0.06] rounded-full blur-3xl pointer-events-none"
+        />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <span className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 mb-6">
-              <Globe className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-300 text-sm font-medium">
-                YAKLAŞIMIMIZ
+            <Reveal>
+              <span className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 shadow-[0_0_24px_-8px_rgba(16,185,129,0.6)]">
+                <Globe className="w-4 h-4 text-emerald-400" />
+                <span className="text-emerald-300 text-sm font-medium tracking-wider uppercase">
+                  Yaklaşımımız
+                </span>
               </span>
-            </span>
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-              Spor Çekimlerinde Önceliğimiz
-              {/* <span className="block text-emerald-500 mt-2"></span> */}
-            </h1>
-            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
-              Ritmik cimnastik başta olmak üzere spor organizasyonlarında; doğru
-              anı, doğru açıdan ve yüksek kaliteyle kayıt altına alıyoruz.
-            </p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+                Spor Çekimlerinde{" "}
+                <span className="text-gradient-brand">Önceliğimiz</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
+                Ritmik cimnastik başta olmak üzere spor organizasyonlarında;
+                doğru anı, doğru açıdan ve yüksek kaliteyle kayıt altına
+                alıyoruz.
+              </p>
+            </Reveal>
           </div>
         </div>
+
+        {/* Bottom fade — image dissolves into the next section (#09090b) */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-32 md:h-44 z-[5] bg-linear-to-b from-transparent to-[#09090b] pointer-events-none"
+        />
       </section>
 
       {/* About Section */}
       <section className="py-20 bg-zinc-950">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="relative">
-              <img
-                src="/about/organization.webp"
-                alt="Ritmika Cup Organizasyon"
-                className="rounded-2xl shadow-2xl"
-              />
-              <div className="absolute -bottom-6 -right-6 bg-emerald-500 text-white p-6 rounded-2xl shadow-xl hidden md:block">
-                <div className="text-4xl font-bold">2026</div>
-                <div className="text-sm opacity-90">Ritmika Cup</div>
+            <Reveal>
+              <div className="relative">
+                <div className="absolute -inset-4 bg-emerald-500/10 rounded-3xl blur-2xl" />
+                <img
+                  src="/about/organization.webp"
+                  alt="Ritmika Cup Organizasyon"
+                  className="relative rounded-2xl shadow-2xl"
+                />
+                <div className="absolute -bottom-6 -right-6 bg-linear-to-br from-emerald-500 to-emerald-700 text-white p-6 rounded-2xl shadow-xl hidden md:block">
+                  <div className="text-4xl font-bold">2026</div>
+                  <div className="text-sm opacity-90">Ritmika Cup</div>
+                </div>
               </div>
-            </div>
+            </Reveal>
 
             <div>
-              <span className="text-emerald-500 font-semibold uppercase tracking-wider text-sm">
-                Hakkımızda
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-200 mt-4 mb-6">
-                Sporun En Değerli Anlarını Görünür Kılıyoruz
-              </h2>
-              <p className="text-gray-400 mb-4 leading-relaxed">
-                <strong className="text-emerald-400">RNG Sport,</strong> spor
-                organizasyonları için profesyonel fotoğraf, video ve dijital
-                içerik üretimi yapan bir spor medya ajansıdır.
-              </p>
-              <p className="text-gray-400 mb-4 leading-relaxed">
-                Yarışma, turnuva ve özel spor etkinliklerinde; sporcuların
-                performanslarını, ailelerin unutmak istemeyeceği anları ve
-                organizasyonun atmosferini kaliteli bir görsel arşive
-                dönüştürüyoruz.
-              </p>
-              <p className="text-gray-400 leading-relaxed">
-                Amacımız sadece çekim yapmak değil; her sporcunun emeğini,
-                heyecanını ve sahnedeki hikâyesini doğru açıdan anlatmak.
-              </p>
+              <SectionHeader
+                eyebrow="Hakkımızda"
+                title="Sporun En Değerli Anlarını Görünür Kılıyoruz"
+                align="left"
+                className="mb-6"
+              />
+              <Reveal delay={0.1}>
+                <p className="text-gray-400 mb-4 leading-relaxed">
+                  <strong className="text-emerald-400">RNG Sport,</strong> spor
+                  organizasyonları için profesyonel fotoğraf, video ve dijital
+                  içerik üretimi yapan bir spor medya ajansıdır.
+                </p>
+              </Reveal>
+              <Reveal delay={0.2}>
+                <p className="text-gray-400 mb-4 leading-relaxed">
+                  Yarışma, turnuva ve özel spor etkinliklerinde; sporcuların
+                  performanslarını, ailelerin unutmak istemeyeceği anları ve
+                  organizasyonun atmosferini kaliteli bir görsel arşive
+                  dönüştürüyoruz.
+                </p>
+              </Reveal>
+              <Reveal delay={0.3}>
+                <p className="text-gray-400 leading-relaxed">
+                  Amacımız sadece çekim yapmak değil; her sporcunun emeğini,
+                  heyecanını ve sahnedeki hikâyesini doğru açıdan anlatmak.
+                </p>
+              </Reveal>
             </div>
           </div>
         </div>
       </section>
+
+      <SectionDivider fromBg={ZINC} toBg={BLACK} />
 
       {/* Vision Section */}
       <section className="py-20 bg-black">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <span className="text-emerald-500 font-semibold uppercase tracking-wider text-sm">
-              Vizyonumuz
-            </span>
-            <h2 className="text-3xl md:text-5xl font-bold text-gray-200 mt-4 mb-6">
-              Organizasyon Vizyonumuz
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Yarışma ve spor etkinliklerinde; sporcuların performansını,
-              aileler için değerli anları ve organizasyonun atmosferini
-              profesyonel bir görsel arşive dönüştürüyoruz.
-            </p>
-          </div>
+          <SectionHeader
+            eyebrow="Vizyonumuz"
+            title="Organizasyon Vizyonumuz"
+            description="Yarışma ve spor etkinliklerinde; sporcuların performansını, aileler için değerli anları ve organizasyonun atmosferini profesyonel bir görsel arşive dönüştürüyoruz."
+            className="mb-16"
+          />
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Globe,
-                title: "Ritmik Cimnastik Uzmanlığı",
-                description:
-                  "Sahne düzenini, seri akışını ve sporcuların kritik anlarını bilen bir çekim yaklaşımıyla çalışıyoruz.",
-              },
-              {
-                icon: Shield,
-                title: "Hızlı ve Düzenli Teslimat",
-                description:
-                  "Fotoğraf ve videoları sporcu bazlı, düzenli ve kolay erişilebilir şekilde teslim ediyoruz.",
-              },
-              {
-                icon: Heart,
-                title: "Sporcu Odaklı Görsel Dil",
-                description:
-                  "Her sporcunun emeğini, performansını ve sahnedeki hikâyesini özenli bir görsel arşive dönüştürüyoruz.",
-              },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="group bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 hover:border-emerald-500/50 rounded-2xl p-8 transition-all duration-300 hover:-translate-y-1"
-              >
-                <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:bg-emerald-500/30 transition-colors">
-                  <item.icon className="w-7 h-7 text-emerald-400" />
+            {visionItems.map((item, index) => (
+              <Reveal key={index} delay={index * 0.1}>
+                <div className="group relative h-full rounded-2xl p-px bg-linear-to-br from-emerald-500/20 via-zinc-700/10 to-emerald-500/20 hover:from-emerald-500/50 hover:to-emerald-400/50 transition-all duration-500">
+                  <div className="relative h-full bg-zinc-950 rounded-2xl p-8 hover:-translate-y-1 transition-transform duration-300">
+                    <div className="w-14 h-14 bg-emerald-500/15 border border-emerald-500/30 rounded-xl flex items-center justify-center mb-6 group-hover:bg-emerald-500/30 group-hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.6)] transition-all">
+                      <item.icon className="w-7 h-7 text-emerald-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-100 mb-3">
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-400 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-200 mb-3">
-                  {item.title}
-                </h3>
-                <p className="text-gray-400">{item.description}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
+
+      <SectionDivider fromBg={BLACK} toBg={ZINC} />
 
       {/* Principles Section */}
       <section className="py-20 bg-zinc-950">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1">
-              <span className="text-emerald-500 font-semibold uppercase tracking-wider text-sm">
-                ÇEKİM STANDARTLARIMIZ
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-200 mt-4 mb-8">
-                Her Sporcuyu Aynı Özenle Çekiyoruz
-              </h2>
+              <SectionHeader
+                eyebrow="Çekim Standartlarımız"
+                title="Her Sporcuyu Aynı Özenle Çekiyoruz"
+                align="left"
+                className="mb-8"
+              />
 
-              <div className="space-y-4">
-                {[
-                  "Ritmik cimnastik dinamiğine hâkim çekim ekibi",
-                  "Seri akışına uygun fotoğraf ve video takibi",
-                  "Sporcu bazlı düzenli arşivleme",
-                  "Aileler için kolay erişilebilir teslimat",
-                  "Organizasyon için güçlü görsel içerik üretimi",
-                ].map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 bg-zinc-900/40 border border-zinc-800 rounded-xl p-4"
-                  >
-                    <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center shrink-0">
-                      <CheckCircle className="w-5 h-5 text-emerald-400" />
+              <div className="space-y-3">
+                {principles.map((item, index) => (
+                  <Reveal key={index} delay={index * 0.06}>
+                    <div className="group flex items-center gap-4 bg-zinc-900/60 border border-zinc-800 hover:border-emerald-500/40 rounded-xl p-4 transition-colors">
+                      <div className="w-10 h-10 bg-emerald-500/15 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-emerald-500/30 group-hover:shadow-[0_0_18px_-4px_rgba(16,185,129,0.7)] transition-all">
+                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <span className="text-gray-300">{item}</span>
                     </div>
-                    <span className="text-gray-300">{item}</span>
-                  </div>
+                  </Reveal>
                 ))}
               </div>
             </div>
 
-            <div className="order-1 md:order-2">
-              <img
-                src="/about/principles.jpeg"
-                alt="Ritmika Cup İlkeleri"
-                className="rounded-2xl shadow-2xl"
-              />
-            </div>
+            <Reveal className="order-1 md:order-2">
+              <div className="relative">
+                <div className="absolute -inset-4 bg-emerald-500/10 rounded-3xl blur-2xl" />
+                <img
+                  src="/about/principles.jpeg"
+                  alt="Ritmika Cup İlkeleri"
+                  className="relative rounded-2xl shadow-2xl"
+                />
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
+
+      <SectionDivider fromBg={ZINC} toBg={BLACK} />
 
       {/* Media Section */}
       <section className="py-20 bg-black">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="relative">
-              <img
-                src="/about/media.jpeg"
-                alt="Range Media"
-                className="rounded-2xl shadow-2xl"
-              />
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent rounded-2xl" />
-              <div className="absolute bottom-6 left-6 right-6">
-                <div className="bg-black/80 backdrop-blur-sm border border-zinc-700 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <Camera className="w-8 h-8 text-emerald-400" />
-                    <div>
-                      <div className="text-white font-semibold">
-                        Range Media
-                      </div>
-                      <div className="text-gray-400 text-sm">
-                        Resmi Çözüm Ortağı
+            <Reveal>
+              <div className="relative">
+                <img
+                  src="/about/media.jpeg"
+                  alt="Range Media"
+                  className="rounded-2xl shadow-2xl"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent rounded-2xl" />
+                <div className="absolute bottom-6 left-6 right-6">
+                  <div className="bg-black/85 backdrop-blur-md border border-emerald-500/30 rounded-xl p-4 shadow-[0_0_24px_-8px_rgba(16,185,129,0.5)]">
+                    <div className="flex items-center gap-3">
+                      <Camera className="w-8 h-8 text-emerald-400" />
+                      <div>
+                        <div className="text-white font-semibold">
+                          Range Media
+                        </div>
+                        <div className="text-gray-400 text-sm">
+                          Resmi Çözüm Ortağı
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </Reveal>
 
             <div>
-              <span className="text-emerald-500 font-semibold uppercase tracking-wider text-sm">
-                Medya
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-200 mt-4 mb-6">
-                Yarışma Günü Tüm Süreci Kayıt Altına Alıyoruz
-              </h2>
-              <p className="text-gray-400 mb-6 leading-relaxed">
-                <strong className="text-emerald-400">RNG Sport,</strong>{" "}
-                organizasyon boyunca yalnızca performans anlarını değil;
-                hazırlık sürecini, sahne atmosferini, ödül anlarını ve
-                etkinliğin genel enerjisini de kapsayan bütünlüklü bir medya
-                akışı oluşturur.
-              </p>
-              <p className="text-gray-400 mb-6 leading-relaxed">
-                Çekimler, yarışma temposuna uyum sağlayacak şekilde planlanır.
-                Sporcu geçişleri, seri sıraları ve teslimat süreci düzenli takip
-                edilerek ailelerin içeriklere kolayca ulaşması hedeflenir.
-              </p>
-              <div className="flex items-start gap-4 bg-zinc-900/60 border border-zinc-800 rounded-xl p-5">
-                <Award className="w-10 h-10 text-emerald-400 shrink-0" />
-                <div>
-                  <h4 className="text-white font-semibold mb-1">
-                    En Güncel Teknoloji
-                  </h4>
-                  <p className="text-gray-400 text-sm">
-                    Sahadaki her performans, en güncel yayıncılık teknolojileri
-                    kullanılarak kayıt altına alınmakta ve arşivlenmektedir.
-                  </p>
+              <SectionHeader
+                eyebrow="Medya"
+                title="Yarışma Günü Tüm Süreci Kayıt Altına Alıyoruz"
+                align="left"
+                className="mb-6"
+              />
+              <Reveal delay={0.1}>
+                <p className="text-gray-400 mb-6 leading-relaxed">
+                  <strong className="text-emerald-400">RNG Sport,</strong>{" "}
+                  organizasyon boyunca yalnızca performans anlarını değil;
+                  hazırlık sürecini, sahne atmosferini, ödül anlarını ve
+                  etkinliğin genel enerjisini de kapsayan bütünlüklü bir medya
+                  akışı oluşturur.
+                </p>
+              </Reveal>
+              <Reveal delay={0.2}>
+                <p className="text-gray-400 mb-6 leading-relaxed">
+                  Çekimler, yarışma temposuna uyum sağlayacak şekilde planlanır.
+                  Sporcu geçişleri, seri sıraları ve teslimat süreci düzenli
+                  takip edilerek ailelerin içeriklere kolayca ulaşması
+                  hedeflenir.
+                </p>
+              </Reveal>
+              <Reveal delay={0.3}>
+                <div className="flex items-start gap-4 bg-zinc-900/60 border border-zinc-800 hover:border-emerald-500/30 rounded-xl p-5 transition-colors">
+                  <Award className="w-10 h-10 text-emerald-400 shrink-0" />
+                  <div>
+                    <h4 className="text-white font-semibold mb-1">
+                      En Güncel Teknoloji
+                    </h4>
+                    <p className="text-gray-400 text-sm">
+                      Sahadaki her performans, en güncel yayıncılık
+                      teknolojileri kullanılarak kayıt altına alınmakta ve
+                      arşivlenmektedir.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             </div>
           </div>
         </div>
       </section>
 
+      <SectionDivider fromBg={BLACK} toBg={ZINC} />
+
       {/* Stats Section */}
-      <section className="py-20 bg-linear-to-b from-zinc-950 to-black">
-        <div className="container mx-auto px-4">
+      <section className="py-20 bg-zinc-950 relative overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-linear-to-b from-transparent via-emerald-950/10 to-transparent"
+        />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { number: "900+", label: "Sporcu", icon: Users },
-              { number: "75+", label: "Kulüp", icon: Target },
-              {
-                number: "4 Gün",
-                label: "Sürecek Sahne Performansları",
-                icon: CalendarDays,
-              },
-              { number: "100%", label: "Memnuniyet", icon: Award },
-            ].map((stat, index) => (
-              <div key={index} className="text-center group">
-                <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-500/30 transition-colors">
-                  <stat.icon className="w-8 h-8 text-emerald-400" />
+            <Reveal>
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-500/30 group-hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.7)] transition-all">
+                  <Users className="w-8 h-8 text-emerald-400" />
                 </div>
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  {stat.number}
+                  <CountUp end={900} suffix="+" />
                 </div>
-                <div className="text-gray-400">{stat.label}</div>
+                <div className="text-gray-400">Sporcu</div>
               </div>
-            ))}
+            </Reveal>
+            <Reveal delay={0.08}>
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-500/30 group-hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.7)] transition-all">
+                  <Target className="w-8 h-8 text-emerald-400" />
+                </div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-2">
+                  <CountUp end={75} suffix="+" />
+                </div>
+                <div className="text-gray-400">Kulüp</div>
+              </div>
+            </Reveal>
+            <Reveal delay={0.16}>
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-500/30 group-hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.7)] transition-all">
+                  <CalendarDays className="w-8 h-8 text-emerald-400" />
+                </div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-2">
+                  <CountUp end={4} suffix=" Gün" />
+                </div>
+                <div className="text-gray-400">
+                  Sürecek Sahne Performansları
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={0.24}>
+              <div className="text-center group">
+                <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-500/30 group-hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.7)] transition-all">
+                  <Award className="w-8 h-8 text-emerald-400" />
+                </div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-2">
+                  <CountUp end={100} suffix="%" />
+                </div>
+                <div className="text-gray-400">Memnuniyet</div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
+
+      <SectionDivider fromBg={ZINC} toBg={BLACK} />
 
       {/* CTA Section */}
       <section className="py-20 bg-black">
         <div className="container mx-auto px-4">
-          <div className="bg-linear-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/30 rounded-3xl p-8 md:p-12 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              IV. International Golden Ribbon Cup 2026'da Yerinizi Ayırtın
-            </h2>
-            <p className="text-gray-300 max-w-2xl mx-auto mb-8">
-              Profesyonel fotoğraf ve video hizmetlerimizle performansınızı
-              ölümsüzleştirin.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/rezervasyon"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-colors"
-              >
-                Rezervasyon Yap
-              </Link>
-              <Link
-                to="/#paketler"
-                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-8 py-3 rounded-xl font-medium transition-colors"
-              >
-                Paketleri İncele
-              </Link>
+          <Reveal>
+            <div className="relative rounded-3xl p-px bg-linear-to-r from-emerald-500/40 via-emerald-400/20 to-emerald-500/40 overflow-hidden">
+              <div className="absolute inset-0 border-glow-shimmer opacity-60" />
+              <div className="relative bg-linear-to-r from-emerald-900/40 to-teal-900/40 backdrop-blur-xl rounded-3xl p-8 md:p-12 text-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  IV. International Golden Ribbon Cup 2026'da Yerinizi Ayırtın
+                </h2>
+                <p className="text-gray-300 max-w-2xl mx-auto mb-8">
+                  Profesyonel fotoğraf ve video hizmetlerimizle performansınızı
+                  ölümsüzleştirin.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    to="/rezervasyon"
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5"
+                  >
+                    Rezervasyon Yap
+                  </Link>
+                  <Link
+                    to="/#paketler"
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 hover:border-emerald-500/50 text-white px-8 py-3 rounded-xl font-medium transition-all"
+                  >
+                    Paketleri İncele
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
     </div>
