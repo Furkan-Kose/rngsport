@@ -330,7 +330,7 @@ const AboutPage = () => {
                   <Users className="w-8 h-8 text-emerald-400" />
                 </div>
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  <CountUp end={900} suffix="+" />
+                  <CountUp end={1000} suffix="+" />
                 </div>
                 <div className="text-gray-400">Sporcu</div>
               </div>
@@ -341,9 +341,9 @@ const AboutPage = () => {
                   <Target className="w-8 h-8 text-emerald-400" />
                 </div>
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  <CountUp end={75} suffix="+" />
+                  <CountUp end={3} suffix="+" />
                 </div>
-                <div className="text-gray-400">Kulüp</div>
+                <div className="text-gray-400">Uluslararası Yarışma Deneyimi</div>
               </div>
             </Reveal>
             <Reveal delay={0.16}>
@@ -352,10 +352,10 @@ const AboutPage = () => {
                   <CalendarDays className="w-8 h-8 text-emerald-400" />
                 </div>
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  <CountUp end={4} suffix=" Gün" />
+                  <CountUp end={4} suffix=" Yıl" />
                 </div>
                 <div className="text-gray-400">
-                  Sürecek Sahne Performansları
+                  Spor Deneyimi
                 </div>
               </div>
             </Reveal>
@@ -365,7 +365,7 @@ const AboutPage = () => {
                   <Award className="w-8 h-8 text-emerald-400" />
                 </div>
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  <CountUp end={100} suffix="%" />
+                  <CountUp end={95} suffix="%" />
                 </div>
                 <div className="text-gray-400">Memnuniyet</div>
               </div>
