@@ -139,7 +139,7 @@ const Tournaments = () => {
                     {tournament.status === "upcoming" && (
                       <span className="flex items-center justify-center md:justify-start gap-2 text-amber-400/80 font-medium whitespace-nowrap">
                         <Clock className="w-4 h-4" />
-                        Çok Yakında
+                        Yakında
                       </span>
                     )}
 

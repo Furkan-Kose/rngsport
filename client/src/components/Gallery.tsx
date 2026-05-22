@@ -20,73 +20,97 @@ const galleryItems = [
   {
     id: 1,
     type: "video",
-    vimeoId: "1160466956",
-    thumbnail: "/video/1.jpeg",
-    title: "Ritmika Cup 2025",
+    vimeoId: "1194518379",
+    thumbnail: "",
+    title: "Ritmika Cup 2026",
     category: "Video",
   },
   {
     id: 2,
     type: "video",
-    vimeoId: "1160467514",
-    thumbnail: "/video/2.jpeg",
-    title: "Ritmika Cup 2025",
+    vimeoId: "1194514858",
+    thumbnail: "",
+    title: "Ritmika Cup 2026",
     category: "Video",
   },
   {
     id: 3,
     type: "video",
-    vimeoId: "1160467257",
+    vimeoId: "1194513032",
     thumbnail: "",
-    title: "Ritmika Cup 2025",
+    title: "Ritmika Cup 2026",
     category: "Video",
   },
   {
     id: 4,
     type: "video",
-    vimeoId: "1160469238",
+    vimeoId: "1194506839",
     thumbnail: "",
-    title: "Ritmika Cup 2025",
+    title: "Ritmika Cup 2026",
     category: "Video",
   },
   {
     id: 5,
-    type: "photo",
-    src: "/gallery/1.webp",
-    thumbnail: "/gallery/1.webp",
-    title: "Ritmika Cup 2025",
-    category: "Fotoğraf",
+    type: "video",
+    vimeoId: "1194510802",
+    thumbnail: "",
+    title: "Ritmika Cup 2026",
+    category: "Video",
   },
   {
     id: 6,
-    type: "photo",
-    src: "/gallery/2.webp",
-    thumbnail: "/gallery/2.webp",
-    title: "Ritmika Cup 2025",
-    category: "Fotoğraf",
+    type: "video",
+    vimeoId: "1194522756",
+    thumbnail: "",
+    title: "Ritmika Cup 2026",
+    category: "Video",
   },
   {
     id: 7,
     type: "photo",
-    src: "/gallery/3.webp",
-    thumbnail: "/gallery/3.webp",
-    title: "Ritmika Cup 2025",
+    src: "/gallery/44.webp",
+    thumbnail: "/gallery/44.webp",
+    title: "Ritmika Cup 2026",
     category: "Fotoğraf",
   },
   {
     id: 8,
     type: "photo",
-    src: "/gallery/4.webp",
-    thumbnail: "/gallery/4.webp",
-    title: "Ritmika Cup 2025",
+    src: "/gallery/45.webp",
+    thumbnail: "/gallery/45.webp",
+    title: "Ritmika Cup 2026",
     category: "Fotoğraf",
   },
   {
     id: 9,
     type: "photo",
-    src: "/gallery/5.webp",
-    thumbnail: "/gallery/5.webp",
-    title: "Ritmika Cup 2025",
+    src: "/gallery/46.webp",
+    thumbnail: "/gallery/46.webp",
+    title: "Ritmika Cup 2026",
+    category: "Fotoğraf",
+  },
+  {
+    id: 10,
+    type: "photo",
+    src: "/gallery/47.webp",
+    thumbnail: "/gallery/47.webp",
+    title: "Ritmika Cup 2026",
+    category: "Fotoğraf",
+  },
+  {
+    id: 11,
+    type: "photo",
+    src: "/gallery/48.webp",
+    thumbnail: "/gallery/48.webp",
+    title: "Ritmika Cup 2026",
+    category: "Fotoğraf",
+  },
+  {
+    id: 12,
+    type: "photo",
+    src: "/gallery/49.webp",
+    thumbnail: "/gallery/49.webp",
+    title: "Ritmika Cup 2026",
     category: "Fotoğraf",
   },
 ];
@@ -109,7 +133,7 @@ const Gallery = () => {
       ? galleryItems
       : galleryItems.filter((item) => item.category === filter);
 
-  const filteredItems = allFilteredItems.slice(0, 6);
+  const filteredItems = allFilteredItems.slice(0, 12);
 
   const openLightbox = (index: number) => {
     setSelectedImage(index);
@@ -204,7 +228,7 @@ const Gallery = () => {
           ))}
         </div>
 
-        {allFilteredItems.length > 6 && (
+        {allFilteredItems.length > 0 && (
           <Reveal delay={0.2}>
             <div className="text-center mt-10">
               <Link
