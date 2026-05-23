@@ -90,12 +90,28 @@ const Tournaments = () => {
         />
 
         <div className="max-w-4xl mx-auto space-y-4">
-          {tournaments.map((tournament, index) => (
+          {tournaments.map((tournament, index) => {
+            const isActive = tournament.status === "ongoing";
+            return (
             <Reveal key={index} delay={index * 0.1}>
-              <div className="group relative rounded-2xl p-px bg-linear-to-r from-emerald-500/30 via-zinc-700/20 to-emerald-500/30 hover:from-emerald-500/60 hover:via-emerald-400/40 hover:to-emerald-500/60 transition-all duration-500">
-                <div className="relative bg-zinc-900/80 backdrop-blur-xl rounded-2xl p-5 md:p-6 shadow-lg overflow-hidden">
-                  {/* hover glow */}
-                  <div className="absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+              <div
+                className={`group relative rounded-2xl p-px bg-linear-to-r transition-all duration-500 ${
+                  isActive
+                    ? "from-emerald-500/70 via-emerald-400/50 to-emerald-500/70"
+                    : "from-emerald-500/30 via-zinc-700/20 to-emerald-500/30 hover:from-emerald-500/60 hover:via-emerald-400/40 hover:to-emerald-500/60"
+                }`}
+              >
+                <div
+                  className={`relative bg-zinc-900/80 backdrop-blur-xl rounded-2xl p-5 md:p-6 shadow-lg overflow-hidden ${
+                    isActive ? "ring-1 ring-emerald-400/40" : ""
+                  }`}
+                >
+                  {/* glow — aktif turnuvada her zaman açık, diğerlerinde hover'da */}
+                  <div
+                    className={`absolute -inset-px rounded-2xl transition-opacity duration-500 pointer-events-none ${
+                      isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    }`}
+                  >
                     <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl" />
                   </div>
 
@@ -108,7 +124,13 @@ const Tournaments = () => {
                       />
                       <div className="min-w-0">
                         <div className="flex flex-col-reverse items-start gap-1.5 mb-2 md:flex-row md:items-center md:gap-2">
-                          <h3 className="text-base md:text-lg font-bold leading-snug text-gray-100 group-hover:text-emerald-400 transition-colors">
+                          <h3
+                            className={`text-base md:text-lg font-bold leading-snug transition-colors ${
+                              isActive
+                                ? "text-emerald-400"
+                                : "text-gray-100 group-hover:text-emerald-400"
+                            }`}
+                          >
                             {tournament.name}
                           </h3>
                           <StatusBadge status={tournament.status} />
@@ -153,7 +175,8 @@ const Tournaments = () => {
                 </div>
               </div>
             </Reveal>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

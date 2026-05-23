@@ -247,7 +247,6 @@ const Packages = () => {
           icon={Sparkles}
           title="Paketlerimiz"
           description="Her bütçeye uygun profesyonel fotoğraf ve video paketleri"
-          gradient
           className="mb-16"
         />
 

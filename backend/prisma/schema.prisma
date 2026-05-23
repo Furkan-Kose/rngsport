@@ -134,8 +134,21 @@ enum ReservationStatus {
   CANCELLED
 }
 
+model ShootingDay {
+  id        String   @id @default(cuid())
+  label     String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries ShootingListEntry[]
+
+  @@map("shooting_days")
+}
+
 model ShootingListEntry {
   id             String    @id @default(cuid())
+  dayId          String
   position       Int
   athleteName    String
   clubName       String?
@@ -150,9 +163,11 @@ model ShootingListEntry {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  day         ShootingDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
   order       Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
   reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
 
+  @@index([dayId])
   @@index([position])
   @@map("shooting_list_entries")
 }

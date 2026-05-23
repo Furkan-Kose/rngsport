@@ -194,6 +194,20 @@ const buildOrderBy = (sortKey) => {
   return [{ position: "asc" }];
 };
 
+// Sekmeler için günleri ve her günün toplam kayıt sayısını döndür
+const listDays = async () => {
+  const days = await prisma.shootingDay.findMany({
+    orderBy: { sortOrder: "asc" },
+    include: { _count: { select: { entries: true } } },
+  });
+  return days.map((d) => ({
+    id: d.id,
+    label: d.label,
+    sortOrder: d.sortOrder,
+    total: d._count.entries,
+  }));
+};
+
 export const getShootingList = async (req, res) => {
   const { page, limit, skip, search } = parsePaginationQuery(req);
   const sortKey = VALID_SORTS.has(req.query.sort) ? req.query.sort : "position";
@@ -201,11 +215,33 @@ export const getShootingList = async (req, res) => {
   // Her okumada güncel sipariş/rezervasyonlara göre eşleşmeleri tazele
   await syncShootingListMatches();
 
-  const where = {};
+  const days = await listDays();
+
+  // Aktif gün: query'deki dayId geçerliyse onu, değilse ilk günü kullan
+  const requestedDayId = req.query.dayId ? String(req.query.dayId) : null;
+  const activeDay =
+    days.find((d) => d.id === requestedDayId) || days[0] || null;
+
+  // Hiç gün yoksa boş yanıt
+  if (!activeDay) {
+    return res.json({
+      days,
+      activeDayId: null,
+      data: [],
+      pagination: { page: 1, limit, total: 0, totalPages: 1 },
+      stats: { total: 0, willBeShot: 0, willNotBeShot: 0, pending: 0, inProgress: 0, done: 0 },
+    });
+  }
+
+  const where = { dayId: activeDay.id };
   if (search) {
-    where.OR = [
-      { athleteName: { contains: search, mode: "insensitive" } },
-      { clubName: { contains: search, mode: "insensitive" } },
+    where.AND = [
+      {
+        OR: [
+          { athleteName: { contains: search, mode: "insensitive" } },
+          { clubName: { contains: search, mode: "insensitive" } },
+        ],
+      },
     ];
   }
 
@@ -242,6 +278,8 @@ export const getShootingList = async (req, res) => {
   };
 
   res.json({
+    days,
+    activeDayId: activeDay.id,
     data: entries.map(formatEntry),
     pagination: {
       page,
@@ -363,6 +401,18 @@ export const uploadShootingList = async (req, res) => {
     throw new AppError("Excel dosyası gerekli", 400);
   }
 
+  const dayId = req.body.dayId ? String(req.body.dayId) : null;
+  const label = req.body.label ? String(req.body.label).trim().slice(0, 100) : "";
+
+  // Mevcut bir güne yüklüyorsak o günü doğrula; yeni günse isim zorunlu
+  let targetDay = null;
+  if (dayId) {
+    targetDay = await prisma.shootingDay.findUnique({ where: { id: dayId } });
+    if (!targetDay) throw new AppError("Gün bulunamadı", 404);
+  } else if (!label) {
+    throw new AppError("Gün adı gerekli", 400);
+  }
+
   const parsed = parseExcelBuffer(req.file.buffer);
   if (parsed.length === 0) {
     throw new AppError("Excel'de geçerli sporcu satırı bulunamadı", 400);
@@ -377,14 +427,32 @@ export const uploadShootingList = async (req, res) => {
     return { ...row, ...match };
   });
 
-  await prisma.$transaction([
-    prisma.shootingListEntry.deleteMany({}),
-    prisma.shootingListEntry.createMany({ data: entries }),
-  ]);
+  // Mevcut güne yükleme → sadece o günün satırlarını değiştir (isteğe bağlı yeniden adlandır)
+  // Yeni gün → yeni ShootingDay oluştur (sortOrder = mevcut max + 1)
+  const resolvedDayId = await prisma.$transaction(async (tx) => {
+    let id = targetDay?.id;
+    if (id) {
+      await tx.shootingListEntry.deleteMany({ where: { dayId: id } });
+      if (label && label !== targetDay.label) {
+        await tx.shootingDay.update({ where: { id }, data: { label } });
+      }
+    } else {
+      const last = await tx.shootingDay.findFirst({ orderBy: { sortOrder: "desc" } });
+      const created = await tx.shootingDay.create({
+        data: { label, sortOrder: (last?.sortOrder ?? 0) + 1 },
+      });
+      id = created.id;
+    }
+    await tx.shootingListEntry.createMany({
+      data: entries.map((e) => ({ ...e, dayId: id })),
+    });
+    return id;
+  });
 
   const willBeShotCount = entries.filter((e) => e.willBeShot).length;
   res.json({
     message: "Liste yüklendi",
+    dayId: resolvedDayId,
     summary: {
       total: entries.length,
       willBeShot: willBeShotCount,
@@ -394,9 +462,16 @@ export const uploadShootingList = async (req, res) => {
   });
 };
 
-export const clearShootingList = async (_req, res) => {
-  const result = await prisma.shootingListEntry.deleteMany({});
-  res.json({ message: "Liste temizlendi", deleted: result.count });
+// Bir günü (ve cascade ile tüm satırlarını) sil
+export const clearShootingList = async (req, res) => {
+  const dayId = req.query.dayId ? String(req.query.dayId) : null;
+  if (!dayId) throw new AppError("Silinecek gün belirtilmedi", 400);
+
+  await prisma.shootingDay
+    .delete({ where: { id: dayId } })
+    .catch(rethrowPrismaError({ notFound: "Gün bulunamadı" }));
+
+  res.json({ message: "Gün silindi" });
 };
 
 // SSE stream: yeni sipariş/rezervasyon değişikliklerinde istemciyi tetikler

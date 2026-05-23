@@ -56,7 +56,7 @@ const Hero = () => {
       >
         <div className="max-w-4xl text-center md:text-left">
           {/* Badge - all screens */}
-          <motion.div variants={itemVariants}>
+          {/* <motion.div variants={itemVariants}>
             <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 shadow-[0_0_24px_-8px_rgba(16,185,129,0.6)]">
               <span className="relative flex w-2 h-2">
                 <span className="animate-ping absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75" />
@@ -67,7 +67,7 @@ const Hero = () => {
                 RNG Sport
               </span>
             </div>
-          </motion.div>
+          </motion.div> */}
 
           {/* Heading */}
           <motion.h1

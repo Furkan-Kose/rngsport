@@ -4,13 +4,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Plus,
+  RefreshCw,
   Search,
   Trash2,
-  Upload,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api, { API_URL } from '../../lib/api';
 import { getApparatusLabel } from '../../constants/apparatuses';
+import UploadDayModal from '../../components/admin/UploadDayModal';
 
 interface ShootingItem {
   packageName: string;
@@ -56,11 +58,11 @@ interface Stats {
   done: number;
 }
 
-interface UploadSummary {
+interface Day {
+  id: string;
+  label: string;
+  sortOrder: number;
   total: number;
-  willBeShot: number;
-  willNotBeShot: number;
-  unmatched: { name: string; club: string | null }[];
 }
 
 type SortKey = 'position' | 'expected' | 'started' | 'name';
@@ -94,36 +96,50 @@ const ShootingListPage = () => {
     inProgress: 0,
     done: 0,
   });
+  const [days, setDays] = useState<Day[]>([]);
+  const [activeDayId, setActiveDayId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('position');
-  const [isUploading, setIsUploading] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Yükleme modalı: null = yeni gün; dolu = o günün üzerine yaz
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadExisting, setUploadExisting] = useState<{ id: string; label: string } | null>(null);
 
   const fetchList = useCallback(
-    async (page: number = 1, silent: boolean = false) => {
+    async (
+      page: number = 1,
+      silent: boolean = false,
+      dayIdOverride?: string | null,
+    ) => {
       if (!silent) setIsLoading(true);
       try {
+        const effectiveDay =
+          dayIdOverride !== undefined ? dayIdOverride : activeDayId;
         const params = new URLSearchParams({
           page: page.toString(),
           limit: ITEMS_PER_PAGE.toString(),
           sort: sortKey,
         });
         if (searchQuery) params.append('search', searchQuery);
+        if (effectiveDay) params.append('dayId', effectiveDay);
 
         const { data } = await api.get(`/api/shooting-list?${params}`);
         setEntries(data.data);
         setPagination(data.pagination);
         setStats(data.stats);
+        setDays(data.days ?? []);
+        // Backend'in döndürdüğü aktif günü senkronla (ilk yükleme / silme sonrası)
+        const nextActive = data.activeDayId ?? null;
+        if (nextActive !== activeDayId) setActiveDayId(nextActive);
       } catch (error) {
         if (!silent) console.error('Çekim listesi alınamadı:', error);
       } finally {
         if (!silent) setIsLoading(false);
       }
     },
-    [searchQuery, sortKey],
+    [searchQuery, sortKey, activeDayId],
   );
 
   useEffect(() => {
@@ -166,44 +182,40 @@ const ShootingListPage = () => {
     }
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
+  const activeDay = days.find((d) => d.id === activeDayId) ?? null;
+
+  const openNewDay = () => {
+    setUploadExisting(null);
+    setUploadOpen(true);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data } = await api.post('/api/shooting-list/upload', formData);
-      const summary: UploadSummary = data.summary;
-      toast.success(
-        `${summary.total} sporcu yüklendi · ${summary.willBeShot} çekilecek · ${summary.willNotBeShot} çekilmeyecek`,
-      );
-      await fetchList(1);
-    } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Excel yüklenemedi';
-      toast.error(message);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+  const openReupload = () => {
+    if (!activeDay) return;
+    setUploadExisting({ id: activeDay.id, label: activeDay.label });
+    setUploadOpen(true);
   };
 
-  const handleClear = async () => {
-    if (!window.confirm('Tüm çekim listesi silinecek. Emin misiniz?')) return;
+  const handleUploaded = (dayId: string) => {
+    setActiveDayId(dayId);
+    fetchList(1, false, dayId);
+  };
+
+  const handleDeleteDay = async () => {
+    if (!activeDay) return;
+    if (
+      !window.confirm(`"${activeDay.label}" günü ve tüm satırları silinecek. Emin misiniz?`)
+    )
+      return;
     setIsClearing(true);
     try {
-      await api.delete('/api/shooting-list');
-      toast.success('Liste temizlendi');
-      await fetchList(1);
+      await api.delete(`/api/shooting-list?dayId=${activeDay.id}`);
+      toast.success('Gün silindi');
+      // Silinen günden çık; backend kalan ilk günü aktif yapacak
+      setActiveDayId(null);
+      await fetchList(1, false, null);
     } catch (error) {
-      console.error('Liste silinemedi:', error);
-      toast.error('Liste silinemedi');
+      console.error('Gün silinemedi:', error);
+      toast.error('Gün silinemedi');
     } finally {
       setIsClearing(false);
     }
@@ -224,41 +236,66 @@ const ShootingListPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileChange}
-            className="hidden"
-          />
           <button
-            onClick={handleUploadClick}
-            disabled={isUploading}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+            onClick={openNewDay}
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
           >
-            {isUploading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Upload className="w-4 h-4" />
-            )}
-            Excel Yükle
+            <Plus className="w-4 h-4" />
+            Yeni Gün
           </button>
-          {stats.total > 0 && (
-            <button
-              onClick={handleClear}
-              disabled={isClearing}
-              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {isClearing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-              Listeyi Temizle
-            </button>
+          {activeDay && (
+            <>
+              <button
+                onClick={openReupload}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Yeniden Yükle
+              </button>
+              <button
+                onClick={handleDeleteDay}
+                disabled={isClearing}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {isClearing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                Bu Günü Sil
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Gün sekmeleri */}
+      {days.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap border-b border-gray-700 pb-px">
+          {days.map((day) => (
+            <button
+              key={day.id}
+              onClick={() => setActiveDayId(day.id)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium border-b-2 -mb-px transition-colors ${
+                day.id === activeDayId
+                  ? 'border-amber-500 text-amber-400 bg-gray-800/50'
+                  : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800/30'
+              }`}
+            >
+              {day.label}
+              <span
+                className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                  day.id === activeDayId
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : 'bg-gray-700 text-gray-400'
+                }`}
+              >
+                {day.total}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -307,7 +344,11 @@ const ShootingListPage = () => {
           <div className="p-12 text-center">
             <Camera className="w-12 h-12 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400">
-              Henüz liste yüklenmedi. Excel dosyasını "Excel Yükle" ile yükleyin.
+              {days.length === 0
+                ? 'Henüz gün eklenmedi. "Yeni Gün" ile ilk Excel\'i yükleyin.'
+                : searchQuery
+                ? 'Aramayla eşleşen kayıt yok.'
+                : 'Bu günde kayıt yok.'}
             </p>
           </div>
         ) : (
@@ -516,6 +557,13 @@ const ShootingListPage = () => {
           </>
         )}
       </div>
+
+      <UploadDayModal
+        open={uploadOpen}
+        existingDay={uploadExisting}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={handleUploaded}
+      />
     </div>
   );
 };
