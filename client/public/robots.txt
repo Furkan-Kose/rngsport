@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://ritmikacup.com/sitemap.xml
+Sitemap: https://rngsport.com/sitemap.xml
 
 # Disallow admin pages
 Disallow: /admin/
