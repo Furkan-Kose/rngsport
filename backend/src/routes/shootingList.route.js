@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import {
   clearShootingList,
+  exportShootingList,
   getShootingList,
   streamShootingList,
   updateShootingEntry,
@@ -27,6 +28,7 @@ const upload = multer({
 });
 
 router.get("/stream", streamShootingList);
+router.get("/export", exportShootingList);
 router.get("/", getShootingList);
 router.post("/upload", upload.single("file"), uploadShootingList);
 router.delete("/", clearShootingList);

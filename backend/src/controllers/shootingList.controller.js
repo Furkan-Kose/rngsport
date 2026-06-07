@@ -291,6 +291,98 @@ export const getShootingList = async (req, res) => {
   });
 };
 
+// Dosya adı için güvenli slug: TR karakter sadeleştir, boşlukları tireye çevir
+const slugify = (s) =>
+  normalizeKey(s).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "liste";
+
+// Excel sheet adı: 31 karakter sınırı + geçersiz karakterleri temizle
+const safeSheetName = (label) =>
+  String(label || "Liste")
+    .replace(/[\\/?*[\]:]/g, " ")
+    .trim()
+    .slice(0, 31) || "Liste";
+
+// Bir entry'yi (formatEntry çıktısı) Excel satırına (Türkçe başlıklı) dönüştür
+const toExcelRow = (e) => ({
+  "Sıra": e.position,
+  "Sporcu Adı": e.athleteName || "",
+  "Kulüp": e.clubName || "",
+  "Doğum Yılı": e.birthYear || "",
+  "Alet / Kategori": e.category || "",
+  "Beklenen Saat": e.expectedTime || "",
+  "Çekilecek mi": e.willBeShot ? "Evet" : "Hayır",
+  "Telefon": e.customerPhone || "",
+  "Paket / Seri": (e.items || [])
+    .map((it) => `${it.packageName} (${it.seriesCount}×${it.quantity})`)
+    .join(", "),
+  "Not": e.notes || "",
+});
+
+// Aktif günün çekim listesini Excel olarak indir
+export const exportShootingList = async (req, res) => {
+  const dayId = req.query.dayId ? String(req.query.dayId) : null;
+  if (!dayId) throw new AppError("Gün belirtilmedi", 400);
+
+  const day = await prisma.shootingDay.findUnique({ where: { id: dayId } });
+  if (!day) throw new AppError("Gün bulunamadı", 404);
+
+  // İndirmeden önce eşleşmeleri güncelle (getShootingList ile aynı davranış)
+  await syncShootingListMatches();
+
+  const include = {
+    order: { select: { customerPhone: true, notes: true, status: true, items: true } },
+    reservation: { select: { customerPhone: true, notes: true, status: true, items: true } },
+  };
+
+  const entries = await prisma.shootingListEntry.findMany({
+    where: { dayId },
+    include,
+    orderBy: buildOrderBy("position"),
+  });
+
+  const rows = entries.map((entry) => toExcelRow(formatEntry(entry)));
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+
+  // Sütun genişliklerini içeriğe (başlık + en uzun hücre) göre ayarla
+  const headers = rows.length
+    ? Object.keys(rows[0])
+    : [
+        "Sıra",
+        "Sporcu Adı",
+        "Kulüp",
+        "Doğum Yılı",
+        "Alet / Kategori",
+        "Beklenen Saat",
+        "Çekilecek mi",
+        "Telefon",
+        "Paket / Seri",
+        "Not",
+      ];
+  worksheet["!cols"] = headers.map((header) => {
+    const maxCell = rows.reduce(
+      (max, row) => Math.max(max, String(row[header] ?? "").length),
+      header.length,
+    );
+    // +2 nefes payı, 10–60 arası sınırla
+    return { wch: Math.min(60, Math.max(10, maxCell + 2)) };
+  });
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetName(day.label));
+  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="cekim-listesi-${slugify(day.label)}.xlsx"`,
+  );
+  res.send(buffer);
+};
+
 const buildUpdateData = (body) => {
   const { action, expectedTime, startedAt, endedAt } = body;
 

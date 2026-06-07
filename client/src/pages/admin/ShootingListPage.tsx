@@ -3,6 +3,7 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  Download,
   Loader2,
   Plus,
   RefreshCw,
@@ -103,6 +104,7 @@ const ShootingListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('position');
   const [isClearing, setIsClearing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   // Yükleme modalı: null = yeni gün; dolu = o günün üzerine yaz
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadExisting, setUploadExisting] = useState<{ id: string; label: string } | null>(null);
@@ -200,6 +202,30 @@ const ShootingListPage = () => {
     fetchList(1, false, dayId);
   };
 
+  const handleExport = async () => {
+    if (!activeDay) return;
+    setIsExporting(true);
+    try {
+      const { data } = await api.get('/api/shooting-list/export', {
+        params: { dayId: activeDay.id },
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cekim-listesi-${activeDay.label}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Excel indirilemedi:', error);
+      toast.error('Excel indirilemedi');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDeleteDay = async () => {
     if (!activeDay) return;
     if (
@@ -251,6 +277,18 @@ const ShootingListPage = () => {
               >
                 <RefreshCw className="w-4 h-4" />
                 Yeniden Yükle
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Excel İndir
               </button>
               <button
                 onClick={handleDeleteDay}

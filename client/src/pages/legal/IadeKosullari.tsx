@@ -57,7 +57,7 @@ const IadeKosullari = () => {
               </h3>
               <p className="text-gray-300 leading-relaxed">
                 Müşteri (ALICI),{" "}
-                <span className="text-emerald-400">www.ritmikacup.com</span>{" "}
+                <span className="text-emerald-400">www.rngsport.com</span>{" "}
                 üzerinden satın aldığı hizmetlerde,{" "}
                 <strong className="text-gray-100">
                   6502 sayılı Tüketicinin Korunması Hakkında Kanun

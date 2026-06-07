@@ -43,7 +43,7 @@ const GizlilikPolitikasi = () => {
                 Range Media - Hakan Köse
               </strong>{" "}
               olarak,{" "}
-              <span className="text-emerald-400">www.ritmikacup.com</span>{" "}
+              <span className="text-emerald-400">www.rngsport.com</span>{" "}
               sitemizi kullanan ve alışveriş yapan müşterilerimizin kişisel
               verilerinin ve özellikle ödeme bilgilerinin güvenliğine büyük önem
               vermekteyiz.

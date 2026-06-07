@@ -150,7 +150,7 @@ const Tournaments = () => {
 
                     {tournament.status === "ongoing" && (
                       <a
-                        href="#paketler"
+                        href="/rezervasyon"
                         className="flex items-center justify-center md:justify-start gap-2 text-emerald-400 font-semibold hover:gap-4 transition-all whitespace-nowrap"
                       >
                         Rezervasyon Yap

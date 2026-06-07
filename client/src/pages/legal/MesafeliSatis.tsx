@@ -106,7 +106,7 @@ const MesafeliSatis = () => {
                 </h4>
                 <p className="text-gray-300 leading-relaxed">
                   İşbu sözleşme kapsamında,{" "}
-                  <span className="text-emerald-400">www.ritmikacup.com</span>{" "}
+                  <span className="text-emerald-400">www.rngsport.com</span>{" "}
                   üzerinden sipariş veren, hizmeti satın alan ve ödemeyi
                   gerçekleştiren gerçek veya tüzel kişidir. İlgili kişinin ödeme
                   esnasında beyan ettiği Ad, Soyad ve İletişim bilgileri esas
