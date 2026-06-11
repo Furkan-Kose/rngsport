@@ -44,7 +44,9 @@ const DiscountBanner = () => {
 
     return {
       days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+      hours: Math.floor(
+        (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      ),
       minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
       seconds: Math.floor((difference % (1000 * 60)) / 1000),
     };
@@ -61,6 +63,73 @@ const DiscountBanner = () => {
   }, []);
 
   return (
+    // <section className="py-12 relative overflow-hidden bg-black">
+    //   {/* Single subtle ambient glow */}
+    //   <div
+    //     aria-hidden
+    //     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-64 bg-emerald-600/[0.04] rounded-full blur-3xl pointer-events-none"
+    //   />
+
+    //   <div className="container mx-auto px-4 relative z-10">
+    //     <div className="max-w-5xl mx-auto">
+    //       <div className="relative bg-zinc-950/80 backdrop-blur-sm border border-emerald-500/20 rounded-2xl p-6 md:p-8 lg:p-10 shadow-lg shadow-emerald-500/5">
+    //         <div className="grid md:grid-cols-[1fr_auto] gap-8 md:gap-10 items-center">
+    //           {/* Left: Info + CTA */}
+    //           <div className="text-center md:text-left">
+    //             <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full mb-4">
+    //               <Percent className="w-3.5 h-3.5 text-emerald-400" />
+    //               <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">
+    //                 Özel Kampanya
+    //               </span>
+    //             </div>
+
+    //             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
+    //               Ön Rezervasyona{" "}
+    //               <span className="text-emerald-400">%20 İndirim</span>
+    //             </h2>
+
+    //             <p className="text-sm sm:text-base text-zinc-400 mb-6 max-w-md mx-auto md:mx-0">
+    //               Ön rezervasyon yaptırıp yarışma günü nakit ödeme yapan
+    //               sporcularımıza özel.
+    //             </p>
+
+    //             <Link
+    //               to="/rezervasyon"
+    //               className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
+    //             >
+    //               <Calendar className="w-4 h-4" />
+    //               Hemen Rezervasyon Yap
+    //             </Link>
+
+    //             <p className="text-[11px] text-zinc-600 mt-3">
+    //               * İndirim sadece ön rezervasyon + nakit ödeme için geçerlidir
+    //             </p>
+    //           </div>
+
+    //           {/* Right: Countdown */}
+    //           <div className="border-t md:border-t-0 md:border-l border-zinc-800 pt-6 md:pt-0 md:pl-10">
+    //             <div className="flex items-center justify-center md:justify-start gap-1.5 text-zinc-500 text-xs mb-3">
+    //               <Clock className="w-3.5 h-3.5" />
+    //               <span className="uppercase tracking-wider">
+    //                 Kampanya bitimi
+    //               </span>
+    //             </div>
+
+    //             <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+    //               <TimeBlock value={timeLeft.days} label="Gün" />
+    //               <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+    //               <TimeBlock value={timeLeft.hours} label="Saat" />
+    //               <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+    //               <TimeBlock value={timeLeft.minutes} label="Dk" />
+    //               <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+    //               <TimeBlock value={timeLeft.seconds} label="Sn" />
+    //             </div>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //   </div>
+    // </section>
     <section className="py-12 relative overflow-hidden bg-black">
       {/* Single subtle ambient glow */}
       <div
@@ -74,21 +143,23 @@ const DiscountBanner = () => {
             <div className="grid md:grid-cols-[1fr_auto] gap-8 md:gap-10 items-center">
               {/* Left: Info + CTA */}
               <div className="text-center md:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full mb-4">
+                {/* <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full mb-4">
                   <Percent className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">
                     Özel Kampanya
                   </span>
-                </div>
+                </div> */}
 
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
-                  Ön Rezervasyona{" "}
-                  <span className="text-emerald-400">%20 İndirim</span>
+                  Ön Rezervasyon
+                  {/* Ön Rezervasyona{" "} */}
+                  {/* <span className="text-emerald-400">%20 İndirim</span> */}
                 </h2>
 
                 <p className="text-sm sm:text-base text-zinc-400 mb-6 max-w-md mx-auto md:mx-0">
-                  Ön rezervasyon yaptırıp yarışma günü nakit ödeme yapan
-                  sporcularımıza özel.
+                  Ön rezervasyon yapan sporcular, çekim planımıza yarışma
+                  öncesinde eklenir. Yarışma günü standımıza uğrayarak ödemenizi
+                  tamamlayabilir, çekim sürecinizi kolayca başlatabilirsiniz.
                 </p>
 
                 <Link
@@ -99,9 +170,9 @@ const DiscountBanner = () => {
                   Hemen Rezervasyon Yap
                 </Link>
 
-                <p className="text-[11px] text-zinc-600 mt-3">
+                {/* <p className="text-[11px] text-zinc-600 mt-3">
                   * İndirim sadece ön rezervasyon + nakit ödeme için geçerlidir
-                </p>
+                </p> */}
               </div>
 
               {/* Right: Countdown */}
@@ -109,17 +180,23 @@ const DiscountBanner = () => {
                 <div className="flex items-center justify-center md:justify-start gap-1.5 text-zinc-500 text-xs mb-3">
                   <Clock className="w-3.5 h-3.5" />
                   <span className="uppercase tracking-wider">
-                    Kampanya bitimi
+                    Yarışma Tarihi
                   </span>
                 </div>
 
                 <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                   <TimeBlock value={timeLeft.days} label="Gün" />
-                  <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+                  <span className="text-zinc-700 font-bold text-lg pb-4">
+                    :
+                  </span>
                   <TimeBlock value={timeLeft.hours} label="Saat" />
-                  <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+                  <span className="text-zinc-700 font-bold text-lg pb-4">
+                    :
+                  </span>
                   <TimeBlock value={timeLeft.minutes} label="Dk" />
-                  <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+                  <span className="text-zinc-700 font-bold text-lg pb-4">
+                    :
+                  </span>
                   <TimeBlock value={timeLeft.seconds} label="Sn" />
                 </div>
               </div>
