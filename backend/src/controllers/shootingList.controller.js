@@ -4,6 +4,7 @@ import bus from "../lib/events.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { parsePaginationQuery } from "../utils/pagination.js";
 import { normalizeApparatus } from "../utils/apparatuses.js";
+import { matchKey } from "../utils/names.js";
 
 const NOT_FOUND = { notFound: "Kayıt bulunamadı" };
 const VALID_ACTIONS = new Set(["start", "end", "reset"]);
@@ -40,20 +41,6 @@ const canonicalForHeader = (header) => {
   }
   return null;
 };
-
-// Sporcu adını eşleşme için normalize et: küçük harf + TR karakter + tek boşluk
-const matchKey = (name) =>
-  String(name ?? "")
-    .toLowerCase()
-    .replace(/ı/g, "i")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ş/g, "s")
-    .replace(/ö/g, "o")
-    .replace(/ç/g, "c")
-    .replace(/i̇/g, "i")
-    .replace(/\s+/g, " ")
-    .trim();
 
 const formatEntry = (entry) => ({
   id: entry.id,

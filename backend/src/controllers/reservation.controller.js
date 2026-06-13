@@ -11,6 +11,7 @@ import {
   parsePaginationQuery,
   buildCustomerSearchWhere,
 } from "../utils/pagination.js";
+import { matchKey } from "../utils/names.js";
 
 const VALID_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "PAID", "CANCELLED"];
 const RESERVATION_NOT_FOUND = { notFound: "Rezervasyon bulunamadı" };
@@ -19,7 +20,7 @@ export const getAllReservations = async (req, res) => {
   const { page, limit, skip, status, search } = parsePaginationQuery(req);
   const where = buildCustomerSearchWhere({ status, search });
 
-  const [reservations, total] = await Promise.all([
+  const [reservations, total, shootingNames] = await Promise.all([
     prisma.reservation.findMany({
       where,
       include: { items: true },
@@ -28,10 +29,19 @@ export const getAllReservations = async (req, res) => {
       take: limit,
     }),
     prisma.reservation.count({ where }),
+    prisma.shootingListEntry.findMany({ select: { athleteName: true } }),
   ]);
 
+  // Çekim listesindeki isimleri normalize edip Set'e koy; sporcu adı eşleşmesi
+  // için (yalnızca isim bazlı). Liste hiç yoksa eşleşme uygulanamaz → null.
+  const nameSet = new Set(shootingNames.map((e) => matchKey(e.athleteName)));
+  const hasList = nameSet.size > 0;
+
   res.json({
-    data: reservations,
+    data: reservations.map((r) => ({
+      ...r,
+      inShootingList: hasList ? nameSet.has(matchKey(r.athleteName)) : null,
+    })),
     pagination: {
       page,
       limit,

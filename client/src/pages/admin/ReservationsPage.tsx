@@ -26,6 +26,7 @@ interface Reservation {
   status: string;
   createdAt: string;
   items: ReservationItem[];
+  inShootingList?: boolean | null;
 }
 
 interface Pagination {
@@ -198,6 +199,15 @@ const ReservationsPage = () => {
     );
   };
 
+  // Onaylı/ödenmiş rezervasyonun sporcusu çekim listesinde mi? (yalnızca isim bazlı)
+  // Varsa yeşilimsi, listede yoksa (isim hatalı olabilir) kırmızımsı arka plan.
+  const getRowTint = (r: Reservation) => {
+    if (r.status !== 'CONFIRMED' && r.status !== 'PAID') return '';
+    if (r.inShootingList === true) return 'bg-green-500/5';
+    if (r.inShootingList === false) return 'bg-red-500/10';
+    return '';
+  };
+
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
       photo: 'Fotoğraf',
@@ -360,10 +370,23 @@ const ReservationsPage = () => {
           </div>
         ) : (
           <>
+            {/* Çekim listesi eşleşme açıklaması (yalnızca onaylı/ödenmiş rezervasyonlarda) */}
+            <div className="px-4 py-2.5 border-b border-gray-700/50 flex items-center gap-4 text-xs text-gray-400 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm bg-green-500/30 border border-green-500/40" />
+                Çekim listesinde
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm bg-red-500/30 border border-red-500/40" />
+                Listede bulunamadı (isim hatalı olabilir)
+              </span>
+              <span className="text-gray-500">— yalnızca onaylanan/ödenen rezervasyonlar için</span>
+            </div>
+
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-gray-700/50">
               {reservations.map((reservation) => (
-                <div key={reservation.id} className="p-4">
+                <div key={reservation.id} className={`p-4 ${getRowTint(reservation)}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-white font-medium truncate">{reservation.athleteName}</p>
@@ -418,7 +441,7 @@ const ReservationsPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-700/50">
                   {reservations.map((reservation) => (
-                    <tr key={reservation.id} className="hover:bg-gray-700/20 transition-colors">
+                    <tr key={reservation.id} className={`hover:bg-gray-700/20 transition-colors ${getRowTint(reservation)}`}>
                       <td className="px-6 py-4">
                         <div>
                           <p className="text-white font-medium">{reservation.athleteName}</p>
