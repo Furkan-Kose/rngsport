@@ -99,6 +99,14 @@ export const galleryItems: GalleryItem[] = [
   },
   {
     id: 12,
+    type: "video",
+    vimeoId: "1202594448",
+    thumbnail: "",
+    title: "Ritmika Cup 2026",
+    category: "Video",
+  },
+  {
+    id: 13,
     type: "photo",
     src: "/gallery/44.webp",
     thumbnail: "/gallery/44.webp",
@@ -106,7 +114,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 13,
+    id: 14,
     type: "photo",
     src: "/gallery/45.webp",
     thumbnail: "/gallery/45.webp",
@@ -114,7 +122,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 14,
+    id: 15,
     type: "photo",
     src: "/gallery/46.webp",
     thumbnail: "/gallery/46.webp",
@@ -122,7 +130,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 15,
+    id: 16,
     type: "photo",
     src: "/gallery/47.webp",
     thumbnail: "/gallery/47.webp",
@@ -130,7 +138,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 16,
+    id: 17,
     type: "photo",
     src: "/gallery/48.webp",
     thumbnail: "/gallery/48.webp",
@@ -138,7 +146,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 17,
+    id: 18,
     type: "photo",
     src: "/gallery/49.webp",
     thumbnail: "/gallery/49.webp",
@@ -146,7 +154,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 18,
+    id: 20,
     type: "photo",
     src: "/gallery/50.webp",
     thumbnail: "/gallery/50.webp",
@@ -154,7 +162,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 19,
+    id: 21,
     type: "photo",
     src: "/gallery/51.webp",
     thumbnail: "/gallery/51.webp",
@@ -162,7 +170,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 20,
+    id: 22,
     type: "photo",
     src: "/gallery/52.webp",
     thumbnail: "/gallery/52.webp",
@@ -170,7 +178,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 21,
+    id: 23,
     type: "photo",
     src: "/gallery/53.webp",
     thumbnail: "/gallery/53.webp",
@@ -178,7 +186,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 22,
+    id: 24,
     type: "photo",
     src: "/gallery/54.webp",
     thumbnail: "/gallery/54.webp",
@@ -186,7 +194,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 23,
+    id: 25,
     type: "photo",
     src: "/gallery/55.webp",
     thumbnail: "/gallery/55.webp",
@@ -194,7 +202,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 24,
+    id: 26,
     type: "photo",
     src: "/gallery/56.webp",
     thumbnail: "/gallery/56.webp",
@@ -202,7 +210,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 25,
+    id: 27,
     type: "photo",
     src: "/gallery/57.webp",
     thumbnail: "/gallery/57.webp",
@@ -210,7 +218,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 26,
+    id: 28,
     type: "photo",
     src: "/gallery/58.webp",
     thumbnail: "/gallery/58.webp",
@@ -218,7 +226,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 27,
+    id: 29,
     type: "photo",
     src: "/gallery/59.webp",
     thumbnail: "/gallery/59.webp",
@@ -226,7 +234,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 28,
+    id: 30,
     type: "photo",
     src: "/gallery/60.webp",
     thumbnail: "/gallery/60.webp",
@@ -234,7 +242,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 29,
+    id: 31,
     type: "photo",
     src: "/gallery/61.webp",
     thumbnail: "/gallery/61.webp",
@@ -242,7 +250,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 30,
+    id: 32,
     type: "photo",
     src: "/gallery/62.webp",
     thumbnail: "/gallery/62.webp",
@@ -250,7 +258,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 31,
+    id: 33,
     type: "photo",
     src: "/gallery/63.webp",
     thumbnail: "/gallery/63.webp",
@@ -258,7 +266,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 32,
+    id: 34,
     type: "photo",
     src: "/gallery/64.webp",
     thumbnail: "/gallery/64.webp",
@@ -266,7 +274,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 33,
+    id: 35,
     type: "photo",
     src: "/gallery/65.webp",
     thumbnail: "/gallery/65.webp",
@@ -274,7 +282,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 34,
+    id: 36,
     type: "photo",
     src: "/gallery/66.webp",
     thumbnail: "/gallery/66.webp",
@@ -282,7 +290,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 35,
+    id: 37,
     type: "photo",
     src: "/gallery/67.webp",
     thumbnail: "/gallery/67.webp",
@@ -290,7 +298,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 36,
+    id: 38,
     type: "photo",
     src: "/gallery/68.webp",
     thumbnail: "/gallery/68.webp",
@@ -298,7 +306,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 37,
+    id: 39,
     type: "photo",
     src: "/gallery/69.webp",
     thumbnail: "/gallery/69.webp",
@@ -306,7 +314,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 38,
+    id: 40,
     type: "photo",
     src: "/gallery/70.webp",
     thumbnail: "/gallery/70.webp",
@@ -314,7 +322,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 39,
+    id: 41,
     type: "photo",
     src: "/gallery/71.webp",
     thumbnail: "/gallery/71.webp",
@@ -322,7 +330,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 40,
+    id: 42,
     type: "photo",
     src: "/gallery/72.webp",
     thumbnail: "/gallery/72.webp",
@@ -330,7 +338,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 41,
+    id: 43,
     type: "photo",
     src: "/gallery/73.webp",
     thumbnail: "/gallery/73.webp",
@@ -338,7 +346,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 42,
+    id: 44,
     type: "photo",
     src: "/gallery/74.webp",
     thumbnail: "/gallery/74.webp",
@@ -346,7 +354,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 43,
+    id: 45,
     type: "photo",
     src: "/gallery/75.webp",
     thumbnail: "/gallery/75.webp",
@@ -354,7 +362,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 44,
+    id: 46,
     type: "photo",
     src: "/gallery/76.webp",
     thumbnail: "/gallery/76.webp",
@@ -362,7 +370,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 45,
+    id: 47,
     type: "photo",
     src: "/gallery/77.webp",
     thumbnail: "/gallery/77.webp",
@@ -370,7 +378,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 46,
+    id: 48,
     type: "photo",
     src: "/gallery/78.webp",
     thumbnail: "/gallery/78.webp",
@@ -378,7 +386,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 47,
+    id: 49,
     type: "photo",
     src: "/gallery/1.webp",
     thumbnail: "/gallery/1.webp",
@@ -386,7 +394,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 48,
+    id: 50,
     type: "photo",
     src: "/gallery/2.webp",
     thumbnail: "/gallery/2.webp",
@@ -394,7 +402,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 49,
+    id: 51,
     type: "photo",
     src: "/gallery/3.webp",
     thumbnail: "/gallery/3.webp",
@@ -402,7 +410,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 50,
+    id: 52,
     type: "photo",
     src: "/gallery/4.webp",
     thumbnail: "/gallery/4.webp",
@@ -410,7 +418,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 51,
+    id: 53,
     type: "photo",
     src: "/gallery/5.webp",
     thumbnail: "/gallery/5.webp",
@@ -418,7 +426,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 52,
+    id: 54,
     type: "photo",
     src: "/gallery/6.webp",
     thumbnail: "/gallery/6.webp",
@@ -426,7 +434,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 53,
+    id: 55,
     type: "photo",
     src: "/gallery/7.webp",
     thumbnail: "/gallery/7.webp",
@@ -434,7 +442,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 54,
+    id: 56,
     type: "photo",
     src: "/gallery/8.webp",
     thumbnail: "/gallery/8.webp",
@@ -442,7 +450,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 55,
+    id: 57,
     type: "photo",
     src: "/gallery/9.webp",
     thumbnail: "/gallery/9.webp",
@@ -450,7 +458,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 56,
+    id: 58,
     type: "photo",
     src: "/gallery/10.webp",
     thumbnail: "/gallery/10.webp",
@@ -458,7 +466,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 57,
+    id: 59,
     type: "photo",
     src: "/gallery/11.webp",
     thumbnail: "/gallery/11.webp",
@@ -466,7 +474,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 58,
+    id: 60,
     type: "photo",
     src: "/gallery/12.webp",
     thumbnail: "/gallery/12.webp",
@@ -474,7 +482,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 59,
+    id: 61,
     type: "photo",
     src: "/gallery/13.webp",
     thumbnail: "/gallery/13.webp",
@@ -482,7 +490,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 60,
+    id: 62,
     type: "photo",
     src: "/gallery/14.webp",
     thumbnail: "/gallery/14.webp",
@@ -490,7 +498,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 61,
+    id: 63,
     type: "photo",
     src: "/gallery/15.webp",
     thumbnail: "/gallery/15.webp",
@@ -498,7 +506,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 62,
+    id: 64,
     type: "photo",
     src: "/gallery/16.webp",
     thumbnail: "/gallery/16.webp",
@@ -506,7 +514,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 63,
+    id: 65,
     type: "photo",
     src: "/gallery/17.webp",
     thumbnail: "/gallery/17.webp",
@@ -514,7 +522,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 64,
+    id: 66,
     type: "photo",
     src: "/gallery/18.webp",
     thumbnail: "/gallery/18.webp",
@@ -522,7 +530,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 65,
+    id: 67,
     type: "photo",
     src: "/gallery/19.webp",
     thumbnail: "/gallery/19.webp",
@@ -530,7 +538,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 66,
+    id: 68,
     type: "photo",
     src: "/gallery/20.webp",
     thumbnail: "/gallery/20.webp",
@@ -538,7 +546,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 67,
+    id: 69,
     type: "photo",
     src: "/gallery/21.webp",
     thumbnail: "/gallery/21.webp",
@@ -546,7 +554,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 68,
+    id: 70,
     type: "photo",
     src: "/gallery/22.webp",
     thumbnail: "/gallery/22.webp",
@@ -554,7 +562,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 69,
+    id: 71,
     type: "photo",
     src: "/gallery/23.webp",
     thumbnail: "/gallery/23.webp",
@@ -562,7 +570,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 70,
+    id: 72,
     type: "photo",
     src: "/gallery/24.webp",
     thumbnail: "/gallery/24.webp",
@@ -570,7 +578,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 71,
+    id: 73,
     type: "photo",
     src: "/gallery/25.webp",
     thumbnail: "/gallery/25.webp",
@@ -578,7 +586,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 72,
+    id: 74,
     type: "photo",
     src: "/gallery/26.webp",
     thumbnail: "/gallery/26.webp",
@@ -586,7 +594,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 73,
+    id: 75,
     type: "photo",
     src: "/gallery/27.webp",
     thumbnail: "/gallery/27.webp",
@@ -594,7 +602,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 74,
+    id: 76,
     type: "photo",
     src: "/gallery/28.webp",
     thumbnail: "/gallery/28.webp",
@@ -602,7 +610,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 75,
+    id: 77,
     type: "photo",
     src: "/gallery/29.webp",
     thumbnail: "/gallery/29.webp",
@@ -610,7 +618,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 76,
+    id: 78,
     type: "photo",
     src: "/gallery/30.webp",
     thumbnail: "/gallery/30.webp",
@@ -618,7 +626,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 77,
+    id: 79,
     type: "photo",
     src: "/gallery/31.webp",
     thumbnail: "/gallery/31.webp",
@@ -626,7 +634,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 78,
+    id: 80,
     type: "photo",
     src: "/gallery/32.webp",
     thumbnail: "/gallery/32.webp",
@@ -634,7 +642,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 79,
+    id: 81,
     type: "photo",
     src: "/gallery/33.webp",
     thumbnail: "/gallery/33.webp",
@@ -642,7 +650,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 80,
+    id: 82,
     type: "photo",
     src: "/gallery/34.webp",
     thumbnail: "/gallery/34.webp",
@@ -650,7 +658,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 81,
+    id: 83,
     type: "photo",
     src: "/gallery/35.webp",
     thumbnail: "/gallery/35.webp",
@@ -658,7 +666,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 82,
+    id: 84,
     type: "photo",
     src: "/gallery/36.webp",
     thumbnail: "/gallery/36.webp",
@@ -666,7 +674,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 83,
+    id: 85,
     type: "photo",
     src: "/gallery/37.webp",
     thumbnail: "/gallery/37.webp",
@@ -674,7 +682,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 84,
+    id: 86,
     type: "photo",
     src: "/gallery/38.webp",
     thumbnail: "/gallery/38.webp",
@@ -682,7 +690,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 85,
+    id: 87,
     type: "photo",
     src: "/gallery/39.webp",
     thumbnail: "/gallery/39.webp",
@@ -690,7 +698,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 86,
+    id: 88,
     type: "photo",
     src: "/gallery/40.webp",
     thumbnail: "/gallery/40.webp",
@@ -698,7 +706,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 87,
+    id: 89,
     type: "photo",
     src: "/gallery/41.webp",
     thumbnail: "/gallery/41.webp",
@@ -706,7 +714,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 88,
+    id: 90,
     type: "photo",
     src: "/gallery/42.webp",
     thumbnail: "/gallery/42.webp",
@@ -714,7 +722,7 @@ export const galleryItems: GalleryItem[] = [
     category: "Fotoğraf",
   },
   {
-    id: 89,
+    id: 91,
     type: "photo",
     src: "/gallery/43.webp",
     thumbnail: "/gallery/43.webp",

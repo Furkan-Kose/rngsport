@@ -286,7 +286,7 @@ const Packages = () => {
             <CategoryDivider />
 
             <div className="flex justify-center">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl w-full items-stretch">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full items-stretch">
                 {getPackagesByCategory("video").map((pkg, i) => (
                   <Reveal
                     key={pkg.id}
