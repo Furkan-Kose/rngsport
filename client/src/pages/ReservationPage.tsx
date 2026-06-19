@@ -245,10 +245,10 @@ const ReservationPage = () => {
       setSuccess(true);
       toast.success("Rezervasyon başarıyla oluşturuldu!");
 
-      // 5 saniye sonra ana sayfaya yönlendir
+      // 10 saniye sonra ana sayfaya yönlendir
       setTimeout(() => {
         navigate("/");
-      }, 5000);
+      }, 10000);
     } catch (err: any) {
       setError(err.response?.data?.message || "Bir hata oluştu");
       toast.error(err.response?.data?.message || "Bir hata oluştu");
@@ -313,8 +313,7 @@ const ReservationPage = () => {
             Rezervasyon Başarılı!
           </h2>
           <p className="text-zinc-400 mb-4">
-            Rezervasyonunuz alınmıştır. En kısa sürede sizinle iletişime
-            geçeceğiz.
+            Rezervasyonunuz alınmıştır. Satış masasına uğrayarak ödemenizi yapabilirsiniz.
           </p>
           <p className="text-sm text-zinc-500">
             Ana sayfaya yönlendiriliyorsunuz...
