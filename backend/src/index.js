@@ -1,3 +1,7 @@
+// .env yüklemesi bugüne kadar Prisma'nın yan etkisiydi; açıkça yapıyoruz.
+// Gerçek ortam değişkenlerini EZMEZ, dolayısıyla Railway'de etkisi yok.
+import "dotenv/config";
+
 import cors from "cors";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -12,6 +16,10 @@ import galleryRoutes from "./routes/gallery.route.js";
 import userRoutes from "./routes/user.route.js";
 import tournamentRoutes from "./routes/tournament.route.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { checkEnv } from "./utils/env.js";
+
+// Eksik yapılandırmayı açılışta, isim isim bildir (bkz. utils/env.js)
+checkEnv();
 
 const app = express();
 
