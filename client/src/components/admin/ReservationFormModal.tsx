@@ -64,6 +64,7 @@ const STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Bekliyor' },
   { value: 'CONFIRMED', label: 'Onaylandı' },
   { value: 'PAID', label: 'Ödendi' },
+  { value: 'DELIVERED', label: 'Teslim Edildi' },
   { value: 'CANCELLED', label: 'İptal' },
 ];
 

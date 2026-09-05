@@ -5,6 +5,12 @@ import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { parsePaginationQuery } from "../utils/pagination.js";
 import { normalizeApparatus } from "../utils/apparatuses.js";
 import { matchKey } from "../utils/names.js";
+import {
+  ROLES,
+  TRACK_CATEGORIES,
+  resolveTrack,
+  trackFields,
+} from "../utils/roles.js";
 
 const NOT_FOUND = { notFound: "Kayıt bulunamadı" };
 const VALID_ACTIONS = new Set(["start", "end", "reset"]);
@@ -42,7 +48,22 @@ const canonicalForHeader = (header) => {
   return null;
 };
 
-const formatEntry = (entry) => ({
+// Paket satırlarını ize göre süz: fotoğrafçı video paketini, videocu foto paketini görmez.
+// track === "all" (admin) → filtre yok.
+const mapItems = (items, track) => {
+  const allowed = TRACK_CATEGORIES[track];
+  return (items ?? [])
+    .filter((it) => !allowed || allowed.includes(it.category))
+    .map((it) => ({
+      packageName: it.packageName,
+      category: it.category,
+      seriesCount: it.seriesCount,
+      quantity: it.quantity,
+      apparatuses: it.apparatuses,
+    }));
+};
+
+const formatEntry = (entry, track = "all") => ({
   id: entry.id,
   position: entry.position,
   athleteName: entry.athleteName,
@@ -50,32 +71,22 @@ const formatEntry = (entry) => ({
   birthYear: entry.birthYear,
   category: entry.category,
   expectedTime: entry.expectedTime,
-  willBeShot: entry.willBeShot,
+  // Seçili ize göre çözülmüş bayrak — client'ta ekstra hesap gerekmez
+  willBeShot: entry[trackFields(track).willBeShot],
+  willBeShotPhoto: entry.willBeShotPhoto,
+  willBeShotVideo: entry.willBeShotVideo,
   orderId: entry.orderId,
   reservationId: entry.reservationId,
-  shootStartedAt: entry.shootStartedAt,
-  shootEndedAt: entry.shootEndedAt,
+  photoStartedAt: entry.photoStartedAt,
+  photoEndedAt: entry.photoEndedAt,
+  videoStartedAt: entry.videoStartedAt,
+  videoEndedAt: entry.videoEndedAt,
   createdAt: entry.createdAt,
   customerPhone:
     entry.order?.customerPhone || entry.reservation?.customerPhone || null,
   notes: entry.order?.notes || entry.reservation?.notes || null,
   status: entry.order?.status || entry.reservation?.status || null,
-  items:
-    entry.order?.items?.map((it) => ({
-      packageName: it.packageName,
-      category: it.category,
-      seriesCount: it.seriesCount,
-      quantity: it.quantity,
-      apparatuses: it.apparatuses,
-    })) ||
-    entry.reservation?.items?.map((it) => ({
-      packageName: it.packageName,
-      category: it.category,
-      seriesCount: it.seriesCount,
-      quantity: it.quantity,
-      apparatuses: it.apparatuses,
-    })) ||
-    [],
+  items: mapItems(entry.order?.items ?? entry.reservation?.items, track),
 });
 
 // Composite key: "nameKey::apparatusKey" (sporcu adı + alet slug)
@@ -84,11 +95,13 @@ const compositeKey = (nameKey, apparatusKey) => `${nameKey}::${apparatusKey}`;
 // Bir order/reservation listesinden composite key -> id haritası kur.
 // Her record'un items dizisindeki her item'ın apparatuses'ı üzerinden döngü;
 // her alet için ayrı bir map entry'si üretir.
-const buildApparatusMap = (records) => {
+// categories verilirse sadece o kategorideki paket satırları sayılır (iz bazlı eşleşme).
+const buildApparatusMap = (records, categories = null) => {
   const map = new Map();
   for (const r of records) {
     const nameKey = matchKey(r.athleteName);
     for (const item of r.items ?? []) {
+      if (categories && !categories.includes(item.category)) continue;
       for (const raw of item.apparatuses ?? []) {
         const appKey = normalizeApparatus(raw);
         if (appKey) map.set(compositeKey(nameKey, appKey), r.id);
@@ -98,43 +111,89 @@ const buildApparatusMap = (records) => {
   return map;
 };
 
-// Mevcut ödenmiş sipariş ve onaylı/ödenmiş rezervasyonlardan (ad+alet) → id haritası kur
+// Mevcut ödenmiş sipariş ve onaylı/ödenmiş rezervasyonlardan (ad+alet) → id haritası kur.
+// Tek sorgudan üç harita seti üretilir: hepsi / foto (photo+full) / video (video+full).
 const fetchMatchMaps = async () => {
   const [orders, reservations] = await Promise.all([
     prisma.order.findMany({
-      where: { status: "PAID" },
+      where: { status: { in: ["PAID", "DELIVERED"] } },
       select: {
         id: true,
         athleteName: true,
-        items: { select: { apparatuses: true } },
+        items: { select: { apparatuses: true, category: true } },
       },
     }),
     prisma.reservation.findMany({
-      where: { status: { in: ["PAID", "CONFIRMED"] } },
+      where: { status: { in: ["PAID", "CONFIRMED", "DELIVERED"] } },
       select: {
         id: true,
         athleteName: true,
-        items: { select: { apparatuses: true } },
+        items: { select: { apparatuses: true, category: true } },
       },
     }),
   ]);
+  const pair = (categories) => ({
+    orderMap: buildApparatusMap(orders, categories),
+    resMap: buildApparatusMap(reservations, categories),
+  });
   return {
-    orderMap: buildApparatusMap(orders),
-    resMap: buildApparatusMap(reservations),
+    all: pair(null),
+    photo: pair(TRACK_CATEGORIES.photo),
+    video: pair(TRACK_CATEGORIES.video),
   };
 };
 
-// Excel satırının (athleteName, category=alet) çiftine göre order/reservation eşleşmesi.
-// Alet boşsa veya tanınmıyorsa eşleşme olmaz.
-const computeMatch = (athleteName, category, orderMap, resMap) => {
-  const appKey = normalizeApparatus(category);
-  if (!appKey) {
-    return { orderId: null, reservationId: null, willBeShot: false };
-  }
-  const key = compositeKey(matchKey(athleteName), appKey);
+const matchIds = (nameKey, appKey, { orderMap, resMap }) => {
+  const key = compositeKey(nameKey, appKey);
   const orderId = orderMap.get(key) || null;
   const reservationId = orderId ? null : resMap.get(key) || null;
-  return { orderId, reservationId, willBeShot: Boolean(orderId || reservationId) };
+  return { orderId, reservationId };
+};
+
+const NO_MATCH = {
+  orderId: null,
+  reservationId: null,
+  willBeShot: false,
+  willBeShotPhoto: false,
+  willBeShotVideo: false,
+};
+
+// Excel satırının (athleteName, category=alet) çiftine göre order/reservation eşleşmesi
+// ve iz bayrakları. Alet boşsa veya tanınmıyorsa eşleşme olmaz.
+const computeMatch = (athleteName, category, maps) => {
+  const appKey = normalizeApparatus(category);
+  if (!appKey) return { ...NO_MATCH };
+  const nameKey = matchKey(athleteName);
+  const all = matchIds(nameKey, appKey, maps.all);
+  const photo = matchIds(nameKey, appKey, maps.photo);
+  const video = matchIds(nameKey, appKey, maps.video);
+  return {
+    ...all,
+    willBeShot: Boolean(all.orderId || all.reservationId),
+    willBeShotPhoto: Boolean(photo.orderId || photo.reservationId),
+    willBeShotVideo: Boolean(video.orderId || video.reservationId),
+  };
+};
+
+const MATCH_FIELDS = Object.keys(NO_MATCH);
+
+// Eşleşmeler yalnızca bir sipariş/rezervasyon değiştiğinde bayatlar. Veritabanı uzakta
+// (her sorgu ~100-400 ms) olduğu için her okumada yeniden hesaplamak pahalı — bayrakla gidiyoruz.
+// "shooting-list-refresh" (saat işlemleri) eşleşmeleri etkilemez, bu yüzden bayrağı kirletmez.
+let matchesDirty = true;
+bus.on("shooting-list-changed", () => {
+  matchesDirty = true;
+});
+
+const syncMatchesIfNeeded = async () => {
+  if (!matchesDirty) return;
+  matchesDirty = false;
+  try {
+    await syncShootingListMatches();
+  } catch (err) {
+    matchesDirty = true; // başarısızsa bir sonraki okumada tekrar denensin
+    throw err;
+  }
 };
 
 // Çekim listesini güncel sipariş/rezervasyonlara göre yeniden eşleştir
@@ -145,22 +204,20 @@ const syncShootingListMatches = async () => {
       athleteName: true,
       category: true,
       willBeShot: true,
+      willBeShotPhoto: true,
+      willBeShotVideo: true,
       orderId: true,
       reservationId: true,
     },
   });
   if (entries.length === 0) return;
 
-  const { orderMap, resMap } = await fetchMatchMaps();
+  const maps = await fetchMatchMaps();
 
   const updates = [];
   for (const entry of entries) {
-    const match = computeMatch(entry.athleteName, entry.category, orderMap, resMap);
-    if (
-      entry.orderId !== match.orderId ||
-      entry.reservationId !== match.reservationId ||
-      entry.willBeShot !== match.willBeShot
-    ) {
+    const match = computeMatch(entry.athleteName, entry.category, maps);
+    if (MATCH_FIELDS.some((field) => entry[field] !== match[field])) {
       updates.push(
         prisma.shootingListEntry.update({ where: { id: entry.id }, data: match }),
       );
@@ -172,13 +229,70 @@ const syncShootingListMatches = async () => {
   }
 };
 
-const buildOrderBy = (sortKey) => {
+const buildOrderBy = (sortKey, track = "all") => {
   if (sortKey === "name") return [{ athleteName: "asc" }];
   if (sortKey === "started")
-    return [{ shootStartedAt: { sort: "asc", nulls: "last" } }, { position: "asc" }];
+    return [
+      { [trackFields(track).startedAt]: { sort: "asc", nulls: "last" } },
+      { position: "asc" },
+    ];
   if (sortKey === "expected")
     return [{ expectedTime: { sort: "asc", nulls: "last" } }, { position: "asc" }];
   return [{ position: "asc" }];
+};
+
+// İstatistik için gereken en dar kolon seti — tek sorguda çekilip JS'te sayılır.
+// (Ayrı ayrı count atmak uzak veritabanında 5 gidiş-dönüş demekti, ~2,3 sn.)
+const STAT_SELECT = {
+  willBeShot: true,
+  willBeShotPhoto: true,
+  willBeShotVideo: true,
+  photoStartedAt: true,
+  photoEndedAt: true,
+  videoStartedAt: true,
+  videoEndedAt: true,
+};
+
+// Bir satırın seçili izdeki durumu. "all" iki izi birden kapsar: herhangi biri
+// açıksa satır "çekiliyor", değilse herhangi biri bitmişse "tamamlandı" sayılır.
+const trackProgress = (row, track) => {
+  const forTrack = (t) => {
+    const f = trackFields(t);
+    const started = row[f.startedAt] !== null;
+    const ended = row[f.endedAt] !== null;
+    return { recording: started && !ended, ended };
+  };
+  if (track !== "all") return forTrack(track);
+  const photo = forTrack("photo");
+  const video = forTrack("video");
+  return {
+    recording: photo.recording || video.recording,
+    ended: photo.ended || video.ended,
+  };
+};
+
+const buildStats = (rows, track) => {
+  const willBeShotField = trackFields(track).willBeShot;
+  let willBeShot = 0;
+  let inProgress = 0;
+  let done = 0;
+
+  for (const row of rows) {
+    if (row[willBeShotField]) willBeShot += 1;
+    const { recording, ended } = trackProgress(row, track);
+    if (recording) inProgress += 1;
+    else if (ended) done += 1;
+  }
+
+  const total = rows.length;
+  return {
+    total,
+    willBeShot,
+    willNotBeShot: total - willBeShot,
+    pending: total - inProgress - done,
+    inProgress,
+    done,
+  };
 };
 
 // Sekmeler için günleri ve her günün toplam kayıt sayısını döndür
@@ -198,9 +312,11 @@ const listDays = async () => {
 export const getShootingList = async (req, res) => {
   const { page, limit, skip, search } = parsePaginationQuery(req);
   const sortKey = VALID_SORTS.has(req.query.sort) ? req.query.sort : "position";
+  // Personelde iz rolden gelir (query yok sayılır); admin ?track= ile seçer, varsayılan "all"
+  const track = resolveTrack(req.user?.role, req.query.track);
 
-  // Her okumada güncel sipariş/rezervasyonlara göre eşleşmeleri tazele
-  await syncShootingListMatches();
+  // Sipariş/rezervasyon değiştiyse eşleşmeleri tazele (bkz. matchesDirty)
+  await syncMatchesIfNeeded();
 
   const days = await listDays();
 
@@ -214,6 +330,7 @@ export const getShootingList = async (req, res) => {
     return res.json({
       days,
       activeDayId: null,
+      track,
       data: [],
       pagination: { page: 1, limit, total: 0, totalPages: 1 },
       stats: { total: 0, willBeShot: 0, willNotBeShot: 0, pending: 0, inProgress: 0, done: 0 },
@@ -237,37 +354,26 @@ export const getShootingList = async (req, res) => {
     reservation: { select: { customerPhone: true, notes: true, status: true, items: true } },
   };
 
-  const [entries, total, willBeShotCount, inProgress, done] = await Promise.all([
+  // Sayfa satırları + istatistik satırları: 6 ayrı count yerine tek ek sorgu
+  const [entries, statRows] = await Promise.all([
     prisma.shootingListEntry.findMany({
       where,
       include,
-      orderBy: buildOrderBy(sortKey),
+      orderBy: buildOrderBy(sortKey, track),
       skip,
       take: limit,
     }),
-    prisma.shootingListEntry.count({ where }),
-    prisma.shootingListEntry.count({ where: { ...where, willBeShot: true } }),
-    prisma.shootingListEntry.count({
-      where: { ...where, shootStartedAt: { not: null }, shootEndedAt: null },
-    }),
-    prisma.shootingListEntry.count({
-      where: { ...where, shootEndedAt: { not: null } },
-    }),
+    prisma.shootingListEntry.findMany({ where, select: STAT_SELECT }),
   ]);
 
-  const stats = {
-    total,
-    willBeShot: willBeShotCount,
-    willNotBeShot: total - willBeShotCount,
-    pending: total - inProgress - done,
-    inProgress,
-    done,
-  };
+  const stats = buildStats(statRows, track);
+  const total = stats.total;
 
   res.json({
     days,
     activeDayId: activeDay.id,
-    data: entries.map(formatEntry),
+    track,
+    data: entries.map((entry) => formatEntry(entry, track)),
     pagination: {
       page,
       limit,
@@ -289,7 +395,11 @@ const safeSheetName = (label) =>
     .trim()
     .slice(0, 31) || "Liste";
 
-// Bir entry'yi (formatEntry çıktısı) Excel satırına (Türkçe başlıklı) dönüştür
+const excelTime = (value) =>
+  value ? new Date(value).toLocaleString("tr-TR") : "";
+
+// Bir entry'yi (formatEntry çıktısı) Excel satırına (Türkçe başlıklı) dönüştür.
+// Her iki iz de ayrı sütunlarda raporlanır.
 const toExcelRow = (e) => ({
   "Sıra": e.position,
   "Sporcu Adı": e.athleteName || "",
@@ -298,6 +408,12 @@ const toExcelRow = (e) => ({
   "Alet / Kategori": e.category || "",
   "Beklenen Saat": e.expectedTime || "",
   "Çekilecek mi": e.willBeShot ? "Evet" : "Hayır",
+  "Foto Çekilecek": e.willBeShotPhoto ? "Evet" : "Hayır",
+  "Video Çekilecek": e.willBeShotVideo ? "Evet" : "Hayır",
+  "Foto Başlangıç": excelTime(e.photoStartedAt),
+  "Foto Bitiş": excelTime(e.photoEndedAt),
+  "Video Başlangıç": excelTime(e.videoStartedAt),
+  "Video Bitiş": excelTime(e.videoEndedAt),
   "Telefon": e.customerPhone || "",
   "Paket / Seri": (e.items || [])
     .map((it) => `${it.packageName} (${it.seriesCount}×${it.quantity})`)
@@ -314,7 +430,7 @@ export const exportShootingList = async (req, res) => {
   if (!day) throw new AppError("Gün bulunamadı", 404);
 
   // İndirmeden önce eşleşmeleri güncelle (getShootingList ile aynı davranış)
-  await syncShootingListMatches();
+  await syncMatchesIfNeeded();
 
   const include = {
     order: { select: { customerPhone: true, notes: true, status: true, items: true } },
@@ -332,20 +448,7 @@ export const exportShootingList = async (req, res) => {
   const worksheet = XLSX.utils.json_to_sheet(rows);
 
   // Sütun genişliklerini içeriğe (başlık + en uzun hücre) göre ayarla
-  const headers = rows.length
-    ? Object.keys(rows[0])
-    : [
-        "Sıra",
-        "Sporcu Adı",
-        "Kulüp",
-        "Doğum Yılı",
-        "Alet / Kategori",
-        "Beklenen Saat",
-        "Çekilecek mi",
-        "Telefon",
-        "Paket / Seri",
-        "Not",
-      ];
+  const headers = rows.length ? Object.keys(rows[0]) : Object.keys(toExcelRow({}));
   worksheet["!cols"] = headers.map((header) => {
     const maxCell = rows.reduce(
       (max, row) => Math.max(max, String(row[header] ?? "").length),
@@ -370,52 +473,67 @@ export const exportShootingList = async (req, res) => {
   res.send(buffer);
 };
 
-const buildUpdateData = (body) => {
+// Zincir: yeni çekim başlarken aynı gün + aynı izdeki açık kayıt aynı anda kapanır.
+// Sahada ayrı bir "durdur" hamlesi yok — sıradaki sporcuya basmak öncekini bitirir.
+const closeOpenEntries = (tx, dayId, exceptId, track, now) => {
+  const fields = trackFields(track);
+  return tx.shootingListEntry.updateMany({
+    where: {
+      dayId,
+      id: { not: exceptId },
+      [fields.startedAt]: { not: null },
+      [fields.endedAt]: null,
+    },
+    data: { [fields.endedAt]: now },
+  });
+};
+
+// Saat alanları seçili izin kolonlarına yazılır; expectedTime sadece admin'e açık.
+// now dışarıdan gelir: önceki kaydın bitişi ile yeni kaydın başlangıcı aynı timestamp olsun.
+const buildUpdateData = (body, { isAdmin, track, now }) => {
   const { action, expectedTime, startedAt, endedAt } = body;
 
   if (action !== undefined && !VALID_ACTIONS.has(action)) {
     throw new AppError("Geçersiz işlem", 400);
   }
 
+  const fields = trackFields(track);
   const data = {};
 
   if (action === "start") {
-    data.shootStartedAt = new Date();
+    data[fields.startedAt] = now;
+    data[fields.endedAt] = null;
   } else if (action === "end") {
-    data.shootEndedAt = new Date();
+    data[fields.endedAt] = now;
   } else if (action === "reset") {
-    data.shootStartedAt = null;
-    data.shootEndedAt = null;
+    data[fields.startedAt] = null;
+    data[fields.endedAt] = null;
   }
 
   if (expectedTime !== undefined) {
+    if (!isAdmin) {
+      throw new AppError("Beklenen saati sadece yönetici değiştirebilir", 403);
+    }
     data.expectedTime = expectedTime
       ? String(expectedTime).trim().slice(0, 50)
       : null;
   }
 
-  if (startedAt !== undefined) {
-    if (startedAt === null || startedAt === "") {
-      data.shootStartedAt = null;
-    } else {
-      const date = new Date(startedAt);
-      if (Number.isNaN(date.getTime())) {
-        throw new AppError("Geçersiz başlangıç saati", 400);
-      }
-      data.shootStartedAt = date;
+  const parseTime = (value, label) => {
+    if (value === null || value === "") return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new AppError(`Geçersiz ${label} saati`, 400);
     }
+    return date;
+  };
+
+  if (startedAt !== undefined) {
+    data[fields.startedAt] = parseTime(startedAt, "başlangıç");
   }
 
   if (endedAt !== undefined) {
-    if (endedAt === null || endedAt === "") {
-      data.shootEndedAt = null;
-    } else {
-      const date = new Date(endedAt);
-      if (Number.isNaN(date.getTime())) {
-        throw new AppError("Geçersiz bitiş saati", 400);
-      }
-      data.shootEndedAt = date;
-    }
+    data[fields.endedAt] = parseTime(endedAt, "bitiş");
   }
 
   if (Object.keys(data).length === 0) {
@@ -427,18 +545,38 @@ const buildUpdateData = (body) => {
 
 export const updateShootingEntry = async (req, res) => {
   const { id } = req.params;
-  const data = buildUpdateData(req.body);
+  const isAdmin = req.user?.role === ROLES.ADMIN;
+  // Personelde iz rolden zorlanır; admin gövdede foto/video belirtmek zorunda
+  const track = resolveTrack(req.user?.role, req.body?.track);
+  if (track === "all") {
+    throw new AppError("Güncelleme için iz (foto/video) belirtilmeli", 400);
+  }
+  const now = new Date();
+  const data = buildUpdateData(req.body, { isAdmin, track, now });
 
   const include = {
     order: { select: { customerPhone: true, notes: true, status: true, items: true } },
     reservation: { select: { customerPhone: true, notes: true, status: true, items: true } },
   };
 
-  const record = await prisma.shootingListEntry
-    .update({ where: { id }, data, include })
+  // "start" iki satırı birden değiştirir (öncekini kapatır) → tek transaction.
+  // dayId'yi ayrıca okumuyoruz: güncellenen kayıttan geliyor, böylece bir tur daha az.
+  const record = await prisma
+    .$transaction(async (tx) => {
+      const updated = await tx.shootingListEntry.update({ where: { id }, data, include });
+      if (req.body?.action === "start") {
+        await closeOpenEntries(tx, updated.dayId, id, track, now);
+      }
+      return updated;
+    })
     .catch(rethrowPrismaError(NOT_FOUND));
 
-  res.json({ message: "Güncellendi", entry: formatEntry(record) });
+  // Zincir başka satırı da değiştirmiş olabilir → açık ekranlar SSE ile tazelensin.
+  // Eşleşmeleri etkilemediği için "changed" değil "refresh" yayınlıyoruz (matchesDirty kirlenmesin).
+  // clientId: işlemi yapan istemci kendi yankısını yok sayabilsin diye.
+  bus.emit("shooting-list-refresh", req.body?.clientId ?? "");
+
+  res.json({ message: "Güncellendi", entry: formatEntry(record, track) });
 };
 
 const parseExcelBuffer = (buffer) => {
@@ -497,11 +635,11 @@ export const uploadShootingList = async (req, res) => {
     throw new AppError("Excel'de geçerli sporcu satırı bulunamadı", 400);
   }
 
-  const { orderMap, resMap } = await fetchMatchMaps();
+  const maps = await fetchMatchMaps();
 
   const unmatched = [];
   const entries = parsed.map((row) => {
-    const match = computeMatch(row.athleteName, row.category, orderMap, resMap);
+    const match = computeMatch(row.athleteName, row.category, maps);
     if (!match.willBeShot) unmatched.push({ name: row.athleteName, club: row.clubName });
     return { ...row, ...match };
   });
@@ -565,11 +703,13 @@ export const streamShootingList = (req, res) => {
   // İlk handshake mesajı — istemci bağlantının kurulduğunu bilir
   res.write(`event: ready\ndata: ${Date.now()}\n\n`);
 
-  const onChange = () => {
-    res.write(`event: refresh\ndata: ${Date.now()}\n\n`);
+  // data = değişikliği tetikleyen istemcinin id'si (varsa); istemci kendi yankısını atlar
+  const onChange = (originId = "") => {
+    res.write(`event: refresh\ndata: ${originId}\n\n`);
   };
 
   bus.on("shooting-list-changed", onChange);
+  bus.on("shooting-list-refresh", onChange);
 
   // Proxy idle timeout'larına karşı periyodik keepalive
   const ping = setInterval(() => {
@@ -579,5 +719,6 @@ export const streamShootingList = (req, res) => {
   req.on("close", () => {
     clearInterval(ping);
     bus.off("shooting-list-changed", onChange);
+    bus.off("shooting-list-refresh", onChange);
   });
 };

@@ -8,27 +8,30 @@ datasource db {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  athleteName   String
-  clubName      String
-  birthYear     String
-  customerPhone String
-  customerEmail String?
-  notes         String?
-  totalPrice    Float
-  status        OrderStatus @default(PENDING)
-  paymentId     String?
+  id             String      @id @default(cuid())
+  athleteName    String
+  clubName       String
+  birthYear      String
+  customerPhone  String
+  customerEmail  String?
+  notes          String?
+  totalPrice     Float
+  status         OrderStatus @default(PENDING)
+  paymentId      String?
   conversationId String?
   // Çekim listesi alanları
-  expectedTime   String?    // Excel'den gelecek beklenen çıkış saati ("14:23" gibi)
-  shootStartedAt DateTime?  // Çekimin gerçek başlangıç saati
-  shootEndedAt   DateTime?  // Çekimin gerçek bitiş saati
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  expectedTime   String? // Excel'den gelecek beklenen çıkış saati ("14:23" gibi)
+  shootStartedAt DateTime? // Çekimin gerçek başlangıç saati
+  shootEndedAt   DateTime? // Çekimin gerçek bitiş saati
+  userId         String? // Girişli kullanıcı sipariş verdiyse bağlanır
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  items OrderItem[]
+  user                User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items               OrderItem[]
   shootingListEntries ShootingListEntry[]
 
+  @@index([userId])
   @@map("orders")
 }
 
@@ -53,61 +56,94 @@ enum OrderStatus {
   PAID
   FAILED
   CANCELLED
+  DELIVERED
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String    @id @default(cuid())
+  username             String?   @unique // Admin girişi için (müşterilerde null)
+  email                String?   @unique // Müşteri girişi için (lowercase saklanır)
+  password             String
+  name                 String?
+  phone                String?
+  role                 String    @default("customer")
+  // E-posta doğrulama + şifre sıfırlama (token'lar sha256 hash olarak saklanır)
+  emailVerifiedAt      DateTime?
+  verifyTokenHash      String?
+  verifyTokenExpiresAt DateTime?
+  resetTokenHash       String?
+  resetTokenExpiresAt  DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  photos       GalleryPhoto[]
+  orders       Order[]
+  reservations Reservation[]
 
   @@map("users")
 }
 
-model Package {
+model GalleryPhoto {
   id          String   @id @default(cuid())
-  slug        String   @unique // photo-basic, video-full gibi
-  name        String
-  category    String   // photo, video, full
-  price       Float
-  image       String
-  features    String[] // PostgreSQL array
-  discount2   Float    // 2 seri indirimi
-  discount3   Float    // 3 seri indirimi
-  // Rezervasyon fiyatları (elden nakit için)
-  reservationPrice     Float?   // Rezervasyon baz fiyatı (null ise price kullanılır)
-  reservationDiscount2 Float?   // 2 seri rezervasyon fiyatı
-  reservationDiscount3 Float?   // 3 seri rezervasyon fiyatı
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  userId      String
+  r2Key       String   @unique // R2 object key: users/{userId}/{uuid}.{ext}
+  fileName    String // Orijinal dosya adı (indirme için)
+  album       String? // Opsiyonel çekim/albüm etiketi
+  size        Int?
+  contentType String?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("gallery_photos")
+}
+
+model Package {
+  id                   String   @id @default(cuid())
+  slug                 String   @unique // photo-basic, video-full gibi
+  name                 String
+  category             String // photo, video, full
+  price                Float
+  image                String
+  features             String[] // PostgreSQL array
+  discount2            Float // 2 seri indirimi
+  discount3            Float // 3 seri indirimi
+  // Rezervasyon fiyatları (elden nakit için)
+  reservationPrice     Float? // Rezervasyon baz fiyatı (null ise price kullanılır)
+  reservationDiscount2 Float? // 2 seri rezervasyon fiyatı
+  reservationDiscount3 Float? // 3 seri rezervasyon fiyatı
+  isActive             Boolean  @default(true)
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@map("packages")
 }
 
 model Reservation {
-  id            String            @id @default(cuid())
-  athleteName   String
-  clubName      String
-  birthYear     String
-  customerPhone String
-  customerEmail String
-  notes         String?
-  totalPrice    Float
-  status        ReservationStatus @default(PENDING)
+  id             String            @id @default(cuid())
+  athleteName    String
+  clubName       String
+  birthYear      String
+  customerPhone  String
+  customerEmail  String
+  notes          String?
+  totalPrice     Float
+  status         ReservationStatus @default(PENDING)
   // Çekim listesi alanları
   expectedTime   String?
   shootStartedAt DateTime?
   shootEndedAt   DateTime?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  userId         String? // Girişli kullanıcı rezervasyon yaptıysa bağlanır
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  items ReservationItem[]
+  user                User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items               ReservationItem[]
   shootingListEntries ShootingListEntry[]
 
+  @@index([userId])
   @@map("reservations")
 }
 
@@ -132,6 +168,22 @@ enum ReservationStatus {
   CONFIRMED
   PAID
   CANCELLED
+  DELIVERED
+}
+
+model Tournament {
+  id        String   @id @default(cuid())
+  name      String
+  date      String // Serbest metin: "18-21 Haziran 2026" (aralıklar için tarih tipi uygun değil)
+  location  String
+  flag      String? // /flags/tr.svg gibi public yolu (null = bayrak gösterilmez)
+  flagAlt   String?
+  status    String   @default("upcoming") // finished | ongoing | upcoming
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tournaments")
 }
 
 model ShootingDay {
@@ -147,21 +199,27 @@ model ShootingDay {
 }
 
 model ShootingListEntry {
-  id             String    @id @default(cuid())
-  dayId          String
-  position       Int
-  athleteName    String
-  clubName       String?
-  birthYear      String?
-  category       String?
-  expectedTime   String?
-  willBeShot     Boolean   @default(false)
-  orderId        String?
-  reservationId  String?
-  shootStartedAt DateTime?
-  shootEndedAt   DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  dayId           String
+  position        Int
+  athleteName     String
+  clubName        String?
+  birthYear       String?
+  category        String?
+  expectedTime    String?
+  // Eşleşme bayrakları: willBeShot = herhangi bir paket; diğerleri iz (track) bazlı
+  willBeShot      Boolean   @default(false)
+  willBeShotPhoto Boolean   @default(false) // photo + full paketler
+  willBeShotVideo Boolean   @default(false) // video + full paketler
+  orderId         String?
+  reservationId   String?
+  // Foto ve video ekibi ayrı saat tutar; @map ile eski kolon adları korunur (veri kaybı yok)
+  photoStartedAt  DateTime? @map("shootStartedAt")
+  photoEndedAt    DateTime? @map("shootEndedAt")
+  videoStartedAt  DateTime?
+  videoEndedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   day         ShootingDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
   order       Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)

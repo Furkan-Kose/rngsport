@@ -8,8 +8,21 @@ import {
   updateShootingEntry,
   uploadShootingList,
 } from "../controllers/shootingList.controller.js";
+import {
+  authMiddleware,
+  requireAdmin,
+  requireRoles,
+} from "../middleware/authMiddleware.js";
+import { SHOOTING_LIST_ROLES } from "../utils/roles.js";
 
 const router = express.Router();
+
+// Giriş her endpoint için zorunlu; yetki route bazında (SSE /stream dahil —
+// client EventSource withCredentials kullandığı için cookie auth yeterli)
+router.use(authMiddleware);
+
+// Okuma + kendi çekim saatini işaretleme: admin, fotografci, videocu
+const canViewList = requireRoles(...SHOOTING_LIST_ROLES);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -27,11 +40,13 @@ const upload = multer({
   },
 });
 
-router.get("/stream", streamShootingList);
-router.get("/export", exportShootingList);
-router.get("/", getShootingList);
-router.post("/upload", upload.single("file"), uploadShootingList);
-router.delete("/", clearShootingList);
-router.patch("/:id", updateShootingEntry);
+router.get("/stream", canViewList, streamShootingList);
+router.get("/", canViewList, getShootingList);
+router.patch("/:id", canViewList, updateShootingEntry);
+
+// Liste yönetimi sadece admin'de
+router.get("/export", requireAdmin, exportShootingList);
+router.post("/upload", requireAdmin, upload.single("file"), uploadShootingList);
+router.delete("/", requireAdmin, clearShootingList);
 
 export default router;

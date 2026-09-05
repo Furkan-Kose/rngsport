@@ -136,6 +136,46 @@ async function main() {
   });
   console.log("  ✓ Admin user created");
 
+  // Turnuvalar (sadece tablo boşsa — tekrar seed'de duplike olmasın)
+  console.log("\nSeeding tournaments...");
+  const tournamentCount = await prisma.tournament.count();
+  if (tournamentCount === 0) {
+    await prisma.tournament.createMany({
+      data: [
+        {
+          name: "International Ritmika Cup 2026",
+          date: "27-28 Şubat - 1-2 Mart 2026",
+          location: "İstanbul, Türkiye",
+          flag: "/flags/tr.svg",
+          flagAlt: "Türkiye",
+          status: "finished",
+          sortOrder: 10,
+        },
+        {
+          name: "IV. International Golden Ribbon Cup 2026",
+          date: "18-21 Haziran 2026",
+          location: "Lefkoşa, KKTC",
+          flag: "/flags/kktc.svg",
+          flagAlt: "KKTC",
+          status: "ongoing",
+          sortOrder: 20,
+        },
+        {
+          name: "International Baby Games 2026",
+          date: "22-25 Ekim 2026",
+          location: "İstanbul, Türkiye",
+          flag: "/flags/tr.svg",
+          flagAlt: "Türkiye",
+          status: "upcoming",
+          sortOrder: 30,
+        },
+      ],
+    });
+    console.log("  ✓ 3 tournaments created");
+  } else {
+    console.log(`  ✓ Skipped (${tournamentCount} tournaments already exist)`);
+  }
+
   console.log("\nSeeding completed!");
 }
 

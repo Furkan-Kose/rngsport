@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Outlet, NavLink, Link, useNavigate, useLocation } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { ROLES, SHOOTING_LIST_ROLES, roleLabel } from "../lib/roles";
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
@@ -26,10 +27,12 @@ const AdminLayout = () => {
     navigate('/admin/login');
   };
 
-  const navItems = [
+  // roles: menüyü hangi rollerin göreceği. Personel sadece Çekim Listesi'ni görür.
+  const allNavItems = [
     {
       name: 'Dashboard',
       path: '/admin',
+      roles: [ROLES.ADMIN],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -39,6 +42,7 @@ const AdminLayout = () => {
     {
       name: 'Siparişler',
       path: '/admin/orders',
+      roles: [ROLES.ADMIN],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -48,6 +52,7 @@ const AdminLayout = () => {
     {
       name: 'Rezervasyonlar',
       path: '/admin/reservations',
+      roles: [ROLES.ADMIN],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -57,6 +62,7 @@ const AdminLayout = () => {
     {
       name: 'Çekim Listesi',
       path: '/admin/shooting-list',
+      roles: SHOOTING_LIST_ROLES,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -67,13 +73,38 @@ const AdminLayout = () => {
     {
       name: 'Paketler',
       path: '/admin/packages',
+      roles: [ROLES.ADMIN],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
       ),
     },
+    {
+      name: 'Turnuvalar',
+      path: '/admin/tournaments',
+      roles: [ROLES.ADMIN],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21h8m-4-4v4m-5.5-15h11M6.5 6v4a5.5 5.5 0 1011 0V6m-13 1h2v3a3 3 0 01-3-3 1 1 0 011-1zm15 0h-2v3a3 3 0 003-3 1 1 0 00-1-1z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Kullanıcılar',
+      path: '/admin/users',
+      roles: [ROLES.ADMIN],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6-4a3 3 0 11-3-3" />
+        </svg>
+      ),
+    },
   ];
+
+  const navItems = allNavItems.filter((item) =>
+    item.roles.includes(user?.role ?? ''),
+  );
 
   return (
     <div className="min-h-screen bg-gray-900 lg:flex">
@@ -187,8 +218,8 @@ const AdminLayout = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">{user?.username}</p>
-              <p className="text-gray-400 text-xs capitalize">{user?.role}</p>
+              <p className="text-white text-sm font-medium truncate">{user?.name || user?.username}</p>
+              <p className="text-gray-400 text-xs">{roleLabel(user?.role)}</p>
             </div>
             <button
               onClick={handleLogout}

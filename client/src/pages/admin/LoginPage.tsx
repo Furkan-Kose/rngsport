@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
+import { ROLES, STAFF_ROLES } from '../../lib/roles';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -18,10 +19,21 @@ const LoginPage = () => {
 
     const result = await login(username, password);
 
-    if (result.success) {
-      navigate('/admin');
-    } else {
+    if (!result.success) {
       setError(result.message || 'Giriş başarısız');
+      setIsLoading(false);
+      return;
+    }
+
+    // Personel panelin geri kalanını göremez → doğrudan çekim listesine,
+    // müşteri hesabı ise buraya hiç girmemeli.
+    const role = result.user?.role;
+    if (role === ROLES.ADMIN) {
+      navigate('/admin');
+    } else if (role && STAFF_ROLES.includes(role)) {
+      navigate('/admin/shooting-list');
+    } else {
+      setError('Bu panele erişim yetkiniz yok');
     }
 
     setIsLoading(false);

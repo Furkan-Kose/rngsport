@@ -10,8 +10,9 @@ import {
   parsePaginationQuery,
   buildCustomerSearchWhere,
 } from "../utils/pagination.js";
+import { sendDeliveryEmail } from "../lib/mail.js";
 
-const VALID_ORDER_STATUSES = ["PENDING", "PAID", "FAILED", "CANCELLED"];
+const VALID_ORDER_STATUSES = ["PENDING", "PAID", "FAILED", "CANCELLED", "DELIVERED"];
 
 const formatOrderForResponse = (order) => ({
   id: order.id,
@@ -53,6 +54,7 @@ export const createOrder = async (req, res) => {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
       totalPrice,
+      ...(req.user?.id && { userId: req.user.id }), // optionalAuth: girişliyse hesaba bağla
       items: { create: items },
     },
     include: { items: true },
@@ -101,6 +103,17 @@ export const getAllOrders = async (req, res) => {
   });
 };
 
+// Girişli kullanıcının kendi siparişleri
+export const getMyOrders = async (req, res) => {
+  const orders = await prisma.order.findMany({
+    where: { userId: req.user.id },
+    include: { items: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json({ data: orders.map(formatOrderForResponse) });
+};
+
 export const getOrder = async (req, res) => {
   const order = await prisma.order.findUnique({
     where: { id: req.params.id },
@@ -124,6 +137,15 @@ export const updateOrder = async (req, res) => {
     throw new AppError("Geçersiz ödeme ID", 400);
   }
 
+  // Teslimat maili için önceki durumu bilmemiz gerekiyor
+  const existing = await prisma.order.findUnique({
+    where: { id: req.params.id },
+    select: { status: true },
+  });
+  if (!existing) {
+    throw new AppError("Sipariş bulunamadı", 404);
+  }
+
   const order = await prisma.order
     .update({
       where: { id: req.params.id },
@@ -136,6 +158,11 @@ export const updateOrder = async (req, res) => {
     .catch(rethrowPrismaError({ notFound: "Sipariş bulunamadı" }));
 
   if (status) bus.emit("shooting-list-changed");
+
+  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget)
+  if (status === "DELIVERED" && existing.status !== "DELIVERED" && order.customerEmail) {
+    sendDeliveryEmail(order.customerEmail, order.athleteName);
+  }
 
   res.json({ message: "Sipariş güncellendi", order });
 };
@@ -154,7 +181,7 @@ export const deleteOrder = async (req, res) => {
 export const getOrderStats = async (req, res) => {
   const [total, paid, pending, failed, recentOrders, revenue] = await Promise.all([
     prisma.order.count(),
-    prisma.order.count({ where: { status: "PAID" } }),
+    prisma.order.count({ where: { status: { in: ["PAID", "DELIVERED"] } } }),
     prisma.order.count({ where: { status: "PENDING" } }),
     prisma.order.count({ where: { status: "FAILED" } }),
     prisma.order.findMany({
@@ -170,7 +197,7 @@ export const getOrderStats = async (req, res) => {
       },
     }),
     prisma.order.aggregate({
-      where: { status: "PAID" },
+      where: { status: { in: ["PAID", "DELIVERED"] } },
       _sum: { totalPrice: true },
     }),
   ]);

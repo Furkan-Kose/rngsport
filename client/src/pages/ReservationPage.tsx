@@ -18,6 +18,7 @@ import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import api from "../lib/api";
 import { toast } from "react-toastify";
+import { useAuth } from "../context/AuthContext";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { APPARATUSES } from "../constants/apparatuses";
@@ -53,6 +54,7 @@ interface SelectedPackage {
 
 const ReservationPage = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
 
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>(
@@ -73,6 +75,16 @@ const ReservationPage = () => {
   });
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
+  // Girişli kullanıcının profilinden boş alanları ön-doldur (yazılmış değeri ezme)
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      customerEmail: prev.customerEmail || user.email || "",
+      customerPhone: prev.customerPhone || user.phone || "",
+    }));
+  }, [user]);
 
   const toggleApparatusOnRow = (rowId: string, slug: string) => {
     setSelectedPackages((prev) =>
@@ -690,6 +702,24 @@ const ReservationPage = () => {
                 günü alandaki standımızda gerçekleştirin."
               </p>
             </div>
+
+            {/* Hesap bağlama bilgisi */}
+            {isAuthenticated ? (
+              <div className="mb-4 flex items-start gap-2 text-sm text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
+                <Check className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>Fotoğraflarınız çekim sonrası hesabınıza tanımlanacaktır.</span>
+              </div>
+            ) : (
+              <div className="mb-4 text-sm text-zinc-500 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
+                <Link
+                  to="/giris?redirect=/rezervasyon"
+                  className="text-emerald-400 hover:text-emerald-300 underline"
+                >
+                  Giriş yaparsanız
+                </Link>{" "}
+                fotoğraflarınız çekim sonrası hesabınıza otomatik tanımlanır.
+              </div>
+            )}
 
             {/* KVKK Onay */}
             <div className="mb-4">

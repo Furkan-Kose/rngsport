@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   MapPin,
   Calendar,
@@ -8,44 +9,19 @@ import {
 } from "lucide-react";
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
+import api from "../lib/api";
 
 type TournamentStatus = "finished" | "ongoing" | "upcoming";
 
 interface Tournament {
+  id: string;
   name: string;
   date: string;
   location: string;
-  flag: string; // /flags/*.svg yolu
-  flagAlt: string;
+  flag: string | null; // /flags/*.svg yolu (null = bayrak gösterilmez)
+  flagAlt: string | null;
   status: TournamentStatus;
 }
-
-const tournaments: Tournament[] = [
-  {
-    name: "International Ritmika Cup 2026",
-    date: "27-28 Şubat - 1-2 Mart 2026",
-    location: "İstanbul, Türkiye",
-    flag: "/flags/tr.svg",
-    flagAlt: "Türkiye",
-    status: "finished",
-  },
-  {
-    name: "IV. International Golden Ribbon Cup 2026",
-    date: "18-21 Haziran 2026",
-    location: "Lefkoşa, KKTC",
-    flag: "/flags/kktc.svg",
-    flagAlt: "KKTC",
-    status: "ongoing",
-  },
-  {
-    name: "International Baby Games 2026",
-    date: "22-25 Ekim 2026",
-    location: "İstanbul, Türkiye",
-    flag: "/flags/tr.svg",
-    flagAlt: "Türkiye",
-    status: "upcoming",
-  },
-];
 
 const StatusBadge = ({ status }: { status: TournamentStatus }) => {
   if (status === "ongoing") {
@@ -78,6 +54,23 @@ const StatusBadge = ({ status }: { status: TournamentStatus }) => {
 };
 
 const Tournaments = () => {
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const { data } = await api.get("/api/tournaments");
+        setTournaments(data);
+      } catch (error) {
+        console.error("Turnuvalar yüklenemedi:", error);
+      }
+    };
+    fetchTournaments();
+  }, []);
+
+  // Yüklenene kadar / hiç turnuva yoksa bölümü tamamen gizle
+  if (tournaments.length === 0) return null;
+
   return (
     <section id="tournament" className="relative py-24 bg-zinc-950">
       <div className="container mx-auto px-4">
@@ -93,7 +86,7 @@ const Tournaments = () => {
           {tournaments.map((tournament, index) => {
             const isActive = tournament.status === "ongoing";
             return (
-            <Reveal key={index} delay={index * 0.1}>
+            <Reveal key={tournament.id} delay={index * 0.1}>
               <div
                 className={`group relative rounded-2xl p-px bg-linear-to-r transition-all duration-500 ${
                   isActive
@@ -117,11 +110,13 @@ const Tournaments = () => {
 
                   <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-start gap-3 md:gap-4">
-                      <img
-                        src={tournament.flag}
-                        alt={tournament.flagAlt}
-                        className="w-9 h-6 md:w-10 md:h-7 rounded-[3px] object-cover shadow-md ring-1 ring-white/15 shrink-0 mt-1"
-                      />
+                      {tournament.flag && (
+                        <img
+                          src={tournament.flag}
+                          alt={tournament.flagAlt || tournament.location}
+                          className="w-9 h-6 md:w-10 md:h-7 rounded-[3px] object-cover shadow-md ring-1 ring-white/15 shrink-0 mt-1"
+                        />
+                      )}
                       <div className="min-w-0">
                         <div className="flex flex-col-reverse items-start gap-1.5 mb-2 md:flex-row md:items-center md:gap-2">
                           <h3

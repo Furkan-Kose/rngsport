@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Camera,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Download,
   Loader2,
+  Pencil,
+  Play,
   Plus,
   RefreshCw,
   Search,
@@ -14,6 +17,10 @@ import { toast } from 'react-toastify';
 import api, { API_URL } from '../../lib/api';
 import { getApparatusLabel } from '../../constants/apparatuses';
 import UploadDayModal from '../../components/admin/UploadDayModal';
+import ShootingTimeEditModal from '../../components/admin/ShootingTimeEditModal';
+import { useAuth } from '../../context/AuthContext';
+import { TRACK_LABELS, type Track } from '../../lib/roles';
+import { trackTimes, type ShootTrack } from '../../lib/shooting';
 
 interface ShootingItem {
   packageName: string;
@@ -31,11 +38,16 @@ interface ShootingEntry {
   birthYear: string | null;
   category: string | null;
   expectedTime: string | null;
+  /** Seçili ize göre backend'de çözülür */
   willBeShot: boolean;
+  willBeShotPhoto: boolean;
+  willBeShotVideo: boolean;
   orderId: string | null;
   reservationId: string | null;
-  shootStartedAt: string | null;
-  shootEndedAt: string | null;
+  photoStartedAt: string | null;
+  photoEndedAt: string | null;
+  videoStartedAt: string | null;
+  videoEndedAt: string | null;
   createdAt: string;
   customerPhone: string | null;
   notes: string | null;
@@ -81,7 +93,106 @@ const statusBadge = (willBeShot: boolean) =>
     </span>
   );
 
+// "14:23:07" — çekimler 1-2 dakika sürdüğü için saniye de gerekli
+const clock = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleTimeString('tr-TR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    : null;
+
+interface TrackTimerProps {
+  entry: ShootingEntry;
+  track: ShootTrack;
+  /** Admin "Tümü" görünümünde iki iz alt alta — hangisi olduğu etiketlensin */
+  showLabel: boolean;
+  busy: boolean;
+  onAction: (entry: ShootingEntry, track: ShootTrack, action: 'start' | 'end') => void;
+  onEdit: (entry: ShootingEntry) => void;
+}
+
+// Bir izin açık (başlamış ama bitmemiş) olup olmadığı
+const isTrackRecording = (entry: ShootingEntry, track: ShootTrack) => {
+  const { startedAt, endedAt } = trackTimes(entry, track);
+  return !!startedAt && !endedAt;
+};
+
+// Bir satırın tek bir izi. Zincirleme akış: "Başlat" → sıradakine basınca kendiliğinden kapanır.
+// Ayrı bir durdur butonu yok; son kaydı kapatmak için yeşil rozete tıklanır.
+const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit }: TrackTimerProps) => {
+  const { startedAt, endedAt } = trackTimes(entry, track);
+  const started = clock(startedAt);
+  const ended = clock(endedAt);
+
+  return (
+    <div className="flex items-center gap-2">
+      {showLabel && (
+        <span className="w-6 shrink-0 text-[10px] font-semibold uppercase text-gray-500">
+          {track === 'photo' ? 'Fo' : 'Vi'}
+        </span>
+      )}
+      {!started ? (
+        <button
+          type="button"
+          onClick={() => onAction(entry, track, 'start')}
+          disabled={busy}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 transition-colors disabled:opacity-50"
+        >
+          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+          Başlat
+        </button>
+      ) : !ended ? (
+        <button
+          type="button"
+          onClick={() => onAction(entry, track, 'end')}
+          disabled={busy}
+          title="Çekimi bitir (sıradaki sporcuya basınca da kapanır)"
+          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm shadow-emerald-500/30 transition-colors disabled:opacity-50"
+        >
+          {busy ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          )}
+          ÇEKİLİYOR · {started}
+        </button>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-gray-700/50 border border-gray-600 text-gray-300">
+          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+          {started} – {ended}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={() => onEdit(entry)}
+        title="Saatleri düzenle"
+        className="p-1 text-gray-500 hover:text-white transition-colors"
+      >
+        <Pencil className="w-3 h-3" />
+      </button>
+    </div>
+  );
+};
+
 const ShootingListPage = () => {
+  const { isAdmin, track: staffTrack } = useAuth();
+  // Personelde iz role sabit; admin seçebiliyor ("Tümü" = bugüne kadarki görünüm)
+  const [selectedTrack, setSelectedTrack] = useState<Track>(staffTrack ?? 'all');
+  const track: Track = staffTrack ?? selectedTrack;
+  const visibleTracks: ShootTrack[] =
+    track === 'all' ? ['photo', 'video'] : [track];
+  // Bu sekmenin kimliği — kendi tetiklediği SSE yankısını yok saymak için
+  const clientIdRef = useRef(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : String(Math.random()),
+  );
+  // Uçuşta kaç saat işlemi var — arka plan tazelemesini sadece sonuncusu tetiklesin
+  const pendingActionsRef = useRef(0);
+  const [timerBusyKey, setTimerBusyKey] = useState<string | null>(null);
+  const [editEntry, setEditEntry] = useState<ShootingEntry | null>(null);
   const [entries, setEntries] = useState<ShootingEntry[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -99,6 +210,9 @@ const ShootingListPage = () => {
   });
   const [days, setDays] = useState<Day[]>([]);
   const [activeDayId, setActiveDayId] = useState<string | null>(null);
+  // fetchList içinde state yerine bu okunur — bkz. fetchList'teki not
+  const activeDayRef = useRef(activeDayId);
+  activeDayRef.current = activeDayId;
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,12 +231,16 @@ const ShootingListPage = () => {
     ) => {
       if (!silent) setIsLoading(true);
       try {
+        // activeDayId bağımlılık listesinde OLMAMALI: ilk yüklemede backend'den
+        // gelen günü set etmek fetchList'i yeniden yaratıp ikinci bir istek atıyordu.
         const effectiveDay =
-          dayIdOverride !== undefined ? dayIdOverride : activeDayId;
+          dayIdOverride !== undefined ? dayIdOverride : activeDayRef.current;
         const params = new URLSearchParams({
           page: page.toString(),
           limit: ITEMS_PER_PAGE.toString(),
           sort: sortKey,
+          // Personelde backend rolü baz alır; parametre admin için anlamlı
+          track,
         });
         if (searchQuery) params.append('search', searchQuery);
         if (effectiveDay) params.append('dayId', effectiveDay);
@@ -134,34 +252,42 @@ const ShootingListPage = () => {
         setDays(data.days ?? []);
         // Backend'in döndürdüğü aktif günü senkronla (ilk yükleme / silme sonrası)
         const nextActive = data.activeDayId ?? null;
-        if (nextActive !== activeDayId) setActiveDayId(nextActive);
+        if (nextActive !== activeDayRef.current) setActiveDayId(nextActive);
       } catch (error) {
         if (!silent) console.error('Çekim listesi alınamadı:', error);
       } finally {
         if (!silent) setIsLoading(false);
       }
     },
-    [searchQuery, sortKey, activeDayId],
+    [searchQuery, sortKey, track],
   );
 
   useEffect(() => {
     fetchList(1);
   }, [fetchList]);
 
-  // Push tetiklendiğinde en güncel sayfayı okumak için ref
+  // Push tetiklendiğinde en güncel sayfayı/günü okumak için ref'ler
   const pageRef = useRef(pagination.page);
   useEffect(() => {
     pageRef.current = pagination.page;
   }, [pagination.page]);
 
-  // SSE: backend yeni sipariş/rezervasyon değişikliğinde "refresh" event'i gönderir
+  const fetchListRef = useRef(fetchList);
+  useEffect(() => {
+    fetchListRef.current = fetchList;
+  }, [fetchList]);
+
+  // SSE: başka bir sekme/kullanıcı listeyi değiştirdiğinde "refresh" gelir.
+  // Bağımlılık [] — aksi halde her arama tuşunda bağlantı kapanıp yeniden açılıyordu.
   useEffect(() => {
     const source = new EventSource(`${API_URL}/api/shooting-list/stream`, {
       withCredentials: true,
     });
 
-    const handleRefresh = () => {
-      fetchList(pageRef.current, true);
+    const handleRefresh = (event: MessageEvent) => {
+      // Kendi yaptığımız değişikliğin yankısı: state zaten güncel, boşuna yükleme yapma
+      if (event.data && event.data === clientIdRef.current) return;
+      fetchListRef.current(pageRef.current, true);
     };
 
     source.addEventListener('refresh', handleRefresh);
@@ -171,7 +297,7 @@ const ShootingListPage = () => {
       source.removeEventListener('refresh', handleRefresh);
       source.close();
     };
-  }, [fetchList]);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearchQuery(searchInput), 400);
@@ -247,6 +373,71 @@ const ShootingListPage = () => {
     }
   };
 
+  // Başlat / Bitir. Veritabanı uzakta olduğu için istek ~1 sn sürüyor; zincirin sonucu
+  // istemcide de bilindiğinden state'i beklemeden güncelliyoruz (iyimser), hata olursa geri alıyoruz.
+  const handleTimerAction = async (
+    entry: ShootingEntry,
+    timerTrack: ShootTrack,
+    action: 'start' | 'end',
+  ) => {
+    const key = `${entry.id}:${timerTrack}`;
+    const snapshot = entries;
+    const now = new Date().toISOString();
+    const startField = timerTrack === 'photo' ? 'photoStartedAt' : 'videoStartedAt';
+    const endField = timerTrack === 'photo' ? 'photoEndedAt' : 'videoEndedAt';
+
+    setEntries((prev) =>
+      prev.map((row) => {
+        if (row.id === entry.id) {
+          return action === 'start'
+            ? { ...row, [startField]: now, [endField]: null }
+            : { ...row, [endField]: now };
+        }
+        // Zincir: aynı izde açık olan diğer satır aynı anda kapanır
+        if (action === 'start' && row[startField] && !row[endField]) {
+          return { ...row, [endField]: now };
+        }
+        return row;
+      }),
+    );
+
+    setTimerBusyKey(key);
+    pendingActionsRef.current += 1;
+    try {
+      await api.patch(`/api/shooting-list/${entry.id}`, {
+        action,
+        track: timerTrack,
+        clientId: clientIdRef.current,
+      });
+    } catch (error) {
+      console.error('Çekim saati güncellenemedi:', error);
+      toast.error('Çekim saati güncellenemedi');
+      setEntries(snapshot);
+    } finally {
+      pendingActionsRef.current -= 1;
+      setTimerBusyKey(null);
+      // İstatistik kartları (Çekiliyor / Tamamlanan) günün tamamını kapsıyor, iyimser
+      // güncellemeden türetilemez. Arka planda sessizce tazele — butonu bekletmez.
+      // Arka arkaya basışlarda sadece sonuncusu tazeler, cevaplar birbirini ezmesin.
+      if (pendingActionsRef.current === 0) {
+        void fetchListRef.current(pageRef.current, true);
+      }
+    }
+  };
+
+  const renderTimers = (entry: ShootingEntry) =>
+    visibleTracks.map((t) => (
+      <TrackTimer
+        key={t}
+        entry={entry}
+        track={t}
+        showLabel={visibleTracks.length > 1}
+        busy={timerBusyKey === `${entry.id}:${t}`}
+        onAction={handleTimerAction}
+        onEdit={setEditEntry}
+      />
+    ));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -255,21 +446,45 @@ const ShootingListPage = () => {
             <Camera className="w-5 h-5 text-amber-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Çekim Listesi</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">
+              {track === 'all' ? 'Çekim Listesi' : `${TRACK_LABELS[track]} Çekim Listesi`}
+            </h1>
             <p className="text-gray-400 mt-1 text-xs sm:text-sm">
-              Excel'den yüklenen sporcuların çekim takibi
+              Sıradaki sporcuda <span className="text-emerald-400">Başlat</span>'a basın —
+              önceki kayıt otomatik kapanır
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={openNewDay}
-            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Yeni Gün
-          </button>
-          {activeDay && (
+          {isAdmin && (
+            <>
+              {/* İz seçici: hangi ekibin gözünden bakıldığı */}
+              <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/50 p-0.5">
+                {(['all', 'photo', 'video'] as Track[]).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setSelectedTrack(option)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      track === option
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {TRACK_LABELS[option]}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={openNewDay}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Yeni Gün
+              </button>
+            </>
+          )}
+          {isAdmin && activeDay && (
             <>
               <button
                 onClick={openReupload}
@@ -344,7 +559,7 @@ const ShootingListPage = () => {
           value={stats.willNotBeShot}
           tone="gray"
         />
-        <StatCard label="Devam Eden" value={stats.inProgress} tone="emerald" />
+        <StatCard label="Çekiliyor" value={stats.inProgress} tone="emerald" />
         <StatCard label="Tamamlanan" value={stats.done} tone="amber" />
       </div>
 
@@ -383,7 +598,9 @@ const ShootingListPage = () => {
             <Camera className="w-12 h-12 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400">
               {days.length === 0
-                ? 'Henüz gün eklenmedi. "Yeni Gün" ile ilk Excel\'i yükleyin.'
+                ? isAdmin
+                  ? 'Henüz gün eklenmedi. "Yeni Gün" ile ilk Excel\'i yükleyin.'
+                  : 'Henüz çekim listesi yüklenmedi.'
                 : searchQuery
                 ? 'Aramayla eşleşen kayıt yok.'
                 : 'Bu günde kayıt yok.'}
@@ -394,13 +611,19 @@ const ShootingListPage = () => {
             {/* Mobile cards */}
             <div className="lg:hidden divide-y divide-gray-700/50">
               {entries.map((entry) => {
-                const disabledRow = !entry.willBeShot;
+                const isRecording = visibleTracks.some((t) => isTrackRecording(entry, t));
+                // Kaydı alınan satır asla soluk görünmesin
+                const disabledRow = !entry.willBeShot && !isRecording;
                 const hasItems = entry.items.length > 0;
                 const hasNotes = !!entry.notes;
                 return (
                   <div
                     key={entry.id}
-                    className={`p-4 transition-colors ${disabledRow ? 'opacity-60' : ''}`}
+                    className={`p-4 border-l-2 transition-colors ${
+                      isRecording
+                        ? 'border-emerald-400 bg-emerald-500/10'
+                        : 'border-transparent'
+                    } ${disabledRow ? 'opacity-60' : ''}`}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -424,6 +647,11 @@ const ShootingListPage = () => {
                       <p className={`font-mono mt-0.5 ${entry.expectedTime ? 'text-white' : 'text-gray-600'}`}>
                         {entry.expectedTime || '—'}
                       </p>
+                    </div>
+
+                    <div className="mt-2 bg-gray-900/40 rounded-md p-2 text-[11px]">
+                      <p className="text-gray-500 uppercase tracking-wide mb-1">Çekim</p>
+                      <div className="space-y-1">{renderTimers(entry)}</div>
                     </div>
 
                     <div className="mt-2 bg-gray-900/40 rounded-md p-2 text-[11px]">
@@ -482,12 +710,15 @@ const ShootingListPage = () => {
                     <th className="px-5 py-3 font-medium">Alet</th>
                     <th className="px-5 py-3 font-medium">Durum</th>
                     <th className="px-5 py-3 font-medium">Beklenen</th>
+                    <th className="px-5 py-3 font-medium">Çekim</th>
                     <th className="px-5 py-3 font-medium">Paket / Seri / Not</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700/50">
                   {entries.map((entry) => {
-                    const disabledRow = !entry.willBeShot;
+                    const isRecording = visibleTracks.some((t) => isTrackRecording(entry, t));
+                    // Kaydı alınan satır asla soluk görünmesin
+                    const disabledRow = !entry.willBeShot && !isRecording;
                     const hasItems = entry.items.length > 0;
                     const hasNotes = !!entry.notes;
 
@@ -495,12 +726,16 @@ const ShootingListPage = () => {
                       <tr
                         key={entry.id}
                         className={`transition-colors ${
-                          disabledRow
-                            ? 'opacity-50 hover:opacity-70 hover:bg-gray-700/20'
+                          isRecording
+                            ? 'bg-emerald-500/10 hover:bg-emerald-500/15'
                             : 'hover:bg-gray-700/20'
-                        }`}
+                        } ${disabledRow ? 'opacity-50 hover:opacity-70' : ''}`}
                       >
-                        <td className="px-5 py-3 text-gray-400 font-mono text-sm align-top">
+                        <td
+                          className={`px-5 py-3 text-gray-400 font-mono text-sm align-top border-l-2 ${
+                            isRecording ? 'border-emerald-400' : 'border-transparent'
+                          }`}
+                        >
                           {entry.position}
                         </td>
                         <td className="px-5 py-3 align-top">
@@ -538,6 +773,9 @@ const ShootingListPage = () => {
                           ) : (
                             <span className="text-gray-600 text-sm">—</span>
                           )}
+                        </td>
+                        <td className="px-5 py-3 align-top">
+                          <div className="space-y-1">{renderTimers(entry)}</div>
                         </td>
                         <td className="px-5 py-3 text-sm align-top">
                           {!hasItems && !hasNotes ? (
@@ -601,6 +839,15 @@ const ShootingListPage = () => {
         existingDay={uploadExisting}
         onClose={() => setUploadOpen(false)}
         onUploaded={handleUploaded}
+      />
+
+      <ShootingTimeEditModal
+        entry={editEntry}
+        tracks={visibleTracks}
+        canEditExpected={isAdmin}
+        clientId={clientIdRef.current}
+        onClose={() => setEditEntry(null)}
+        onSaved={() => fetchList(pagination.page, true)}
       />
     </div>
   );

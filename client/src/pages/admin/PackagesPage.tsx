@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, X, Loader2, Package, Save } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { Plus, Pencil, Trash2, X, Loader2, Package, Save, Upload } from 'lucide-react';
 import api from '../../lib/api';
 
 interface Package {
@@ -9,6 +10,7 @@ interface Package {
   category: string;
   price: number;
   image: string;
+  imageUrl?: string;
   features: string[];
   discount2: number;
   discount3: number;
@@ -60,6 +62,10 @@ const PackagesPage = () => {
   const [formData, setFormData] = useState<PackageFormData>(initialFormData);
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  // Görsel yükleme durumu: imagePreview form açıkken gösterilen URL
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState('');
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchPackages();
@@ -87,6 +93,7 @@ const PackagesPage = () => {
     setFormData(initialFormData);
     setEditingId(null);
     setError('');
+    setImagePreview('');
     setShowModal(true);
   };
 
@@ -108,6 +115,7 @@ const PackagesPage = () => {
     });
     setEditingId(pkg.id);
     setError('');
+    setImagePreview(pkg.imageUrl || pkg.image);
     setShowModal(true);
   };
 
@@ -116,6 +124,32 @@ const PackagesPage = () => {
     setEditingId(null);
     setFormData(initialFormData);
     setError('');
+    setImagePreview('');
+  };
+
+  // Görsel yükleme: presign → plain axios ile R2'ye PUT (cookie gitmesin) → form'a key yaz
+  const handleImageUpload = async (file: File | undefined) => {
+    if (!file) return;
+    setIsUploadingImage(true);
+    setError('');
+    try {
+      const { data } = await api.post('/api/packages/upload-image', {
+        fileName: file.name,
+        contentType: file.type,
+        size: file.size,
+      });
+      await axios.put(data.uploadUrl, file, {
+        headers: { 'Content-Type': file.type },
+      });
+      setFormData((prev) => ({ ...prev, image: data.key }));
+      setImagePreview(URL.createObjectURL(file));
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      setError(errorObj.response?.data?.message || 'Görsel yüklenemedi');
+    } finally {
+      setIsUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -222,7 +256,7 @@ const PackagesPage = () => {
           <div key={pkg.id} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <img
-                src={pkg.image}
+                src={pkg.imageUrl || pkg.image}
                 alt={pkg.name}
                 className="w-14 h-14 rounded-lg object-cover bg-gray-700 shrink-0"
               />
@@ -326,9 +360,9 @@ const PackagesPage = () => {
                 <tr key={pkg.id} className="hover:bg-gray-800/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <img 
-                        src={pkg.image} 
-                        alt={pkg.name} 
+                      <img
+                        src={pkg.imageUrl || pkg.image}
+                        alt={pkg.name}
                         className="w-12 h-12 rounded-lg object-cover bg-gray-700"
                       />
                       <div>
@@ -500,17 +534,58 @@ const PackagesPage = () => {
                 </div>
               </div>
 
-              {/* Image URL */}
+              {/* Paket Görseli */}
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Görsel URL</label>
-                <input
-                  type="text"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
-                />
+                <label className="block text-sm text-gray-400 mb-1">Paket Görseli</label>
+                <div className="flex items-start gap-3">
+                  {imagePreview && (
+                    <img
+                      src={imagePreview}
+                      alt="Önizleme"
+                      className="w-20 h-20 rounded-lg object-cover bg-gray-700 border border-gray-600 shrink-0"
+                    />
+                  )}
+                  <div className="grow">
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept=".webp,.jpg,.jpeg,.png,image/webp,image/jpeg,image/png"
+                      onChange={(e) => handleImageUpload(e.target.files?.[0])}
+                      disabled={isUploadingImage}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {isUploadingImage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Yükleniyor...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          {imagePreview ? 'Görseli Değiştir' : 'Görsel Yükle'}
+                        </>
+                      )}
+                    </button>
+                    <p className="text-xs text-gray-500 mt-1.5">webp/jpg/png, maks. 10MB</p>
+                    <input
+                      type="text"
+                      name="image"
+                      value={formData.image}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        setImagePreview(e.target.value);
+                      }}
+                      placeholder="veya harici URL girin"
+                      className="mt-2 w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-xs placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Normal Prices */}

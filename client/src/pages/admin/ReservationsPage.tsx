@@ -185,12 +185,14 @@ const ReservationsPage = () => {
       CONFIRMED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       PAID: 'bg-green-500/20 text-green-400 border-green-500/30',
       CANCELLED: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+      DELIVERED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     };
     const labels: Record<string, string> = {
       PENDING: 'Bekliyor',
       CONFIRMED: 'Onaylandı',
       PAID: 'Ödendi',
       CANCELLED: 'İptal',
+      DELIVERED: 'Teslim Edildi',
     };
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full border ${badges[status] || badges.PENDING}`}>
@@ -202,7 +204,7 @@ const ReservationsPage = () => {
   // Onaylı/ödenmiş rezervasyonun sporcusu çekim listesinde mi? (yalnızca isim bazlı)
   // Varsa yeşilimsi, listede yoksa (isim hatalı olabilir) kırmızımsı arka plan.
   const getRowTint = (r: Reservation) => {
-    if (r.status !== 'CONFIRMED' && r.status !== 'PAID') return '';
+    if (r.status !== 'CONFIRMED' && r.status !== 'PAID' && r.status !== 'DELIVERED') return '';
     if (r.inShootingList === true) return 'bg-green-500/5';
     if (r.inShootingList === false) return 'bg-red-500/10';
     return '';
@@ -341,6 +343,7 @@ const ReservationsPage = () => {
           <option value="PENDING">Bekliyor</option>
           <option value="CONFIRMED">Onaylandı</option>
           <option value="PAID">Ödendi</option>
+          <option value="DELIVERED">Teslim Edildi</option>
           <option value="CANCELLED">İptal</option>
         </select>
       </div>
@@ -582,7 +585,7 @@ const ReservationsPage = () => {
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-700">
                 <span className="text-gray-400 text-sm mr-2 self-center">Durumu değiştir:</span>
-                {['PENDING', 'CONFIRMED', 'PAID', 'CANCELLED'].map((status) => (
+                {['PENDING', 'CONFIRMED', 'PAID', 'DELIVERED', 'CANCELLED'].map((status) => (
                   <button
                     key={status}
                     onClick={() => updateReservationStatus(selectedReservation.id, status)}
@@ -592,12 +595,22 @@ const ReservationsPage = () => {
                         ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                         : status === 'CONFIRMED'
                         ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                        : status === 'DELIVERED'
+                        ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
                         : status === 'CANCELLED'
                         ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
                         : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
                     }`}
                   >
-                    {status === 'PENDING' ? 'Bekliyor' : status === 'CONFIRMED' ? 'Onaylandı' : status === 'PAID' ? 'Ödendi' : 'İptal'}
+                    {status === 'PENDING'
+                      ? 'Bekliyor'
+                      : status === 'CONFIRMED'
+                      ? 'Onaylandı'
+                      : status === 'PAID'
+                      ? 'Ödendi'
+                      : status === 'DELIVERED'
+                      ? 'Teslim Edildi'
+                      : 'İptal'}
                   </button>
                 ))}
               </div>

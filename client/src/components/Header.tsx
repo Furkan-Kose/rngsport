@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
-import { Menu, X, ShoppingCart, Calendar } from "lucide-react";
+import { Menu, X, ShoppingCart, Calendar, User, LogIn } from "lucide-react";
 import { Link } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { getTotalItems } = useCart();
+  const { user, isAuthenticated, isAdmin } = useAuth();
+
+  // Girişli kullanıcı: admin → panel, müşteri → profil
+  const accountPath = isAdmin ? "/admin" : "/profil";
+  const accountLabel = isAdmin
+    ? "Yönetim Paneli"
+    : user?.name?.split(" ")[0] || "Hesabım";
 
   const cartItemCount = getTotalItems();
   const showBackground = scrolled || isOpen;
@@ -88,6 +96,46 @@ const Header = () => {
               <Calendar className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
             </Link>
 
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to={accountPath}
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
+                >
+                  <User className="w-4 h-4 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
+                  <span className="text-sm font-medium text-zinc-300 group-hover:text-emerald-400 transition-colors max-w-24 truncate">
+                    {accountLabel}
+                  </span>
+                </Link>
+                <Link
+                  to={accountPath}
+                  className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
+                  title={accountLabel}
+                >
+                  <User className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/giris"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
+                >
+                  <LogIn className="w-4 h-4 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
+                  <span className="text-sm font-medium text-zinc-300 group-hover:text-emerald-400 transition-colors">
+                    Giriş Yap
+                  </span>
+                </Link>
+                <Link
+                  to="/giris"
+                  className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
+                  title="Giriş Yap"
+                >
+                  <LogIn className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
+                </Link>
+              </>
+            )}
+
             <Link
               to="/sepet"
               className="relative p-2 sm:p-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
@@ -142,6 +190,32 @@ const Header = () => {
                     {link.name}
                   </motion.a>
                 ))}
+                {isAuthenticated && !isAdmin ? (
+                  <>
+                    <Link
+                      to="/profil"
+                      className="text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors duration-300 font-medium py-2.5 px-3 rounded-lg"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Hesabım
+                    </Link>
+                    <Link
+                      to="/galerim"
+                      className="text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors duration-300 font-medium py-2.5 px-3 rounded-lg"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Fotoğraflarım
+                    </Link>
+                  </>
+                ) : !isAuthenticated ? (
+                  <Link
+                    to="/giris"
+                    className="text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors duration-300 font-medium py-2.5 px-3 rounded-lg"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Giriş Yap
+                  </Link>
+                ) : null}
               </div>
             </motion.nav>
           )}

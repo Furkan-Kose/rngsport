@@ -103,6 +103,7 @@ const DashboardPage = () => {
       FAILED: 'bg-red-500/20 text-red-400 border-red-500/30',
       CANCELLED: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
       CONFIRMED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      DELIVERED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     };
     const labels: Record<string, string> = {
       PENDING: 'Bekliyor',
@@ -110,6 +111,7 @@ const DashboardPage = () => {
       FAILED: 'Başarısız',
       CANCELLED: 'İptal',
       CONFIRMED: 'Onaylandı',
+      DELIVERED: 'Teslim Edildi',
     };
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full border ${badges[status] || badges.PENDING}`}>

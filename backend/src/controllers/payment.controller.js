@@ -2,6 +2,7 @@ import Iyzipay from "iyzipay";
 import iyzipay from "../lib/iyzico.js";
 import prisma from "../lib/prisma.js";
 import bus from "../lib/events.js";
+import { sendOrderPaidEmail } from "../lib/mail.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -214,6 +215,7 @@ export const paymentCallback = async (req, res) => {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
+      include: { items: true },
     });
 
     if (!order) {
@@ -277,6 +279,11 @@ export const paymentCallback = async (req, res) => {
 
       // Çekim listesi sayfaları anlık güncellenmesi için
       bus.emit("shooting-list-changed");
+
+      // Sipariş onay maili (fire-and-forget)
+      if (order.customerEmail) {
+        sendOrderPaidEmail(order.customerEmail, order);
+      }
 
       console.log("Ödeme başarılı, yönlendiriliyor:", order.id);
       return res.redirect(

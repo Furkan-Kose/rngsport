@@ -1,8 +1,26 @@
+import crypto from "node:crypto";
 import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
+import { presignUpload, getObject, deleteObject } from "../lib/r2.js";
 
 const PACKAGE_NOT_FOUND = { notFound: "Paket bulunamadı" };
 const PACKAGE_DUPLICATE = { duplicate: "Bu slug zaten kullanılıyor" };
+
+const R2_IMAGE_PREFIX = "paketler/";
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const IMAGE_EXTENSIONS = new Set(["webp", "jpg", "jpeg", "png"]);
+// Sadece paketler/ klasöründeki uuid'li dosya adları — users/ galerisine erişimi keser
+const IMAGE_FILE_REGEX = /^[a-z0-9-]+\.(webp|jpe?g|png)$/;
+
+// paketler/ key'lerini sabit proxy URL'sine çevirir; eski /packages/*.webp
+// ve harici URL'ler olduğu gibi geçer (geriye uyumluluk).
+const resolveImage = (image) => {
+  if (image?.startsWith(R2_IMAGE_PREFIX)) {
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+    return `${backendUrl}/api/packages/image/${image.slice(R2_IMAGE_PREFIX.length)}`;
+  }
+  return image;
+};
 
 // Public response: frontend'in beklediği format
 const formatPackagePublic = (pkg) => ({
@@ -10,7 +28,7 @@ const formatPackagePublic = (pkg) => ({
   category: pkg.category,
   name: pkg.name,
   price: pkg.price,
-  image: pkg.image,
+  image: resolveImage(pkg.image),
   features: pkg.features,
   discounts: {
     2: pkg.discount2,
@@ -25,6 +43,7 @@ const formatPackagePublic = (pkg) => ({
 });
 
 // Admin response: tüm alanlar (pasifler dahil)
+// image ham değerdir (form state için); imageUrl önizleme/liste için çözülmüş URL
 const formatPackageAdmin = (pkg) => ({
   id: pkg.id,
   slug: pkg.slug,
@@ -32,6 +51,7 @@ const formatPackageAdmin = (pkg) => ({
   name: pkg.name,
   price: pkg.price,
   image: pkg.image,
+  imageUrl: resolveImage(pkg.image),
   features: pkg.features,
   discount2: pkg.discount2,
   discount3: pkg.discount3,
@@ -122,7 +142,7 @@ export const createPackage = async (req, res) => {
     })
     .catch(rethrowPrismaError(PACKAGE_DUPLICATE));
 
-  res.status(201).json({ message: "Paket oluşturuldu", package: pkg });
+  res.status(201).json({ message: "Paket oluşturuldu", package: formatPackageAdmin(pkg) });
 };
 
 // Paket güncelle (admin)
@@ -142,6 +162,15 @@ export const updatePackage = async (req, res) => {
     isActive,
     sortOrder,
   } = req.body;
+
+  // Görsel değişiyorsa eski R2 objesini temizlemek için mevcut değeri oku
+  const existing = await prisma.package.findUnique({
+    where: { id },
+    select: { image: true },
+  });
+  if (!existing) {
+    throw new AppError("Paket bulunamadı", 404);
+  }
 
   const pkg = await prisma.package
     .update({
@@ -164,14 +193,79 @@ export const updatePackage = async (req, res) => {
     })
     .catch(rethrowPrismaError(PACKAGE_NOT_FOUND));
 
-  res.json({ message: "Paket güncellendi", package: pkg });
+  // Görsel değiştiyse eski R2 objesini temizle (fire-and-forget)
+  if (
+    image &&
+    image !== existing.image &&
+    existing.image?.startsWith(R2_IMAGE_PREFIX)
+  ) {
+    deleteObject(existing.image).catch((err) =>
+      console.error("Eski paket görseli silinemedi:", err)
+    );
+  }
+
+  res.json({ message: "Paket güncellendi", package: formatPackageAdmin(pkg) });
 };
 
 // Paket sil (admin)
 export const deletePackage = async (req, res) => {
-  await prisma.package
+  const pkg = await prisma.package
     .delete({ where: { id: req.params.id } })
     .catch(rethrowPrismaError(PACKAGE_NOT_FOUND));
 
+  // R2'deki görseli de temizle (fire-and-forget — hata silmeyi engellemesin)
+  if (pkg.image?.startsWith(R2_IMAGE_PREFIX)) {
+    deleteObject(pkg.image).catch((err) =>
+      console.error("Paket görseli silinemedi:", err)
+    );
+  }
+
   res.json({ message: "Paket silindi" });
+};
+
+// Admin: paket görseli için imzalı PUT URL'i üretir
+export const presignPackageImage = async (req, res) => {
+  const { fileName, contentType, size } = req.body;
+
+  if (!fileName || !contentType) {
+    throw new AppError("Dosya adı ve türü gerekli", 400);
+  }
+  if (!String(contentType).startsWith("image/")) {
+    throw new AppError("Sadece görsel dosyası yüklenebilir", 400);
+  }
+  if (size && size > MAX_IMAGE_SIZE) {
+    throw new AppError("Görsel 10MB'ı aşamaz", 400);
+  }
+  const ext = String(fileName).split(".").pop()?.toLowerCase();
+  if (!IMAGE_EXTENSIONS.has(ext)) {
+    throw new AppError("Desteklenmeyen dosya türü (webp/jpg/png)", 400);
+  }
+
+  const key = `${R2_IMAGE_PREFIX}${crypto.randomUUID()}.${ext}`;
+  res.json({ key, uploadUrl: await presignUpload(key, contentType) });
+};
+
+// Public: paket görselini R2'den sabit URL ile servis eder (tarayıcı cache'ler)
+export const servePackageImage = async (req, res) => {
+  const { file } = req.params;
+
+  if (!IMAGE_FILE_REGEX.test(file)) {
+    throw new AppError("Görsel bulunamadı", 404);
+  }
+
+  try {
+    const object = await getObject(`${R2_IMAGE_PREFIX}${file}`);
+    res.setHeader("Content-Type", object.ContentType || "image/webp");
+    if (object.ContentLength) {
+      res.setHeader("Content-Length", object.ContentLength);
+    }
+    // Key'ler uuid olduğu için içerik hiç değişmez — güvenle immutable
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    object.Body.pipe(res);
+  } catch (err) {
+    if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
+      throw new AppError("Görsel bulunamadı", 404);
+    }
+    throw err;
+  }
 };

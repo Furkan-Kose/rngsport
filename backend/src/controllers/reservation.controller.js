@@ -12,8 +12,9 @@ import {
   buildCustomerSearchWhere,
 } from "../utils/pagination.js";
 import { matchKey } from "../utils/names.js";
+import { sendDeliveryEmail } from "../lib/mail.js";
 
-const VALID_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "PAID", "CANCELLED"];
+const VALID_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "PAID", "CANCELLED", "DELIVERED"];
 const RESERVATION_NOT_FOUND = { notFound: "Rezervasyon bulunamadı" };
 
 export const getAllReservations = async (req, res) => {
@@ -102,6 +103,7 @@ export const createReservation = async (req, res) => {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
       totalPrice,
+      ...(req.user?.id && { userId: req.user.id }), // optionalAuth: girişliyse hesaba bağla
       items: { create: items },
     },
     include: { items: true },
@@ -125,6 +127,33 @@ export const createReservation = async (req, res) => {
   });
 };
 
+// Girişli kullanıcının kendi rezervasyonları
+export const getMyReservations = async (req, res) => {
+  const reservations = await prisma.reservation.findMany({
+    where: { userId: req.user.id },
+    include: { items: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json({
+    data: reservations.map((r) => ({
+      id: r.id,
+      athleteName: r.athleteName,
+      clubName: r.clubName,
+      totalPrice: r.totalPrice,
+      status: r.status,
+      createdAt: r.createdAt,
+      items: r.items.map((item) => ({
+        package: { id: item.packageId, name: item.packageName, category: item.category },
+        seriesCount: item.seriesCount,
+        quantity: item.quantity,
+        price: item.price,
+        apparatuses: item.apparatuses,
+      })),
+    })),
+  });
+};
+
 export const updateReservation = async (req, res) => {
   const { id } = req.params;
   const { status, items } = req.body;
@@ -138,6 +167,22 @@ export const updateReservation = async (req, res) => {
     ...(status && { status }),
   };
 
+  // Teslimat maili için önceki durumu bilmemiz gerekiyor
+  const existing = await prisma.reservation.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!existing) {
+    throw new AppError("Rezervasyon bulunamadı", 404);
+  }
+
+  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget)
+  const notifyDelivered = (reservation) => {
+    if (status === "DELIVERED" && existing.status !== "DELIVERED" && reservation.customerEmail) {
+      sendDeliveryEmail(reservation.customerEmail, reservation.athleteName);
+    }
+  };
+
   // Items gönderilmediyse sadece basit güncelleme
   if (items === undefined) {
     const reservation = await prisma.reservation
@@ -145,6 +190,7 @@ export const updateReservation = async (req, res) => {
       .catch(rethrowPrismaError(RESERVATION_NOT_FOUND));
 
     if (status) bus.emit("shooting-list-changed");
+    notifyDelivered(reservation);
 
     return res.json({ message: "Rezervasyon güncellendi", reservation });
   }
@@ -169,6 +215,7 @@ export const updateReservation = async (req, res) => {
     .catch(rethrowPrismaError(RESERVATION_NOT_FOUND));
 
   if (status) bus.emit("shooting-list-changed");
+  notifyDelivered(reservation);
 
   res.json({ message: "Rezervasyon güncellendi", reservation });
 };
@@ -190,7 +237,7 @@ export const getReservationStats = async (req, res) => {
       prisma.reservation.count(),
       prisma.reservation.count({ where: { status: "CONFIRMED" } }),
       prisma.reservation.count({ where: { status: "PENDING" } }),
-      prisma.reservation.count({ where: { status: "PAID" } }),
+      prisma.reservation.count({ where: { status: { in: ["PAID", "DELIVERED"] } } }),
       prisma.reservation.findMany({
         take: 5,
         orderBy: { createdAt: "desc" },
@@ -204,7 +251,7 @@ export const getReservationStats = async (req, res) => {
         },
       }),
       prisma.reservation.aggregate({
-        where: { status: { in: ["CONFIRMED", "PAID"] } },
+        where: { status: { in: ["CONFIRMED", "PAID", "DELIVERED"] } },
         _sum: { totalPrice: true },
       }),
     ]);

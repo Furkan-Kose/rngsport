@@ -3,10 +3,14 @@ import { useAuth } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredRole?: string;
+  /** Birden fazla rolün erişebildiği sayfalar için (ör. çekim listesi) */
+  requiredRoles?: string[];
+  redirectTo?: string;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAuthenticated, isLoading } = useAuth();
+const ProtectedRoute = ({ children, requiredRole, requiredRoles, redirectTo }: ProtectedRouteProps) => {
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,7 +21,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to={redirectTo ?? '/admin/login'} replace />;
+  }
+
+  // Rol tutmuyorsa ana sayfaya (login sayfasına değil — redirect loop olmasın)
+  const allowed = requiredRoles ?? (requiredRole ? [requiredRole] : null);
+  if (allowed && !allowed.includes(user?.role ?? '')) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

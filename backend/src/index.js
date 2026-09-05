@@ -8,9 +8,15 @@ import packageRoutes from "./routes/package.route.js";
 import authRoutes from "./routes/auth.route.js";
 import reservationRoutes from "./routes/reservation.route.js";
 import shootingListRoutes from "./routes/shootingList.route.js";
+import galleryRoutes from "./routes/gallery.route.js";
+import userRoutes from "./routes/user.route.js";
+import tournamentRoutes from "./routes/tournament.route.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
+
+// Proxy arkasında (Railway/Render) rate-limit'in gerçek client IP'sini görmesi için
+app.set("trust proxy", 1);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -39,6 +45,9 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/packages", packageRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/shooting-list", shootingListRoutes);
+app.use("/api/gallery", galleryRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/tournaments", tournamentRoutes);
 
 app.use(errorHandler);
 

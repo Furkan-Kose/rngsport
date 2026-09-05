@@ -19,6 +19,7 @@ import {
 import { Link, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart, type CartItem } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
@@ -199,6 +200,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 
 const CartPage = () => {
   const { items, getTotalPrice, clearCart } = useCart();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const isEmpty = items.length === 0;
 
@@ -218,6 +220,17 @@ const CartPage = () => {
   });
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
+  // Girişli kullanıcının profilinden boş alanları ön-doldur (yazılmış değeri ezme)
+  useEffect(() => {
+    if (!user) return;
+    setForm((prev) => ({
+      ...prev,
+      customerEmail: prev.customerEmail || user.email || "",
+      customerPhone: prev.customerPhone || user.phone || "",
+    }));
+  }, [user]);
+
   // Sepet satırı bazlı alet seçimi: key = `${packageId}-${seriesCount}` (sepet item key'i)
   const [itemApparatuses, setItemApparatuses] = useState<
     Record<string, string[]>
