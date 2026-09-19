@@ -83,14 +83,6 @@ const GalleryPage = () => {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <Reveal>
-              <span className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 shadow-[0_0_24px_-8px_rgba(16,185,129,0.6)]">
-                <Camera className="w-4 h-4 text-emerald-400" />
-                <span className="text-emerald-300 text-sm font-medium tracking-wider uppercase">
-                  Portföy
-                </span>
-              </span>
-            </Reveal>
             <Reveal delay={0.1}>
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
                 <span className="text-gradient-brand">Galeri</span>

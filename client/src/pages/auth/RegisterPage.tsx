@@ -1,15 +1,19 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { UserPlus, Mail, Lock, Phone, User } from "lucide-react";
+import { UserPlus, Mail, Lock, Phone, User, Building2, CalendarDays } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import SEO from "../../components/SEO";
 
 const RegisterPage = () => {
+  // name = sporcu adı soyadı. Rezervasyon formu ve çekim listesi eşleşmesi bunu
+  // kullanıyor, o yüzden hesapta sporcunun kendi adı tutuluyor.
   const [form, setForm] = useState({
     name: "",
-    email: "",
+    clubName: "",
+    birthYear: "",
     phone: "",
+    email: "",
     password: "",
     passwordConfirm: "",
   });
@@ -49,8 +53,10 @@ const RegisterPage = () => {
 
     const result = await register({
       name: form.name.trim(),
+      clubName: form.clubName.trim(),
+      birthYear: form.birthYear.trim(),
+      phone: form.phone.trim(),
       email: form.email.trim(),
-      phone: form.phone.trim() || undefined,
       password: form.password,
     });
 
@@ -90,7 +96,7 @@ const RegisterPage = () => {
             </div>
             <h1 className="text-3xl font-bold text-gradient-brand">Kayıt Ol</h1>
             <p className="text-zinc-500 text-sm mt-2">
-              Çekim fotoğraflarınız hesabınıza tanımlanır
+              Sporcu bilgilerinizi bir kez girin, rezervasyonda hazır gelsin
             </p>
           </div>
 
@@ -107,7 +113,7 @@ const RegisterPage = () => {
               <div>
                 <label htmlFor="name" className={labelClass}>
                   <User className="w-4 h-4" />
-                  Ad Soyad <span className="text-red-400">*</span>
+                  Sporcu Adı Soyadı <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -115,9 +121,62 @@ const RegisterPage = () => {
                   value={form.name}
                   onChange={(e) => updateForm("name", e.target.value)}
                   className={inputClass}
-                  placeholder="Adınız Soyadınız"
+                  placeholder="Sporcunun adı soyadı"
                   required
                   minLength={2}
+                />
+                <p className="text-xs text-zinc-600 mt-1.5">
+                  Çekim listesi eşleşmesi bu isimle yapılır; yarışma kaydındaki yazımla
+                  aynı olmasına dikkat edin.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="clubName" className={labelClass}>
+                  <Building2 className="w-4 h-4" />
+                  Kulüp <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="clubName"
+                  value={form.clubName}
+                  onChange={(e) => updateForm("clubName", e.target.value)}
+                  className={inputClass}
+                  placeholder="Kulüp adı"
+                  required
+                  minLength={2}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="birthYear" className={labelClass}>
+                  <CalendarDays className="w-4 h-4" />
+                  Doğum Yılı <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="birthYear"
+                  value={form.birthYear}
+                  onChange={(e) => updateForm("birthYear", e.target.value)}
+                  className={inputClass}
+                  placeholder="2011"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className={labelClass}>
+                  <Phone className="w-4 h-4" />
+                  Telefon <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={form.phone}
+                  onChange={(e) => updateForm("phone", e.target.value)}
+                  className={inputClass}
+                  placeholder="05xx xxx xx xx"
+                  required
                 />
               </div>
 
@@ -134,21 +193,6 @@ const RegisterPage = () => {
                   className={inputClass}
                   placeholder="ornek@eposta.com"
                   required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className={labelClass}>
-                  <Phone className="w-4 h-4" />
-                  Telefon
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={form.phone}
-                  onChange={(e) => updateForm("phone", e.target.value)}
-                  className={inputClass}
-                  placeholder="05xx xxx xx xx"
                 />
               </div>
 

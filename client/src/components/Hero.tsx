@@ -1,6 +1,52 @@
+import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, Calendar, ChevronDown } from "lucide-react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
+
+// Dikey (1080x1920) ve yatay (1920x1080) iki ayri kurgu var; esik overlay'lerin
+// kullandigi md kirilimiyla ayni tutuluyor.
+const WEB_VIDEO = "/rngsport_hero_web.mp4";
+const MOBILE_VIDEO = "/rngsport_hero_mobil.mp4";
+const MOBILE_QUERY = "(max-width: 767px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+const matches = (query: string) =>
+  typeof window !== "undefined" && window.matchMedia(query).matches;
+
+/**
+ * Hero arka plan videosu.
+ *
+ * Tek <video> kullaniliyor, kaynak matchMedia ile seciliyor:
+ * - <source media> guvenilmez (tarayicilar yeniden degerlendirmiyor)
+ * - iki ayri <video> ise gizli olani da indirir -> 18 MB
+ *
+ * prefers-reduced-motion aciksa video hic yuklenmez, poster gorseli kalir.
+ */
+const useHeroVideoSrc = () => {
+  const [src, setSrc] = useState<string | null>(() =>
+    matches(REDUCED_MOTION_QUERY)
+      ? null
+      : matches(MOBILE_QUERY)
+        ? MOBILE_VIDEO
+        : WEB_VIDEO,
+  );
+
+  useEffect(() => {
+    const mobile = window.matchMedia(MOBILE_QUERY);
+    const reduced = window.matchMedia(REDUCED_MOTION_QUERY);
+    const sync = () =>
+      setSrc(reduced.matches ? null : mobile.matches ? MOBILE_VIDEO : WEB_VIDEO);
+
+    mobile.addEventListener("change", sync);
+    reduced.addEventListener("change", sync);
+    return () => {
+      mobile.removeEventListener("change", sync);
+      reduced.removeEventListener("change", sync);
+    };
+  }, []);
+
+  return src;
+};
 
 const containerVariants = {
   hidden: {},
@@ -17,19 +63,32 @@ const itemVariants = {
 };
 
 const Hero = () => {
+  const videoSrc = useHeroVideoSrc();
+
   return (
-    <section
-      id=""
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
-    >
-      {/* Background Image */}
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Arka plan videosu — poster ilk boyayi verir ve video engellenirse kalici yedek olur */}
       <div className="absolute inset-0">
-        <img
-        
-          src="/hero.webp"
-          alt="Ritmik Cimnastik"
-          className="w-full h-full object-cover"
-        />
+        {videoSrc ? (
+          <video
+            key={videoSrc}
+            src={videoSrc}
+            poster="/hero.webp"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <img
+            src="/hero.webp"
+            alt="Ritmik Cimnastik"
+            className="w-full h-full object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-linear-to-r from-black/90 via-black/60 to-transparent hidden md:block" />
         <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/50 hidden md:block" />
         <div className="absolute inset-0 bg-black/60 md:hidden" />

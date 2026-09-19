@@ -162,7 +162,7 @@ const Gallery = () => {
   };
 
   const gallerySection = (
-    <section id="galeri" className="relative py-24 bg-black">
+    <section id="galeri" className="relative py-24 bg-zinc-950">
       <div className="container mx-auto px-4">
         <SectionHeader
           eyebrow="Portföy"

@@ -1,15 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
-import { ChevronLeft, ChevronRight, Loader2, Images, Search, Users } from 'lucide-react';
+import { toast } from 'react-toastify';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Images,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Users,
+} from 'lucide-react';
 import api from '../../lib/api';
 import StaffPanel from '../../components/admin/StaffPanel';
+import CustomerFormModal, { type CustomerUser } from '../../components/admin/CustomerFormModal';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 
-interface UserRow {
-  id: string;
-  name: string | null;
-  email: string | null;
-  phone: string | null;
-  createdAt: string;
+interface UserRow extends CustomerUser {
   _count: {
     photos: number;
     reservations: number;
@@ -24,13 +32,32 @@ interface Pagination {
   totalPages: number;
 }
 
+interface CustomerStats {
+  total: number;
+  withoutPassword: number;
+  unverified: number;
+  withPhotos: number;
+}
+
 const ITEMS_PER_PAGE = 20;
 
 type Tab = 'customers' | 'staff';
 
+const errorMessage = (err: unknown) =>
+  (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+  'Bir hata oluştu';
+
+const StatCard = ({ label, value }: { label: string; value: number }) => (
+  <div className="bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3">
+    <p className="text-2xl font-bold text-white">{value}</p>
+    <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+  </div>
+);
+
 const UsersPage = () => {
   const [tab, setTab] = useState<Tab>('customers');
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [stats, setStats] = useState<CustomerStats | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: ITEMS_PER_PAGE,
@@ -40,6 +67,11 @@ const UsersPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchUsers = useCallback(async (page: number = 1) => {
     setIsLoading(true);
@@ -62,9 +94,22 @@ const UsersPage = () => {
     }
   }, [searchQuery]);
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const { data } = await api.get('/api/users/stats');
+      setStats(data);
+    } catch (error) {
+      console.error('Stats fetch error:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchUsers(1);
   }, [fetchUsers]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Debounced search
   useEffect(() => {
@@ -77,6 +122,31 @@ const UsersPage = () => {
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       fetchUsers(newPage);
+    }
+  };
+
+  // Kaydetme/silme sonrası: liste aynı sayfada kalsın, kartlar da tazelensin
+  const refresh = () => {
+    fetchUsers(pagination.page);
+    fetchStats();
+  };
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    setIsDeleting(true);
+    try {
+      const { data } = await api.delete(`/api/users/${deleting.id}`);
+      toast.success(
+        data.deletedPhotos
+          ? `Müşteri silindi (${data.deletedPhotos} dosya kaldırıldı)`
+          : 'Müşteri silindi',
+      );
+      setDeleting(null);
+      refresh();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -125,9 +195,19 @@ const UsersPage = () => {
         <StaffPanel />
       ) : (
         <>
-      {/* Arama */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
+      {/* Özet kartlar */}
+      {stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <StatCard label="Toplam müşteri" value={stats.total} />
+          <StatCard label="Şifre belirlememiş" value={stats.withoutPassword} />
+          <StatCard label="E-postası doğrulanmamış" value={stats.unverified} />
+          <StatCard label="Galerisi dolu" value={stats.withPhotos} />
+        </div>
+      )}
+
+      {/* Arama + ekle */}
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-60 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="text"
@@ -137,6 +217,17 @@ const UsersPage = () => {
             className="w-full pl-10 pr-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(null);
+            setModalOpen(true);
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-medium transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Müşteri Ekle
+        </button>
       </div>
 
       {/* Tablo */}
@@ -169,8 +260,31 @@ const UsersPage = () => {
               <tbody className="divide-y divide-gray-700/50">
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-700/20 transition-colors">
-                    <td className="px-4 py-3 text-white font-medium">{user.name || '-'}</td>
-                    <td className="px-4 py-3 text-gray-300 text-sm">{user.email || '-'}</td>
+                    <td className="px-4 py-3">
+                      <Link
+                        to={`/admin/users/${user.id}`}
+                        className="text-white font-medium hover:text-amber-400 transition-colors"
+                      >
+                        {user.name || '-'}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-gray-300 text-sm">{user.email || '-'}</span>
+                      {(!user.hasPassword || !user.emailVerified) && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {!user.hasPassword && (
+                            <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
+                              Şifre yok
+                            </span>
+                          )}
+                          {!user.emailVerified && (
+                            <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
+                              Doğrulanmadı
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-300 text-sm hidden md:table-cell">
                       {user.phone || '-'}
                     </td>
@@ -185,14 +299,37 @@ const UsersPage = () => {
                     <td className="px-4 py-3 text-gray-400 text-sm hidden lg:table-cell">
                       {formatDate(user.createdAt)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        to={`/admin/users/${user.id}/galeri`}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-medium transition-colors"
-                      >
-                        <Images className="w-4 h-4" />
-                        Galeri
-                      </Link>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditing(user);
+                            setModalOpen(true);
+                          }}
+                          title="Düzenle"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-200 text-sm font-medium transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span className="hidden xl:inline">Düzenle</span>
+                        </button>
+                        <Link
+                          to={`/admin/users/${user.id}/galeri`}
+                          title="Galeri"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-medium transition-colors"
+                        >
+                          <Images className="w-4 h-4" />
+                          <span className="hidden xl:inline">Galeri</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(user)}
+                          title="Sil"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -226,6 +363,41 @@ const UsersPage = () => {
           )}
         </div>
       )}
+
+      <CustomerFormModal
+        open={modalOpen}
+        customer={editing}
+        onClose={() => setModalOpen(false)}
+        onSaved={refresh}
+      />
+
+      <ConfirmDeleteModal
+        open={!!deleting}
+        title="Müşteriyi Sil"
+        isDeleting={isDeleting}
+        onCancel={() => setDeleting(null)}
+        onConfirm={handleDelete}
+        message={
+          deleting && (
+            <>
+              <strong className="text-white">{deleting.name || deleting.email}</strong> hesabı
+              silinecek.
+              {deleting._count.photos > 0 && (
+                <>
+                  {' '}
+                  Galerisindeki{' '}
+                  <strong className="text-red-400">
+                    {deleting._count.photos} dosya kalıcı olarak
+                  </strong>{' '}
+                  silinecek.
+                </>
+              )}{' '}
+              Sipariş ve rezervasyon kayıtları durur, ancak hesapla bağları kopar. Bu işlem geri
+              alınamaz.
+            </>
+          )
+        }
+      />
         </>
       )}
     </div>

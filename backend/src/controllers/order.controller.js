@@ -10,6 +10,12 @@ import {
   parsePaginationQuery,
   buildCustomerSearchWhere,
 } from "../utils/pagination.js";
+import {
+  resolveGuestAccount,
+  syncProfileGaps,
+  claimStatusFor,
+  issueSetPasswordTokenIfUnclaimed,
+} from "../utils/customerAccount.js";
 import { sendDeliveryEmail } from "../lib/mail.js";
 
 const VALID_ORDER_STATUSES = ["PENDING", "PAID", "FAILED", "CANCELLED", "DELIVERED"];
@@ -49,12 +55,22 @@ export const createOrder = async (req, res) => {
     activeOnly: true,
   });
 
+  // optionalAuth: girişliyse kendi hesabı; misafirse e-postasından hesap açılır/bulunur.
+  // Sipariş maili ödeme onaylanınca gidiyor (payment.controller.js), burada mail yok.
+  const account = req.user?.id
+    ? { userId: req.user.id, status: "linked" }
+    : await resolveGuestAccount(customer);
+
+  // Girişli kullanıcının profilindeki BOŞ sporcu alanlarını doldur (doluyu ezmeden),
+  // böylece bir sonraki sefer form ön-dolu gelir. Beklenmez — siparişi geciktirmesin.
+  if (req.user?.id) syncProfileGaps(req.user.id, customer);
+
   const order = await prisma.order.create({
     data: {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
       totalPrice,
-      ...(req.user?.id && { userId: req.user.id }), // optionalAuth: girişliyse hesaba bağla
+      ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
     include: { items: true },
@@ -62,6 +78,7 @@ export const createOrder = async (req, res) => {
 
   res.status(201).json({
     message: "Sipariş oluşturuldu",
+    account: { status: account.status, email: order.customerEmail },
     order: {
       id: order.id,
       athleteName: order.athleteName,
@@ -117,14 +134,20 @@ export const getMyOrders = async (req, res) => {
 export const getOrder = async (req, res) => {
   const order = await prisma.order.findUnique({
     where: { id: req.params.id },
-    include: { items: true },
+    // user: OrderSuccessPage'deki "hesabını tamamla" kartı için (bkz. accountStatus)
+    include: { items: true, user: { select: { role: true, password: true } } },
   });
 
   if (!order) {
     throw new AppError("Sipariş bulunamadı", 404);
   }
 
-  res.json(formatOrderForResponse(order));
+  // account: "hesabını tamamla" kartı için. formatOrderForResponse alanları tek tek
+  // yazdığı için user ilişkisi (şifre hash'i dahil) yanıta asla sızmaz.
+  res.json({
+    ...formatOrderForResponse(order),
+    account: { status: claimStatusFor(order), email: order.customerEmail },
+  });
 };
 
 export const updateOrder = async (req, res) => {
@@ -159,9 +182,12 @@ export const updateOrder = async (req, res) => {
 
   if (status) bus.emit("shooting-list-changed");
 
-  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget)
+  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget).
+  // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.
   if (status === "DELIVERED" && existing.status !== "DELIVERED" && order.customerEmail) {
-    sendDeliveryEmail(order.customerEmail, order.athleteName);
+    issueSetPasswordTokenIfUnclaimed(order.userId)
+      .then((token) => sendDeliveryEmail(order.customerEmail, order.athleteName, token))
+      .catch((err) => console.error("[mail] Teslimat maili hatası:", err));
   }
 
   res.json({ message: "Sipariş güncellendi", order });

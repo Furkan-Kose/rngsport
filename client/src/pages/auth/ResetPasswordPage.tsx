@@ -8,6 +8,8 @@ import SEO from "../../components/SEO";
 const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
+  // yeni=1 → hesap sipariş/rezervasyonla otomatik açıldı, bu ilk şifre belirleme
+  const isFirstTime = searchParams.get("yeni") === "1";
 
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -45,7 +47,10 @@ const ResetPasswordPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO title="Şifre Sıfırla" description="RNG Sport hesabınız için yeni şifre belirleyin." />
+      <SEO
+        title={isFirstTime ? "Şifre Belirle" : "Şifre Sıfırla"}
+        description="RNG Sport hesabınız için yeni şifre belirleyin."
+      />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -60,7 +65,15 @@ const ResetPasswordPage = () => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-4">
               <KeyRound className="w-7 h-7 text-emerald-400" />
             </div>
-            <h1 className="text-3xl font-bold text-gradient-brand">Yeni Şifre Belirle</h1>
+            <h1 className="text-3xl font-bold text-gradient-brand">
+              {isFirstTime ? "Şifrenizi Belirleyin" : "Yeni Şifre Belirle"}
+            </h1>
+            {isFirstTime && (
+              <p className="text-sm text-zinc-400 mt-3">
+                Rezervasyonunuzla birlikte hesabınız oluşturuldu. Şifrenizi belirleyin,
+                fotoğraflarınız buraya yüklenecek.
+              </p>
+            )}
           </div>
 
           <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 sm:p-8">
@@ -71,12 +84,16 @@ const ResetPasswordPage = () => {
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-4">
                   <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                 </div>
-                <h2 className="text-lg font-semibold text-white mb-2">Şifreniz Güncellendi</h2>
+                <h2 className="text-lg font-semibold text-white mb-2">
+                  {isFirstTime ? "Hesabınız Hazır" : "Şifreniz Güncellendi"}
+                </h2>
                 <p className="text-sm text-zinc-400 mb-6">
-                  Yeni şifrenizle giriş yapabilirsiniz.
+                  {isFirstTime
+                    ? "Belirlediğiniz şifreyle giriş yapıp galerinize ulaşabilirsiniz."
+                    : "Yeni şifrenizle giriş yapabilirsiniz."}
                 </p>
                 <Link
-                  to="/giris"
+                  to={isFirstTime ? "/giris?redirect=/galerim" : "/giris"}
                   className="inline-block py-3 px-8 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold transition-all duration-300"
                 >
                   Giriş Yap
@@ -111,7 +128,7 @@ const ResetPasswordPage = () => {
                 <div>
                   <label htmlFor="password" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                     <Lock className="w-4 h-4" />
-                    Yeni Şifre <span className="text-red-400">*</span>
+                    {isFirstTime ? "Şifre" : "Yeni Şifre"} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="password"
@@ -128,7 +145,7 @@ const ResetPasswordPage = () => {
                 <div>
                   <label htmlFor="passwordConfirm" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                     <Lock className="w-4 h-4" />
-                    Yeni Şifre Tekrar <span className="text-red-400">*</span>
+                    {isFirstTime ? "Şifre Tekrar" : "Yeni Şifre Tekrar"} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="password"

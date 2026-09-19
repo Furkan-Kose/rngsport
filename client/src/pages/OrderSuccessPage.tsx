@@ -4,9 +4,12 @@ import { CheckCircle, Package, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "../lib/api";
 import Reveal from "../components/ui/Reveal";
+import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCard";
 
 interface OrderData {
   id: string;
+  /** Şifre belirleme kartı için hesap durumu (backend: claimStatusFor) */
+  account?: AccountInfo;
   athleteName: string;
   clubName: string;
   totalPrice: number;
@@ -142,10 +145,14 @@ const OrderSuccessPage = () => {
                 </Reveal>
               )}
 
+              {order?.account && (
+                <AccountClaimCard account={order.account} orderId={order.id} />
+              )}
+
               <Reveal delay={0.5}>
                 <Link
                   to="/"
-                  className="inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 group"
+                  className="mt-8 inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 group"
                 >
                   Ana Sayfaya Dön
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

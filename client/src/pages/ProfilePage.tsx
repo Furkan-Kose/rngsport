@@ -2,10 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import {
-  User,
-  Mail,
-  Phone,
-  LogOut,
   Images,
   Calendar,
   ChevronRight,
@@ -18,6 +14,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
 import SEO from "../components/SEO";
+import ProfileCard from "../components/ProfileCard";
 
 interface MyItem {
   package: { id: string; name: string; category: string };
@@ -58,7 +55,6 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const RecordList = ({ title, records }: { title: string; records: MyRecord[] }) => {
-  if (records.length === 0) return null;
   return (
     <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
       <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
@@ -66,6 +62,9 @@ const RecordList = ({ title, records }: { title: string; records: MyRecord[] }) 
         <Calendar className="w-5 h-5 text-emerald-400" />
         {title}
       </h2>
+      {records.length === 0 ? (
+        <p className="text-sm text-zinc-500">Henüz kaydınız yok.</p>
+      ) : (
       <div className="space-y-3">
         {records.map((r) => (
           <div
@@ -105,6 +104,7 @@ const RecordList = ({ title, records }: { title: string; records: MyRecord[] }) 
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };
@@ -279,44 +279,7 @@ const ProfilePage = () => {
             </div>
           )}
 
-          {/* Profil kartı */}
-          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 sm:p-8">
-            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
-
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                  <User className="w-7 h-7 text-emerald-400" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gradient-brand">
-                    {user?.name || "Hesabım"}
-                  </h1>
-                  <p className="text-zinc-500 text-sm">Hesap bilgileriniz</p>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-800/60 hover:bg-red-500/10 border border-zinc-700/50 hover:border-red-500/50 text-zinc-300 hover:text-red-400 text-sm transition-all duration-300"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Çıkış Yap</span>
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-zinc-300">
-                <Mail className="w-4 h-4 text-emerald-400/70 shrink-0" />
-                <span className="text-sm">{user?.email}</span>
-              </div>
-              {user?.phone && (
-                <div className="flex items-center gap-3 text-zinc-300">
-                  <Phone className="w-4 h-4 text-emerald-400/70 shrink-0" />
-                  <span className="text-sm">{user.phone}</span>
-                </div>
-              )}
-            </div>
-          </div>
+          <ProfileCard onLogout={handleLogout} />
 
           {/* Şifre değiştirme */}
           <ChangePasswordCard />

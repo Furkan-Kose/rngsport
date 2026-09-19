@@ -2,6 +2,7 @@ import Hero from "../components/Hero";
 import Tournaments from "../components/Tournaments";
 import DiscountBanner from "../components/DiscountBanner";
 import Packages from "../components/Packages";
+import Products from "../components/Products";
 import Gallery from "../components/Gallery";
 import HowItWorks from "../components/Process";
 import FAQ from "../components/FAQ";
@@ -28,11 +29,15 @@ const HomePage = () => {
       <SectionDivider fromBg={BLACK} toBg={ZINC} />
       <Packages />
       <SectionDivider fromBg={ZINC} toBg={BLACK} />
-      <Gallery />
+      <Products />
       <SectionDivider fromBg={BLACK} toBg={ZINC} />
-      <HowItWorks />
+      <Gallery />
       <SectionDivider fromBg={ZINC} toBg={BLACK} />
+      <HowItWorks />
+      <SectionDivider fromBg={BLACK} toBg={ZINC} />
       <FAQ />
+      {/* Footer sınırı: çapraz değil, yumuşak gradient iniş */}
+      <SectionDivider variant="fade" fromBg={ZINC} toBg={BLACK} height="lg" />
     </div>
   );
 };

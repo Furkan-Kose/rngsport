@@ -6,6 +6,9 @@ import AdminLayout from "./layouts/AdminLayout";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import GalleryPage from "./pages/GalleryPage";
+import PackagesPage from "./pages/PackagesPage";
+import ProductsPage from "./pages/ProductsPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import ReservationPage from "./pages/ReservationPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
@@ -22,9 +25,10 @@ import LoginPage from "./pages/admin/LoginPage";
 import DashboardPage from "./pages/admin/DashboardPage";
 import OrdersPage from "./pages/admin/OrdersPage";
 import ReservationsPage from "./pages/admin/ReservationsPage";
-import PackagesPage from "./pages/admin/PackagesPage";
+import AdminPackagesPage from "./pages/admin/PackagesPage";
 import ShootingListPage from "./pages/admin/ShootingListPage";
 import UsersPage from "./pages/admin/UsersPage";
+import UserDetailPage from "./pages/admin/UserDetailPage";
 import UserGalleryPage from "./pages/admin/UserGalleryPage";
 import TournamentsPage from "./pages/admin/TournamentsPage";
 import { SHOOTING_LIST_ROLES } from "./lib/roles";
@@ -50,6 +54,18 @@ export const router = createBrowserRouter([
       {
         path: "/galeri",
         element: <GalleryPage />,
+      },
+      {
+        path: "/paketler",
+        element: <PackagesPage />,
+      },
+      {
+        path: "/urunler",
+        element: <ProductsPage />,
+      },
+      {
+        path: "/urunler/:slug",
+        element: <ProductDetailPage />,
       },
       {
         path: "/sepet",
@@ -148,11 +164,15 @@ export const router = createBrowserRouter([
       },
       {
         path: "/admin/packages",
-        element: <PackagesPage />,
+        element: <AdminPackagesPage />,
       },
       {
         path: "/admin/users",
         element: <UsersPage />,
+      },
+      {
+        path: "/admin/users/:id",
+        element: <UserDetailPage />,
       },
       {
         path: "/admin/users/:id/galeri",

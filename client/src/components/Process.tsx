@@ -36,7 +36,7 @@ const steps = [
 
 const Process = () => {
   return (
-    <section id="surec" className="relative py-24 bg-zinc-950 overflow-hidden">
+    <section id="surec" className="relative py-24 bg-black overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
         <SectionHeader
           eyebrow="Süreç"

@@ -139,6 +139,16 @@ const KvkkMetni = () => {
                       olarak kullanılması
                     </span>
                   </li>
+                  <li className="flex items-start gap-3 text-gray-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
+                    <span>
+                      Satın alınan fotoğraf ve videoların yalnızca ilgili kişiye
+                      teslim edilebilmesi için, rezervasyon/sipariş sırasında
+                      verdiğiniz e-posta adresiyle adınıza bir müşteri hesabı
+                      oluşturulması ve çekim dosyalarınızın bu özel galeride
+                      saklanması
+                    </span>
+                  </li>
                 </ul>
               </div>
             </section>

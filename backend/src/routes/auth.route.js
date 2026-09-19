@@ -5,11 +5,13 @@ import {
   logout,
   register,
   getMe,
+  updateMe,
   verifyEmail,
   resendVerification,
   forgotPassword,
   resetPassword,
   changePassword,
+  claimAccount,
 } from "../controllers/auth.controller.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -28,6 +30,8 @@ router.post("/login", authLimiter, login);
 router.post("/register", authLimiter, register);
 router.post("/logout", logout);
 router.get("/me", authMiddleware, getMe);
+// Profil düzenleme (e-posta/rol/şifre hariç)
+router.patch("/me", authMiddleware, updateMe);
 
 // E-posta doğrulama + şifre akışları
 router.post("/verify-email", authLimiter, verifyEmail);
@@ -35,5 +39,7 @@ router.post("/resend-verification", authLimiter, authMiddleware, resendVerificat
 router.post("/forgot-password", authLimiter, forgotPassword);
 router.post("/reset-password", authLimiter, resetPassword);
 router.post("/change-password", authMiddleware, changePassword);
+// Sipariş/rezervasyon başarı ekranından şifresiz hesabı sahiplenme
+router.post("/claim-account", authLimiter, claimAccount);
 
 export default router;

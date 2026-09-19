@@ -47,7 +47,7 @@ const FAQ = () => {
   };
 
   return (
-    <section id="sss" className="relative py-24 bg-black">
+    <section id="sss" className="relative py-24 bg-zinc-950">
       <div className="container mx-auto px-4 relative z-10">
         <SectionHeader
           eyebrow="Yardım"

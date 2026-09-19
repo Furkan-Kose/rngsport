@@ -63,8 +63,11 @@ model User {
   id                   String    @id @default(cuid())
   username             String?   @unique // Admin girişi için (müşterilerde null)
   email                String?   @unique // Müşteri girişi için (lowercase saklanır)
-  password             String
-  name                 String?
+  password             String?   // null = sipariş/rezervasyonla otomatik açıldı, şifre henüz belirlenmedi
+  // Sporcu bilgileri — rezervasyon formunun ön-doldurması ve galeri klasörü bunlardan gelir
+  name                 String? // Sporcu adı soyadı
+  clubName             String?
+  birthYear            String? // Proje genelinde serbest metin (Order/Reservation'da da String)
   phone                String?
   role                 String    @default("customer")
   // E-posta doğrulama + şifre sıfırlama (token'lar sha256 hash olarak saklanır)

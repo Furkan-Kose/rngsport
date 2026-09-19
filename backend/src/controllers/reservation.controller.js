@@ -12,7 +12,13 @@ import {
   buildCustomerSearchWhere,
 } from "../utils/pagination.js";
 import { matchKey } from "../utils/names.js";
-import { sendDeliveryEmail } from "../lib/mail.js";
+import {
+  resolveGuestAccount,
+  syncProfileGaps,
+  issueSetPasswordToken,
+  issueSetPasswordTokenIfUnclaimed,
+} from "../utils/customerAccount.js";
+import { sendDeliveryEmail, sendReservationCreatedEmail } from "../lib/mail.js";
 
 const VALID_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "PAID", "CANCELLED", "DELIVERED"];
 const RESERVATION_NOT_FOUND = { notFound: "Rezervasyon bulunamadı" };
@@ -98,19 +104,38 @@ export const createReservation = async (req, res) => {
     activeOnly: true,
   });
 
+  // optionalAuth: girişliyse kendi hesabı; misafirse e-postasından hesap açılır/bulunur
+  const account = req.user?.id
+    ? { userId: req.user.id, status: "linked" }
+    : await resolveGuestAccount(customer);
+
+  // Girişli kullanıcının profilindeki BOŞ sporcu alanlarını doldur (doluyu ezmeden),
+  // böylece bir sonraki sefer form ön-dolu gelir. Beklenmez — siparişi geciktirmesin.
+  if (req.user?.id) syncProfileGaps(req.user.id, customer);
+
   const reservation = await prisma.reservation.create({
     data: {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
       totalPrice,
-      ...(req.user?.id && { userId: req.user.id }), // optionalAuth: girişliyse hesaba bağla
+      ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
     include: { items: true },
   });
 
+  // Rezervasyon onay maili (fire-and-forget — token üretimi response'u bekletmesin).
+  // Hesap hâlâ şifresizse şifre belirleme linki de iliştirilir; başarı ekranındaki
+  // kartı atlayanlar için yedek yol.
+  (async () => {
+    const token =
+      account.status === "claimable" ? await issueSetPasswordToken(account.userId) : null;
+    sendReservationCreatedEmail(reservation.customerEmail, reservation, token);
+  })().catch((err) => console.error("[mail] Rezervasyon maili hatası:", err));
+
   res.status(201).json({
     message: "Rezervasyon oluşturuldu",
+    account: { status: account.status, email: reservation.customerEmail },
     reservation: {
       id: reservation.id,
       athleteName: reservation.athleteName,
@@ -176,10 +201,15 @@ export const updateReservation = async (req, res) => {
     throw new AppError("Rezervasyon bulunamadı", 404);
   }
 
-  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget)
+  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget).
+  // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.
   const notifyDelivered = (reservation) => {
     if (status === "DELIVERED" && existing.status !== "DELIVERED" && reservation.customerEmail) {
-      sendDeliveryEmail(reservation.customerEmail, reservation.athleteName);
+      issueSetPasswordTokenIfUnclaimed(reservation.userId)
+        .then((token) =>
+          sendDeliveryEmail(reservation.customerEmail, reservation.athleteName, token)
+        )
+        .catch((err) => console.error("[mail] Teslimat maili hatası:", err));
     }
   };
 

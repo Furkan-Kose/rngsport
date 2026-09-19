@@ -6,16 +6,22 @@ interface User {
   id: string;
   username?: string | null;
   email?: string | null;
+  /** Sporcu adı soyadı — rezervasyon formunun ön-doldurması bunu kullanır */
   name?: string | null;
+  clubName?: string | null;
+  birthYear?: string | null;
   phone?: string | null;
   role: string;
   emailVerified?: boolean;
 }
 
 interface RegisterData {
+  /** Sporcu adı soyadı */
   name: string;
+  clubName: string;
+  birthYear: string;
+  phone: string;
   email: string;
-  phone?: string;
   password: string;
 }
 
@@ -31,6 +37,8 @@ interface AuthContextType {
   login: (identifier: string, password: string) => Promise<{ success: boolean; message?: string; user?: User }>;
   register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
+  /** Oturum durumunu sunucudan tazeler (ör. hesap sahiplenildikten sonra) */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,6 +131,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         login,
         register,
         logout,
+        refresh: checkAuth,
       }}
     >
       {children}

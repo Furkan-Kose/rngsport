@@ -3,6 +3,7 @@ import iyzipay from "../lib/iyzico.js";
 import prisma from "../lib/prisma.js";
 import bus from "../lib/events.js";
 import { sendOrderPaidEmail } from "../lib/mail.js";
+import { issueSetPasswordTokenIfUnclaimed } from "../utils/customerAccount.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -280,9 +281,12 @@ export const paymentCallback = async (req, res) => {
       // Çekim listesi sayfaları anlık güncellenmesi için
       bus.emit("shooting-list-changed");
 
-      // Sipariş onay maili (fire-and-forget)
+      // Sipariş onay maili (fire-and-forget). Hesap hâlâ şifresizse şifre belirleme
+      // linki de iliştirilir — başarı ekranındaki kartı atlayanlar için yedek yol.
       if (order.customerEmail) {
-        sendOrderPaidEmail(order.customerEmail, order);
+        issueSetPasswordTokenIfUnclaimed(order.userId)
+          .then((token) => sendOrderPaidEmail(order.customerEmail, order, token))
+          .catch((err) => console.error("[mail] Sipariş onay maili hatası:", err));
       }
 
       console.log("Ödeme başarılı, yönlendiriliyor:", order.id);

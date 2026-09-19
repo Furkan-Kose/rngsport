@@ -14,7 +14,7 @@ import {
   Package as PackageIcon,
   Mail,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { motion } from "framer-motion";
 import api from "../lib/api";
 import { toast } from "react-toastify";
@@ -22,6 +22,8 @@ import { useAuth } from "../context/AuthContext";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { APPARATUSES } from "../constants/apparatuses";
+import { emptyCustomerForm, fillCustomerFormGaps } from "../lib/customerForm";
+import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCard";
 
 interface Package {
   id: string;
@@ -53,7 +55,6 @@ interface SelectedPackage {
 }
 
 const ReservationPage = () => {
-  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
 
   const [packages, setPackages] = useState<Package[]>([]);
@@ -63,27 +64,22 @@ const ReservationPage = () => {
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  // Başarı ekranı: rezervasyon no + hesap durumu (şifre belirleme kartı için)
+  const [result, setResult] = useState<{
+    reservationId: string;
+    account: AccountInfo;
+  } | null>(null);
 
-  const [form, setForm] = useState({
-    athleteName: "",
-    clubName: "",
-    birthYear: "",
-    customerPhone: "",
-    customerEmail: "",
-    notes: "",
-  });
+  const [form, setForm] = useState(emptyCustomerForm);
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
 
-  // Girişli kullanıcının profilinden boş alanları ön-doldur (yazılmış değeri ezme)
+  // Girişli kullanıcının profilinden boş alanları ön-doldur (yazılmış değeri ezme).
+  // Sporcu adı da dolar: çekim listesi eşleşmesi tam isim eşitliğine bakıyor, her
+  // seferinde elle yazılması yazım farkı yüzünden eşleşmeyi düşürüyordu.
   useEffect(() => {
     if (!user) return;
-    setForm((prev) => ({
-      ...prev,
-      customerEmail: prev.customerEmail || user.email || "",
-      customerPhone: prev.customerPhone || user.phone || "",
-    }));
+    setForm((prev) => fillCustomerFormGaps(prev, user));
   }, [user]);
 
   const toggleApparatusOnRow = (rowId: string, slug: string) => {
@@ -230,7 +226,7 @@ const ReservationPage = () => {
     setIsSubmitting(true);
 
     try {
-      const {} = await api.post("/api/reservations", {
+      const { data } = await api.post("/api/reservations", {
         ...form,
         items: selectedPackages.map((sp) => {
           const pkg = packages.find((p) => p.id === sp.packageId);
@@ -253,14 +249,13 @@ const ReservationPage = () => {
         totalPrice: calculateTotal(),
       });
 
-      // Başarılı
-      setSuccess(true);
+      // Başarılı. Otomatik ana sayfa yönlendirmesi YOK — müşteri bu ekranda
+      // şifresini belirleyip hesabına giriyor.
+      setResult({
+        reservationId: data.reservation.id,
+        account: data.account,
+      });
       toast.success("Rezervasyon başarıyla oluşturuldu!");
-
-      // 10 saniye sonra ana sayfaya yönlendir
-      setTimeout(() => {
-        navigate("/");
-      }, 10000);
     } catch (err: any) {
       setError(err.response?.data?.message || "Bir hata oluştu");
       toast.error(err.response?.data?.message || "Bir hata oluştu");
@@ -306,30 +301,47 @@ const ReservationPage = () => {
     );
   }
 
-  if (success) {
+  if (result) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <div className="text-center">
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 18 }}
-            className="relative w-24 h-24 mx-auto mb-6"
-          >
-            <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl animate-pulse" />
-            <div className="relative w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
-              <Check className="w-12 h-12 text-emerald-400" />
-            </div>
-          </motion.div>
-          <h2 className="text-2xl font-bold text-gradient-brand mb-2">
-            Rezervasyon Başarılı!
-          </h2>
-          <p className="text-zinc-400 mb-4">
-            Rezervasyonunuz alınmıştır. Satış masasına uğrayarak ödemenizi yapabilirsiniz.
-          </p>
-          <p className="text-sm text-zinc-500">
-            Ana sayfaya yönlendiriliyorsunuz...
-          </p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 py-24">
+        <div className="w-full max-w-md">
+          <div className="text-center">
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 18 }}
+              className="relative w-24 h-24 mx-auto mb-6"
+            >
+              <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl animate-pulse" />
+              <div className="relative w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
+                <Check className="w-12 h-12 text-emerald-400" />
+              </div>
+            </motion.div>
+            <h2 className="text-2xl font-bold text-gradient-brand mb-2">
+              Rezervasyon Başarılı!
+            </h2>
+            <p className="text-zinc-400 mb-3">
+              Rezervasyonunuz alınmıştır. Satış masasına uğrayarak ödemenizi yapabilirsiniz.
+            </p>
+            <p className="text-xs text-zinc-600 font-mono break-all">
+              Rezervasyon No: {result.reservationId}
+            </p>
+          </div>
+
+          <AccountClaimCard
+            account={result.account}
+            reservationId={result.reservationId}
+          />
+
+          <div className="text-center mt-6">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Ana Sayfaya Dön
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -710,14 +722,13 @@ const ReservationPage = () => {
                 <span>Fotoğraflarınız çekim sonrası hesabınıza tanımlanacaktır.</span>
               </div>
             ) : (
-              <div className="mb-4 text-sm text-zinc-500 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
-                <Link
-                  to="/giris?redirect=/rezervasyon"
-                  className="text-emerald-400 hover:text-emerald-300 underline"
-                >
-                  Giriş yaparsanız
-                </Link>{" "}
-                fotoğraflarınız çekim sonrası hesabınıza otomatik tanımlanır.
+              <div className="mb-4 flex items-start gap-2 text-sm text-zinc-400 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
+                <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
+                <span>
+                  Fotoğraflarınız, girdiğiniz e-posta adresiyle açılacak hesabınıza
+                  yüklenecek. Rezervasyon sonrası şifrenizi belirleyip hemen
+                  girebilirsiniz.
+                </span>
               </div>
             )}
 

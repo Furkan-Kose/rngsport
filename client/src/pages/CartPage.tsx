@@ -15,6 +15,7 @@ import {
   Loader2,
   CreditCard,
   Mail,
+  Check,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
@@ -24,6 +25,11 @@ import api from "../lib/api";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { APPARATUSES } from "../constants/apparatuses";
+import {
+  emptyCustomerForm,
+  customerFormFromUser,
+  fillCustomerFormGaps,
+} from "../lib/customerForm";
 
 // iyzico ödeme modu: "popup" = modal içinde, "redirect" = iyzico sayfasına yönlendir
 const IYZICO_MODE: "popup" | "redirect" = "redirect";
@@ -200,7 +206,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 
 const CartPage = () => {
   const { items, getTotalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
   const isEmpty = items.length === 0;
 
@@ -210,25 +216,16 @@ const CartPage = () => {
   const [error, setError] = useState("");
   const [paymentHtml, setPaymentHtml] = useState("");
 
-  const [form, setForm] = useState({
-    athleteName: "",
-    clubName: "",
-    birthYear: "",
-    customerPhone: "",
-    customerEmail: "",
-    notes: "",
-  });
+  const [form, setForm] = useState(emptyCustomerForm);
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
 
-  // Girişli kullanıcının profilinden boş alanları ön-doldur (yazılmış değeri ezme)
+  // Girişli kullanıcının profilinden boş alanları ön-doldur (yazılmış değeri ezme).
+  // Sporcu adı da dolar: çekim listesi eşleşmesi tam isim eşitliğine bakıyor, her
+  // seferinde elle yazılması yazım farkı yüzünden eşleşmeyi düşürüyordu.
   useEffect(() => {
     if (!user) return;
-    setForm((prev) => ({
-      ...prev,
-      customerEmail: prev.customerEmail || user.email || "",
-      customerPhone: prev.customerPhone || user.phone || "",
-    }));
+    setForm((prev) => fillCustomerFormGaps(prev, user));
   }, [user]);
 
   // Sepet satırı bazlı alet seçimi: key = `${packageId}-${seriesCount}` (sepet item key'i)
@@ -343,14 +340,10 @@ const CartPage = () => {
     setStep("form");
     setError("");
     setPaymentHtml("");
-    setForm({
-      athleteName: "",
-      clubName: "",
-      birthYear: "",
-      customerPhone: "",
-      customerEmail: "",
-      notes: "",
-    });
+    // Boşa değil profil değerlerine sıfırla: prefill useEffect'i [user]'a bağlı
+    // olduğu için tekrar tetiklenmiyor, aksi halde modal yeniden açıldığında
+    // girişli kullanıcının bilgileri de silinmiş olurdu.
+    setForm(customerFormFromUser(user));
   };
 
   return (
@@ -424,7 +417,7 @@ const CartPage = () => {
               size uygun olanı seçebilirsiniz.
             </p>
             <Link
-              to="/#paketler"
+              to="/paketler"
               className="inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -720,6 +713,25 @@ const CartPage = () => {
                           ₺{getTotalPrice().toLocaleString("tr-TR")}
                         </span>
                       </div>
+
+                      {/* Hesap bağlama bilgisi */}
+                      {isAuthenticated ? (
+                        <div className="mb-4 flex items-start gap-2 text-sm text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
+                          <Check className="w-4 h-4 mt-0.5 shrink-0" />
+                          <span>
+                            Fotoğraflarınız çekim sonrası hesabınıza tanımlanacaktır.
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="mb-4 flex items-start gap-2 text-sm text-zinc-400 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
+                          <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
+                          <span>
+                            Fotoğraflarınız, girdiğiniz e-posta adresiyle açılacak
+                            hesabınıza yüklenecek. Ödeme sonrası şifrenizi belirleyip
+                            hemen girebilirsiniz.
+                          </span>
+                        </div>
+                      )}
 
                       {/* KVKK Onay */}
                       <div className="mb-4">

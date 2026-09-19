@@ -32,7 +32,7 @@ const TimeBlock = ({ value, label }: { value: number; label: string }) => {
 };
 
 const DiscountBanner = () => {
-  const targetDate = new Date("2026-06-18T00:00:00").getTime();
+  const targetDate = new Date("2026-10-22T00:00:00").getTime();
 
   const calculateTimeLeft = () => {
     const now = new Date().getTime();

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Plus, Pencil } from 'lucide-react';
 import api from '../../lib/api';
+import StatusBadge from '../../lib/orderStatus';
 import ReservationFormModal from '../../components/admin/ReservationFormModal';
 import { getApparatusLabel } from '../../constants/apparatuses';
 
@@ -179,27 +180,6 @@ const ReservationsPage = () => {
     }).format(new Date(date));
   };
 
-  const getStatusBadge = (status: string) => {
-    const badges: Record<string, string> = {
-      PENDING: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      CONFIRMED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      PAID: 'bg-green-500/20 text-green-400 border-green-500/30',
-      CANCELLED: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-      DELIVERED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    };
-    const labels: Record<string, string> = {
-      PENDING: 'Bekliyor',
-      CONFIRMED: 'Onaylandı',
-      PAID: 'Ödendi',
-      CANCELLED: 'İptal',
-      DELIVERED: 'Teslim Edildi',
-    };
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${badges[status] || badges.PENDING}`}>
-        {labels[status] || status}
-      </span>
-    );
-  };
 
   // Onaylı/ödenmiş rezervasyonun sporcusu çekim listesinde mi? (yalnızca isim bazlı)
   // Varsa yeşilimsi, listede yoksa (isim hatalı olabilir) kırmızımsı arka plan.
@@ -400,7 +380,7 @@ const ReservationsPage = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-white font-semibold">{formatPrice(reservation.totalPrice)}</p>
-                      <div className="mt-1.5">{getStatusBadge(reservation.status)}</div>
+                      <div className="mt-1.5"><StatusBadge status={reservation.status} /></div>
                     </div>
                   </div>
                   <p className="text-gray-500 text-xs mt-2">{formatDate(reservation.createdAt)}</p>
@@ -454,7 +434,7 @@ const ReservationsPage = () => {
                       <td className="px-6 py-4 text-gray-300">{reservation.clubName}</td>
                       <td className="px-6 py-4 text-gray-300">{reservation.customerPhone}</td>
                       <td className="px-6 py-4 text-white font-medium">{formatPrice(reservation.totalPrice)}</td>
-                      <td className="px-6 py-4">{getStatusBadge(reservation.status)}</td>
+                      <td className="px-6 py-4"><StatusBadge status={reservation.status} /></td>
                       <td className="px-6 py-4 text-gray-400 text-sm">{formatDate(reservation.createdAt)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -513,7 +493,7 @@ const ReservationsPage = () => {
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Durum</p>
-                  <div className="mt-1">{getStatusBadge(selectedReservation.status)}</div>
+                  <div className="mt-1"><StatusBadge status={selectedReservation.status} /></div>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Sporcu Adı</p>

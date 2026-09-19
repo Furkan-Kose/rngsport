@@ -6,9 +6,8 @@ const Footer = () => {
     { name: "Ana Sayfa", href: "/#" },
     { name: "Hakkımızda", href: "/hakkimizda" },
     { name: "Galeri", href: "/galeri" },
-    { name: "Paketler", href: "/#paketler" },
-    { name: "Süreç", href: "/#surec" },
-    { name: "SSS", href: "/#sss" },
+    { name: "Ürünler", href: "/urunler" },
+    { name: "Paketler", href: "/paketler" },
   ];
 
   return (

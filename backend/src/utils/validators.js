@@ -41,7 +41,7 @@ const validateAthleteName = (value) => {
   return trimmed;
 };
 
-const validateClubName = (value) => {
+export const validateClubName = (value) => {
   const trimmed = String(value).trim();
   if (trimmed.length < 2 || trimmed.length > 100) {
     throw new AppError("Kulüp adı 2-100 karakter arasında olmalı", 400);
@@ -65,7 +65,7 @@ export const validateEmail = (value) => {
   return trimmed;
 };
 
-const sanitizeBirthYear = (value) => String(value).trim().slice(0, 20);
+export const sanitizeBirthYear = (value) => String(value).trim().slice(0, 20);
 
 export const sanitizeNotes = (value) =>
   value ? String(value).trim().slice(0, 500) : null;
