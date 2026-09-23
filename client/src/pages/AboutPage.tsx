@@ -4,8 +4,7 @@ import {
   Users,
   Target,
   CalendarDays,
-  Sparkles,
-  ArrowRight,
+  Trophy,
 } from "lucide-react";
 import SEO from "../components/SEO";
 import { Link } from "react-router";
@@ -17,40 +16,22 @@ import CountUp from "../components/ui/CountUp";
 const BLACK = "#000000";
 const ZINC = "#09090b";
 
-/**
- * Yarışma günü akışı — metinler uydurma değil, SSS'te (components/FAQ.tsx)
- * zaten verilen taahhütlerin aynısı.
- */
-const steps = [
+const audiences = [
   {
-    title: "Ön rezervasyon",
-    body: "Siteden paketini seçip kaydını oluşturuyorsun. Yarışma günü alandaki standımızdan da kayıt alıyoruz; ancak çekim listesinde öncelik rezervasyonlu sporcuların.",
+    icon: Users,
+    title: "Sporcular İçin",
+    paragraphs: [
+      "Sporcular ve veliler, etkinlik öncesinde RNG Sport üzerinden rezervasyon oluşturabiliyor.",
+      "Çekimler hazır olduğunda e-posta ile bilgilendirme yapılıyor. Kullanıcı hesabına giriş yapıldığında fotoğraf ve videolara kişisel galeri üzerinden ulaşılabiliyor.",
+    ],
   },
   {
-    title: "Ödeme",
-    body: "Ödemeyi yarışma günü standımızda nakit veya kredi kartıyla tamamlıyorsun. Ödemesi tamamlanan kayıtlar çekim listesine giriyor.",
-  },
-  {
-    title: "Esame listesinden takip",
-    body: "Her rezervasyonlu sporcuyu yarışmanın esame (başlangıç) listesinden takip ediyoruz. Sıra geldiğinde ekip yerinde hazır oluyor, performans baştan sona kaydediliyor.",
-  },
-  {
-    title: "Teslimat",
-    body: "Çekimler sporcu bazlı klasörlenip hesabına yükleniyor. Galerine girip tek tek ya da toplu indirebiliyorsun.",
-  },
-];
-
-const guarantees = [
-  {
-    icon: Award,
-    title: "Teknik hatada %100 iade",
-    body: "Bizden kaynaklı bir teknik sorun (odak kaybı, veri bozulması) yüzünden performans görüntülenemezse ücretin tamamını iade ediyoruz.",
-  },
-  {
-    icon: Sparkles,
-    title: "Kişiye özel ürünler",
-    body: "Çekimin ötesinde: sporcunun kendi pozundan hazırlanan üç boyutlu figür ve isminin baş harfinden yola çıkan ışıklı cimnastik harfi. Yakında siparişe açılıyor.",
-    to: "/urunler",
+    icon: Trophy,
+    title: "Organizatörler İçin",
+    paragraphs: [
+      "Organizasyonun büyüklüğüne ve ihtiyaçlarına göre çekim ekibi, kamera sayısı ve içerik planlamasını birlikte belirliyoruz.",
+      "Amacımız organizasyon sırasında çekim sürecinin düzenli ilerlemesi ve içeriklerin sonrasında kolay şekilde sporculara ulaştırılması.",
+    ],
   },
 ];
 
@@ -94,14 +75,16 @@ const AboutPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Reveal>
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                Ritmik cimnastik çeken{" "}
-                <span className="text-gradient-brand">bir ekibiz</span>
+                Doğru anı,{" "}
+                <span className="text-gradient-brand">doğru yerden</span> takip
+                ediyoruz.
               </h1>
             </Reveal>
             <Reveal delay={0.1}>
               <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
-                Dört yıldır yarışma salonlarındayız. Bir serinin hangi
-                saniyesinde ne olacağını bildiğimiz için doğru anı kaçırmıyoruz.
+                Doğru görüntü için ne zaman, nerede ve neyi takip etmemiz
+                gerektiğini biliyoruz. Çekim planımızı organizasyonun ve branşın
+                yapısına göre oluşturuyoruz.
               </p>
             </Reveal>
           </div>
@@ -134,31 +117,24 @@ const AboutPage = () => {
 
             <div>
               <SectionHeader
-                eyebrow="Hakkımızda"
-                title="Salonu tanıyan bir çekim ekibi"
+                eyebrow="Biz Kimiz"
+                title="Hakkımızda"
                 align="left"
                 className="mb-6"
               />
               <Reveal delay={0.1}>
                 <p className="text-gray-400 mb-4 leading-relaxed">
                   <strong className="text-emerald-400">RNG Sport,</strong> spor
-                  organizasyonları için fotoğraf, video ve dijital içerik üreten
-                  bir spor medya ajansıdır. Ana alanımız ritmik cimnastik.
+                  organizasyonları için fotoğraf ve video prodüksiyon hizmeti
+                  sunan bir ekip.
                 </p>
               </Reveal>
               <Reveal delay={0.2}>
-                <p className="text-gray-400 mb-4 leading-relaxed">
-                  Sahne düzenini, seri akışını ve aletlerin ritmini bildiğimiz
-                  için kadrajı olayın peşinden sürüklemiyoruz — atlayışın,
-                  fırlatmanın ve bitiriş pozunun nerede olacağını önceden
-                  kurguluyoruz.
-                </p>
-              </Reveal>
-              <Reveal delay={0.3}>
                 <p className="text-gray-400 mb-6 leading-relaxed">
-                  Yarışma boyunca yalnızca performansları değil; hazırlık
-                  anlarını, sahne atmosferini ve ödül törenini de kayıt altına
-                  alıyoruz.
+                  Başta ritmik cimnastik olmak üzere farklı branşlardaki
+                  yarışma, turnuva ve etkinliklerde çekim yapıyoruz.
+                  Organizasyonun yapısına göre fotoğraf, video, reels ve
+                  sporcuya özel içerikler hazırlıyoruz.
                 </p>
               </Reveal>
               <Reveal delay={0.4}>
@@ -177,72 +153,50 @@ const AboutPage = () => {
 
       <SectionDivider fromBg={ZINC} toBg={BLACK} />
 
-      {/* 3 — Yarışma günü akışı. Bilinçli olarak görselsiz: sayfa aynı
-          "görsel + metin" ritmini üst üste tekrarlamasın. */}
+      {/* 3 — Nasıl çalışıyoruz + kimler için. Bilinçli olarak görselsiz:
+          sayfa aynı "görsel + metin" ritmini üst üste tekrarlamasın. */}
       <section className="py-20 bg-black">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             <Reveal>
-              <h2 className="text-3xl sm:text-5xl font-bold text-gray-100 leading-tight mb-5">
-                Yarışma günü nasıl çalışıyoruz
+              <h2 className="text-3xl sm:text-5xl font-bold text-gray-100 leading-tight mb-6">
+                Nasıl Çalışıyoruz?
               </h2>
             </Reveal>
             <Reveal delay={0.08}>
-              <p className="text-gray-400 text-base sm:text-lg mb-12">
-                Kayıttan teslimata kadar süreç bu şekilde işliyor.
+              <p className="text-gray-400 text-base sm:text-lg leading-relaxed mb-4">
+                Her sporun çekim şekli farklı. Bu yüzden organizasyona
+                başlamadan önce branşı, saha düzenini ve yarışma akışını dikkate
+                alarak çekim planımızı oluşturuyoruz.
+              </p>
+            </Reveal>
+            <Reveal delay={0.16}>
+              <p className="text-gray-400 text-base sm:text-lg leading-relaxed mb-12">
+                Etkinlik boyunca sporcuların performanslarını takip ediyor,
+                fotoğraf ve video çekimlerini gerçekleştiriyor ve çekim
+                sonrasında içerikleri düzenleyerek teslim ediyoruz.
               </p>
             </Reveal>
 
-            <ol className="relative border-l border-zinc-800 pl-8 space-y-10">
-              {steps.map((step, i) => (
-                <Reveal key={step.title} delay={i * 0.08}>
-                  <li className="relative">
-                    <span className="absolute -left-[3.15rem] flex items-center justify-center w-9 h-9 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-sm font-semibold">
-                      {i + 1}
-                    </span>
-                    <h3 className="text-xl font-semibold text-white mb-2">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-400 leading-relaxed">{step.body}</p>
-                  </li>
-                </Reveal>
-              ))}
-            </ol>
-
-            <div className="grid sm:grid-cols-2 gap-4 mt-12">
-              {guarantees.map((item, i) => {
-                const cardClass =
-                  "group h-full block bg-zinc-900/60 border border-zinc-800 hover:border-emerald-500/40 rounded-2xl p-6 transition-colors";
-                const inner = (
-                  <>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {audiences.map((item, i) => (
+                <Reveal key={item.title} delay={i * 0.1}>
+                  <div className="h-full bg-zinc-900/60 border border-zinc-800 hover:border-emerald-500/40 rounded-2xl p-6 transition-colors">
                     <item.icon className="w-6 h-6 text-emerald-400 mb-3" />
-                    <h3 className="text-white font-semibold mb-2">
+                    <h3 className="text-white font-semibold mb-3">
                       {item.title}
                     </h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">
-                      {item.body}
-                    </p>
-                    {item.to && (
-                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-                        Ürünleri gör
-                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                      </span>
-                    )}
-                  </>
-                );
-
-                return (
-                  <Reveal key={item.title} delay={i * 0.1}>
-                    {item.to ? (
-                      <Link to={item.to} className={cardClass}>
-                        {inner}
-                      </Link>
-                    ) : (
-                      <div className={cardClass}>{inner}</div>
-                    )}
-                  </Reveal>
-                );
-              })}
+                    {item.paragraphs.map((text) => (
+                      <p
+                        key={text}
+                        className="text-sm text-gray-400 leading-relaxed mb-2 last:mb-0"
+                      >
+                        {text}
+                      </p>
+                    ))}
+                  </div>
+                </Reveal>
+              ))}
             </div>
           </div>
         </div>
@@ -277,7 +231,7 @@ const AboutPage = () => {
               <div className="absolute inset-0 border-glow-shimmer opacity-60" />
               <div className="relative bg-linear-to-r from-emerald-900/40 to-teal-900/40 backdrop-blur-xl rounded-3xl p-8 md:p-12 text-center">
                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                  IV. International Golden Ribbon Cup 2026'da Yerinizi Ayırtın
+                  International Baby Games 2026'da Yerinizi Ayırtın
                 </h2>
                 <p className="text-gray-300 max-w-2xl mx-auto mb-8">
                   Çekim listesinde öncelik rezervasyonlu sporcuların. Yerinizi

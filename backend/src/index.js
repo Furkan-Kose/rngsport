@@ -59,7 +59,7 @@ app.use("/api/tournaments", tournamentRoutes);
 
 app.use(errorHandler);
 
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server: http://localhost:${port}`);
 });

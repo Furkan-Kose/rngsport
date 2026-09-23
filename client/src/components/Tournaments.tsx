@@ -72,7 +72,7 @@ const Tournaments = () => {
   if (tournaments.length === 0) return null;
 
   return (
-    <section id="tournament" className="relative py-24 bg-zinc-950">
+    <section id="tournament" className="relative py-24 bg-black">
       <div className="container mx-auto px-4">
         <SectionHeader
           eyebrow="Yaklaşan Etkinlikler"

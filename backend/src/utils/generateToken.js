@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 const isProd = process.env.NODE_ENV === 'production';
 
 // Prod: Netlify frontend + ayrı API host → cross-site cookie (secure + none) şart.
-// Dev: localhost:5173 → localhost:3001 same-site sayılır, lax yeterli (http'de secure cookie set edilemez).
+// Dev: localhost:5173 → localhost:3000 same-site sayılır, lax yeterli (http'de secure cookie set edilemez).
 export const cookieOptions = {
   httpOnly: true,
   secure: isProd,

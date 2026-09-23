@@ -133,11 +133,8 @@ const Hero = () => {
             variants={itemVariants}
             className="text-[2rem] leading-[1.2] md:text-5xl lg:text-6xl font-display font-bold text-white md:text-gray-100 md:leading-tight mb-5 md:mb-6"
           >
-            Sporcunun
-            <span className="block text-gradient-brand">
-              En Değerli Anlarını,
-            </span>
-            Profesyonel Bir Hikayeye Dönüştürüyoruz.
+            Sahnedeki O An,
+            <span className="block text-gradient-brand">Hep Seninle.</span>
           </motion.h1>
 
           {/* Description */}
@@ -145,9 +142,9 @@ const Hero = () => {
             variants={itemVariants}
             className="text-gray-300 md:text-gray-400 text-base md:text-xl max-w-md md:max-w-xl mx-auto md:mx-0 mb-8 md:mb-10"
           >
-            RNG Sport olarak ritmik cimnastik başta olmak üzere spor
-            organizasyonlarında fotoğraf ve video prodüksiyon hizmeti
-            sunuyoruz.
+            Aylarca süren emeği, birkaç dakikalık performansı ve bir daha
+            tekrarlanmayacak anları profesyonel fotoğraf ve videolarla kayıt
+            altına alıyoruz.
           </motion.p>
 
           {/* Buttons */}

@@ -373,7 +373,7 @@ const ReservationPage = () => {
         </Reveal>
 
         <Reveal delay={0.05}>
-          <div className="flex items-center gap-4 mb-10">
+          <div className="flex items-center gap-4 mb-5">
             <div className="relative">
               <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
               <div className="relative w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
@@ -389,6 +389,12 @@ const ReservationPage = () => {
               </p>
             </div>
           </div>
+          <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-3xl mb-10">
+            Paketini seç, bilgilerini gir ve hesabını oluştur. Rezervasyonunu
+            kullanıcı panelinden takip edebilir ve güncelleyebilirsin.
+            Çekimlerin hazır olduğunda e-posta ile bilgilendirilir, fotoğraf ve
+            videolarına kişisel galerinden ulaşırsın.
+          </p>
         </Reveal>
 
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -23,9 +23,9 @@ const HomePage = () => {
         url="https://rngsport.com"
       />
       <Hero />
-      <Tournaments />
-      <SectionDivider fromBg={ZINC} toBg={BLACK} />
       <DiscountBanner />
+      <SectionDivider fromBg={ZINC} toBg={BLACK} />
+      <Tournaments />
       <SectionDivider fromBg={BLACK} toBg={ZINC} />
       <Packages />
       <SectionDivider fromBg={ZINC} toBg={BLACK} />

@@ -4,33 +4,33 @@ import Reveal from "./ui/Reveal";
 const steps = [
   {
     number: "01",
-    title: "Online Ön Kayıt",
+    title: "Rezervasyon ve Hesap",
     description:
-      "Fotoğraf veya video paketinizi seçin, rezervasyon formunu doldurarak talebinizi oluşturun.",
+      "Paketini seçip rezervasyonunu oluştur. E-posta adresin ve belirlediğin şifreyle hesabını aynı adımda kolayca aç.",
   },
   {
     number: "02",
-    title: "Ödeme Tercihi",
+    title: "Ödeme",
     description:
-      "Güvenli ödeme ile online satın alabilir veya nakit/kart seçeneğiyle ödemeyi yarışma alanında yapabilirsiniz.",
+      "Ödemeni online olarak tamamlayabilir veya yarışma alanındaki ödeme seçeneklerinden yararlanabilirsin.",
   },
   {
     number: "03",
     title: "Performans ve Çekim",
     description:
-      "Sıra size geldiğinde ekibimiz hazır bulunur; sahne performansınız eksiksiz olarak kayıt altına alınır.",
+      "Sıra sana geldiğinde ekibimiz hazır olur. Performansının en özel anlarını fotoğraf ve videolarla kaydederiz.",
   },
   {
     number: "04",
-    title: "Düzenleme ve Kurgu",
+    title: "Düzenleme ve Hazırlık",
     description:
-      "Çekilen görüntüler teknik ekibimizce işlenir; fotoğraflar düzenlenir, videolar kurgu aşamasından geçer.",
+      "Çekimlerin ekibimiz tarafından seçilir, düzenlenir ve satın aldığın pakete göre hazırlanır.",
   },
   {
     number: "05",
-    title: "Dijital Teslimat",
+    title: "Kişisel Galerin Hazır",
     description:
-      "Hazırlanan tüm dosyalar, yüksek kalitede ve dijital bağlantı (link) ile tarafınıza iletilir.",
+      "İçeriklerin hazır olduğunda sana e-posta ile haber veririz. Hesabına giriş yaparak kişisel galerindeki fotoğraf ve videolarına ulaşabilirsin.",
   },
 ];
 

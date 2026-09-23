@@ -1,13 +1,68 @@
-import { useState, useEffect } from "react";
-import { Clock, Calendar } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Clock, Calendar, CalendarCheck } from "lucide-react";
 import { Link } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
+import Reveal from "./ui/Reveal";
+
+const PROMO_VIDEO = "/baby_games.mp4";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+const DESKTOP_QUERY = "(min-width: 768px)";
+
+/**
+ * Tanitim videosu yalnizca ekrandayken oynar.
+ *
+ * preload="none" + ilk gorunurlukte play(): 7 MB'lik dosya sayfa acilisinda
+ * Hero videosuyla yarismaz. prefers-reduced-motion aciksa hic otomatik
+ * oynatilmaz; kullanici kontrollerle kendisi baslatir.
+ *
+ * md+ ekranda ayni dosyanin bulanik bir kopyasi (ambient) tum section'in
+ * arkasinda oynar; ayni URL oldugu icin tarayici onbellekten okur. Mobilde
+ * ambient hic oynatilmaz (orada zaten asil video arka plan).
+ */
+const useInViewVideo = () => {
+  const ref = useRef<HTMLVideoElement>(null);
+  const ambientRef = useRef<HTMLVideoElement>(null);
+  const [reduced] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia(REDUCED_MOTION_QUERY).matches,
+  );
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || reduced) return;
+    const desktop = window.matchMedia(DESKTOP_QUERY);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const ambient = desktop.matches ? ambientRef.current : null;
+        if (entry.isIntersecting) {
+          // Autoplay engellenirse (dusuk guc modu vb.) sessizce ilk kare kalir
+          video.play().catch(() => {});
+          if (ambient) {
+            ambient.currentTime = video.currentTime;
+            ambient.play().catch(() => {});
+          }
+        } else {
+          video.pause();
+          ambientRef.current?.pause();
+        }
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [reduced]);
+
+  return { ref, ambientRef, reduced };
+};
 
 const TimeBlock = ({ value, label }: { value: number; label: string }) => {
   const display = value.toString().padStart(2, "0");
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-12 h-14 sm:w-14 sm:h-16 md:w-16 md:h-20 bg-zinc-950/90 border border-zinc-800 rounded-lg overflow-hidden">
+      <div className="relative w-12 h-14 sm:w-14 sm:h-16 md:w-16 md:h-20 bg-black/50 backdrop-blur-sm border border-zinc-800 rounded-lg overflow-hidden">
         <AnimatePresence initial={false} mode="popLayout">
           <motion.span
             key={display}
@@ -53,6 +108,7 @@ const DiscountBanner = () => {
   };
 
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+  const { ref: videoRef, ambientRef, reduced } = useInViewVideo();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -63,78 +119,105 @@ const DiscountBanner = () => {
   }, []);
 
   return (
-    <section className="py-12 relative overflow-hidden bg-black">
-      {/* Single subtle ambient glow */}
+    <section className="relative overflow-hidden bg-zinc-950 py-28 md:py-10">
+      {/* Ambient arka plan (md+): ayni videonun buyutulmus, bulanik kopyasi
+          tum section'i kapliyor — video "arka planda donuyor" hissi. Ust/alt
+          kenarlar zinc-950'ye eriyor, Hero'dan kesintisiz gecis. */}
+      <div aria-hidden className="absolute inset-0 hidden md:block pointer-events-none">
+        {!reduced && (
+          <video
+            ref={ambientRef}
+            src={PROMO_VIDEO}
+            muted
+            loop
+            playsInline
+            preload="none"
+            className="w-full h-full object-cover scale-125 blur-3xl opacity-45 saturate-150"
+          />
+        )}
+        <div className="absolute inset-0 bg-zinc-950/50" />
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-zinc-950/40 to-zinc-950/85" />
+        <div className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-zinc-950 via-zinc-950/60 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-56 bg-linear-to-t from-zinc-950 via-zinc-950/60 to-transparent" />
+      </div>
+
+      {/* Metin tarafinda Hero'daki gibi cok hafif izgara */}
       <div
         aria-hidden
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-64 bg-emerald-600/[0.04] rounded-full blur-3xl pointer-events-none"
+        className="absolute inset-y-0 right-0 w-1/2 bg-grid-dark opacity-40 pointer-events-none hidden md:block"
       />
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="relative bg-zinc-950/80 backdrop-blur-sm border border-emerald-500/20 rounded-2xl p-6 md:p-8 lg:p-10 shadow-lg shadow-emerald-500/5">
-            <div className="grid md:grid-cols-[1fr_auto] gap-8 md:gap-10 items-center">
-              {/* Left: Info + CTA */}
-              <div className="text-center md:text-left">
-                {/* <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full mb-4">
-                  <Percent className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">
-                    Özel Kampanya
-                  </span>
-                </div> */}
+      {/* container/grid bilerek position'siz: mobilde video section'a gore
+          absolute konumlanip tum arka plani kapliyor. */}
+      <div className="container mx-auto px-4">
+        <div className="grid md:grid-cols-[auto_1fr] gap-12 lg:gap-20 xl:gap-28 items-center">
+          {/* Video — mobilde section arka plani; md+ Header ile ayni container'in
+              sol kenarindan (logo hizasi) basliyor,
+              tam 9:16 (kirpilmadan). Cerceve yok, kenarlar maskeyle zinc-950'ye
+              eriyor; Hero'nun alt fade'inden kesintisiz devam ediyor. */}
+          <div
+            aria-hidden={!reduced}
+            className="absolute inset-0 md:relative md:inset-auto md:h-[min(94vh,940px)] md:aspect-[9/16] video-edge-fade"
+          >
+            <video
+              ref={videoRef}
+              src={PROMO_VIDEO}
+              muted
+              loop
+              playsInline
+              preload={reduced ? "metadata" : "none"}
+              controls={reduced}
+              className="w-full h-full object-cover"
+            />
+            {/* Hero ile ayni dil: mobilde duz karartma, md+ alttan hafif koyulasma */}
+            <div className="absolute inset-0 bg-black/65 md:hidden pointer-events-none" />
+            <div className="absolute inset-0 hidden md:block bg-linear-to-t from-black/45 via-black/5 to-black/20 pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-40 bg-linear-to-b from-zinc-950 via-zinc-950/50 to-transparent pointer-events-none md:hidden" />
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-zinc-950 via-zinc-950/50 to-transparent pointer-events-none md:hidden" />
+          </div>
 
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 leading-tight">
-                  Ön Rezervasyon
-                  {/* Ön Rezervasyona{" "} */}
-                  {/* <span className="text-emerald-400">%20 İndirim</span> */}
-                </h2>
+          {/* Right: Info + Countdown + CTA */}
+          <Reveal delay={0.15} className="relative z-10 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 text-emerald-400 text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-4">
+              <CalendarCheck className="w-4 h-4" />
+              Yaklaşan Yarışma
+            </div>
 
-                <p className="text-sm sm:text-base text-zinc-400 mb-6 max-w-md mx-auto md:mx-0">
-                  Ön rezervasyon yapan sporcular, çekim planımıza yarışma
-                  öncesinde eklenir. Yarışma günü standımıza uğrayarak ödemenizi
-                  tamamlayabilir, çekim sürecinizi kolayca başlatabilirsiniz.
-                </p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4 leading-tight">
+              Ön Rezervasyon
+            </h2>
 
-                <Link
-                  to="/rezervasyon"
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Hemen Rezervasyon Yap
-                </Link>
+            <p className="text-sm sm:text-base md:text-lg text-zinc-300 md:text-zinc-400 mb-8 max-w-xl mx-auto md:mx-0">
+              Ön rezervasyon yapan sporcular, çekim planımıza yarışma
+              öncesinde eklenir. Yarışma günü standımıza uğrayarak ödemenizi
+              tamamlayabilir, çekim sürecinizi kolayca başlatabilirsiniz.
+            </p>
 
-                {/* <p className="text-[11px] text-zinc-600 mt-3">
-                  * İndirim sadece ön rezervasyon + nakit ödeme için geçerlidir
-                </p> */}
+            <div className="mb-8">
+              <div className="flex items-center justify-center md:justify-start gap-1.5 text-zinc-500 text-xs mb-3">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="uppercase tracking-wider">Yarışma Tarihi</span>
               </div>
 
-              {/* Right: Countdown */}
-              <div className="border-t md:border-t-0 md:border-l border-zinc-800 pt-6 md:pt-0 md:pl-10">
-                <div className="flex items-center justify-center md:justify-start gap-1.5 text-zinc-500 text-xs mb-3">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span className="uppercase tracking-wider">
-                    Yarışma Tarihi
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
-                  <TimeBlock value={timeLeft.days} label="Gün" />
-                  <span className="text-zinc-700 font-bold text-lg pb-4">
-                    :
-                  </span>
-                  <TimeBlock value={timeLeft.hours} label="Saat" />
-                  <span className="text-zinc-700 font-bold text-lg pb-4">
-                    :
-                  </span>
-                  <TimeBlock value={timeLeft.minutes} label="Dk" />
-                  <span className="text-zinc-700 font-bold text-lg pb-4">
-                    :
-                  </span>
-                  <TimeBlock value={timeLeft.seconds} label="Sn" />
-                </div>
+              <div className="flex items-center justify-center md:justify-start gap-1.5 sm:gap-2">
+                <TimeBlock value={timeLeft.days} label="Gün" />
+                <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+                <TimeBlock value={timeLeft.hours} label="Saat" />
+                <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+                <TimeBlock value={timeLeft.minutes} label="Dk" />
+                <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
+                <TimeBlock value={timeLeft.seconds} label="Sn" />
               </div>
             </div>
-          </div>
+
+            <Link
+              to="/rezervasyon"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5"
+            >
+              <Calendar className="w-4 h-4" />
+              Hemen Rezervasyon Yap
+            </Link>
+          </Reveal>
         </div>
       </div>
     </section>

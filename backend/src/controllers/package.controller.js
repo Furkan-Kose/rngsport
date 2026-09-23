@@ -16,7 +16,7 @@ const IMAGE_FILE_REGEX = /^[a-z0-9-]+\.(webp|jpe?g|png)$/;
 // ve harici URL'ler olduğu gibi geçer (geriye uyumluluk).
 const resolveImage = (image) => {
   if (image?.startsWith(R2_IMAGE_PREFIX)) {
-    const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+    const backendUrl = process.env.BACKEND_URL || "http://localhost:3000";
     return `${backendUrl}/api/packages/image/${image.slice(R2_IMAGE_PREFIX.length)}`;
   }
   return image;

@@ -37,6 +37,21 @@ const faqs = [
     answer:
       "Standart teslimatımız en hızlı ulaşım için dijitaldir. Ancak talep edilmesi durumunda; özel tasarım poster, kanvas tablo veya anı albümü gibi baskılı ürünler için yarışma sonrası ekibimizle iletişime geçebilirsiniz.",
   },
+  {
+    question: "Hesap oluşturmam gerekiyor mu?",
+    answer:
+      "Evet. Rezervasyon sırasında oluşturduğun hesap sayesinde siparişlerini takip edebilir, içeriklerin hazır olduğunda kişisel galerine ulaşabilir ve sonraki yarışmalarda hesabına giriş yaparak bilgilerini tekrar girmeden daha hızlı rezervasyon oluşturabilirsin.",
+  },
+  {
+    question: "Rezervasyonu yarışmadan önce yapmak zorunda mıyım?",
+    answer:
+      "Önceden rezervasyon yapmanı öneriyoruz. Böylece sporcunun bilgileri çekim ekibimize önceden ulaşır ve süreç yarışma günü daha hızlı ilerler.",
+  },
+  {
+    question: "Rezervasyonumu güncelleyebilir miyim?",
+    answer:
+      "Evet. Kullanıcı paneline giriş yaparak mevcut rezervasyon bilgilerini görüntüleyebilir ve gerekli güncellemeleri kolayca yapabilirsin.",
+  },
 ];
 
 const FAQ = () => {
