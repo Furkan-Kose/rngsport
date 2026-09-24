@@ -67,13 +67,13 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Arka plan videosu — poster ilk boyayi verir ve video engellenirse kalici yedek olur */}
-      <div className="absolute inset-0">
+      {/* Arka plan videosu — bilerek poster yok: acilista once gorsel, sonra
+          video gecisi istenmiyor. Video gelene kadar zemin siyah kalir. */}
+      <div className="absolute inset-0 bg-black">
         {videoSrc ? (
           <video
             key={videoSrc}
             src={videoSrc}
-            poster="/hero.webp"
             autoPlay
             muted
             loop

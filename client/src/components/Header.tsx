@@ -55,9 +55,9 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
             <img
-              src="/logo.PNG"
-              alt="Ritmika Cimnastik"
-              className="w-30 h-30 transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(16,185,129,0.35)]"
+              src="/logo-web.png"
+              alt="RNG Sport"
+              className="h-11 md:h-12 w-auto transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(16,185,129,0.35)]"
             />
           </Link>
 

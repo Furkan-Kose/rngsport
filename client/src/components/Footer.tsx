@@ -33,9 +33,9 @@ const Footer = () => {
           <div className="md:col-span-2">
             <a href="#home" className="flex items-center gap-3 mb-6 group">
               <img
-                src="/logo.PNG"
-                alt="Ritmika Cimnastik"
-                className="w-30 h-30 transition-transform duration-300 group-hover:scale-105"
+                src="/logo-web.png"
+                alt="RNG Sport"
+                className="h-16 w-auto transition-transform duration-300 group-hover:scale-105"
               />
             </a>
             <p className="text-gray-400 max-w-md mb-6 leading-relaxed">
