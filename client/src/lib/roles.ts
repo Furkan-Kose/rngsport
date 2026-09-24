@@ -8,6 +8,7 @@ export const ROLES = {
 } as const;
 
 export const STAFF_ROLES: string[] = [ROLES.PHOTOGRAPHER, ROLES.VIDEOGRAPHER];
+export const PANEL_ACCOUNT_ROLES: string[] = [ROLES.ADMIN, ...STAFF_ROLES];
 export const SHOOTING_LIST_ROLES: string[] = [ROLES.ADMIN, ...STAFF_ROLES];
 
 export type Track = 'all' | 'photo' | 'video';

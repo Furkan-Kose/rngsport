@@ -1,4 +1,15 @@
-import { Instagram, Facebook, Phone, ShieldCheck } from "lucide-react";
+import { Instagram, Mail, Phone, ShieldCheck } from "lucide-react";
+
+const socialLinks = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/range.media",
+    icon: Instagram,
+    external: true,
+  },
+  { label: "E-posta", href: "mailto:range.media0@gmail.com", icon: Mail },
+  { label: "Telefon", href: "tel:+905398444521", icon: Phone },
+];
 import { Link } from "react-router";
 
 const Footer = () => {
@@ -33,24 +44,21 @@ const Footer = () => {
               sunuyoruz.
             </p>
             <div className="flex gap-3">
-              <a
-                href="#"
-                className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
-              >
-                <Phone className="w-5 h-5" />
-              </a>
+              {socialLinks.map(({ label, href, icon: Icon, external }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  title={label}
+                  {...(external && {
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                  })}
+                  className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
+                >
+                  <Icon className="w-5 h-5" />
+                </a>
+              ))}
             </div>
           </div>
 

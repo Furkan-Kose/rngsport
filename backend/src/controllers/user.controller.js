@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
-import { ROLES, STAFF_ROLES } from "../utils/roles.js";
+import { ROLES, PANEL_ACCOUNT_ROLES } from "../utils/roles.js";
 import {
   validateClubName,
   validateEmail,
@@ -269,8 +269,10 @@ export const sendSetPasswordLink = async (req, res) => {
   });
 };
 
-// --- Saha personeli (fotografci / videocu) ---
-// Bu uçlar sadece STAFF_ROLES üzerinde çalışır; admin hesapları buradan yönetilemez.
+// --- Panel hesapları (admin / fotografci / videocu) ---
+// Bu uçlar PANEL_ACCOUNT_ROLES üzerinde çalışır; müşteri hesaplarına dokunmaz.
+// Kendi hesabını silmek ve son admin'i silmek/düşürmek yasak — aksi halde
+// panele kimse giremez hale gelir.
 
 const staffSelect = {
   id: true,
@@ -281,7 +283,7 @@ const staffSelect = {
 };
 
 const validateStaffRole = (role) => {
-  if (!STAFF_ROLES.includes(role)) {
+  if (!PANEL_ACCOUNT_ROLES.includes(role)) {
     throw new AppError("Geçersiz personel rolü", 400);
   }
   return role;
@@ -292,15 +294,22 @@ const findStaffOrThrow = async (id) => {
     where: { id },
     select: { id: true, role: true },
   });
-  if (!user || !STAFF_ROLES.includes(user.role)) {
+  if (!user || !PANEL_ACCOUNT_ROLES.includes(user.role)) {
     throw new AppError("Personel bulunamadı", 404);
   }
   return user;
 };
 
+const assertNotLastAdmin = async () => {
+  const adminCount = await prisma.user.count({ where: { role: ROLES.ADMIN } });
+  if (adminCount <= 1) {
+    throw new AppError("Son yönetici hesabı silinemez veya yetkisi alınamaz", 400);
+  }
+};
+
 export const getStaff = async (_req, res) => {
   const data = await prisma.user.findMany({
-    where: { role: { in: STAFF_ROLES } },
+    where: { role: { in: PANEL_ACCOUNT_ROLES } },
     select: staffSelect,
     orderBy: { createdAt: "desc" },
   });
@@ -327,7 +336,7 @@ export const createStaff = async (req, res) => {
 
 export const updateStaff = async (req, res) => {
   const { id } = req.params;
-  await findStaffOrThrow(id);
+  const target = await findStaffOrThrow(id);
 
   const data = {};
   if (req.body.username !== undefined) data.username = validateUsername(req.body.username);
@@ -340,6 +349,14 @@ export const updateStaff = async (req, res) => {
 
   if (Object.keys(data).length === 0) {
     throw new AppError("Güncellenecek alan yok", 400);
+  }
+
+  // Bir admin'in yetkisi alınıyorsa
+  if (target.role === ROLES.ADMIN && data.role && data.role !== ROLES.ADMIN) {
+    if (id === req.user.id) {
+      throw new AppError("Kendi yönetici yetkinizi kaldıramazsınız", 400);
+    }
+    await assertNotLastAdmin();
   }
 
   const user = await prisma.user
@@ -356,7 +373,12 @@ export const updateStaff = async (req, res) => {
 
 export const deleteStaff = async (req, res) => {
   const { id } = req.params;
-  await findStaffOrThrow(id);
+  if (id === req.user.id) {
+    throw new AppError("Kendi hesabınızı silemezsiniz", 400);
+  }
+  const target = await findStaffOrThrow(id);
+  if (target.role === ROLES.ADMIN) await assertNotLastAdmin();
+
   await prisma.user
     .delete({ where: { id } })
     .catch(rethrowPrismaError({ notFound: "Personel bulunamadı" }));

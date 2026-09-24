@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
 import api from '../../lib/api';
-import { ROLES, roleLabel } from '../../lib/roles';
+import { PANEL_ACCOUNT_ROLES, ROLES, roleLabel } from '../../lib/roles';
 
 export interface StaffUser {
   id: string;
@@ -18,8 +18,6 @@ interface Props {
   onClose: () => void;
   onSaved: () => void;
 }
-
-const STAFF_ROLE_OPTIONS = [ROLES.PHOTOGRAPHER, ROLES.VIDEOGRAPHER];
 
 const errorMessage = (err: unknown) =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -79,7 +77,7 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
       >
         <div className="p-5 border-b border-gray-700 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">
-            {isEdit ? 'Personeli Düzenle' : 'Personel Ekle'}
+            {isEdit ? 'Hesabı Düzenle' : 'Hesap Ekle'}
           </h2>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
@@ -126,12 +124,17 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
               onChange={(e) => setRole(e.target.value)}
               className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
             >
-              {STAFF_ROLE_OPTIONS.map((option) => (
+              {PANEL_ACCOUNT_ROLES.map((option) => (
                 <option key={option} value={option}>
                   {roleLabel(option)}
                 </option>
               ))}
             </select>
+            {role === ROLES.ADMIN && (
+              <p className="text-[11px] text-amber-400/90 mt-1">
+                Yönetici tüm panele erişir: siparişler, rezervasyonlar, kullanıcılar ve bu hesaplar.
+              </p>
+            )}
             {isEdit && (
               <p className="text-[11px] text-gray-500 mt-1">
                 Görev değişikliği, kullanıcı yeniden giriş yaptığında geçerli olur.

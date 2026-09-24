@@ -123,7 +123,10 @@ const DiscountBanner = () => {
       {/* Ambient arka plan (md+): ayni videonun buyutulmus, bulanik kopyasi
           tum section'i kapliyor — video "arka planda donuyor" hissi. Ust/alt
           kenarlar zinc-950'ye eriyor, Hero'dan kesintisiz gecis. */}
-      <div aria-hidden className="absolute inset-0 hidden md:block pointer-events-none">
+      <div
+        aria-hidden
+        className="absolute inset-0 hidden md:block pointer-events-none"
+      >
         {!reduced && (
           <video
             ref={ambientRef}
@@ -177,20 +180,23 @@ const DiscountBanner = () => {
           </div>
 
           {/* Right: Info + Countdown + CTA */}
-          <Reveal delay={0.15} className="relative z-10 text-center md:text-left">
+          <Reveal
+            delay={0.15}
+            className="relative z-10 text-center md:text-left"
+          >
             <div className="inline-flex items-center gap-2 text-emerald-400 text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-4">
               <CalendarCheck className="w-4 h-4" />
               Yaklaşan Yarışma
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4 leading-tight">
-              Ön Rezervasyon
+              Yarışma Gününe Özel %15 İndirim
             </h2>
 
             <p className="text-sm sm:text-base md:text-lg text-zinc-300 md:text-zinc-400 mb-8 max-w-xl mx-auto md:mx-0">
-              Ön rezervasyon yapan sporcular, çekim planımıza yarışma
-              öncesinde eklenir. Yarışma günü standımıza uğrayarak ödemenizi
-              tamamlayabilir, çekim sürecinizi kolayca başlatabilirsiniz.
+              Ön rezervasyonunuzu oluşturun, çekim planımıza önceden dahil olun.
+              Yarışma günü standımızda ödemenizi tamamlayın; nakit ödemelerde
+              %15 indirimden yararlanın.
             </p>
 
             <div className="mb-8">

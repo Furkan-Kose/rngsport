@@ -11,6 +11,9 @@ export const ROLES = {
 // Admin panelinden açılabilen saha personeli rolleri
 export const STAFF_ROLES = [ROLES.PHOTOGRAPHER, ROLES.VIDEOGRAPHER];
 
+// Admin panelindeki "Personel" sekmesinden yönetilen hesaplar (kullanıcı adıyla giriş yapanlar)
+export const PANEL_ACCOUNT_ROLES = [ROLES.ADMIN, ...STAFF_ROLES];
+
 // Çekim listesini görebilen roller
 export const SHOOTING_LIST_ROLES = [ROLES.ADMIN, ...STAFF_ROLES];
 

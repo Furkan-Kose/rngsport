@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Camera, Loader2, Pencil, Plus, Trash2, Video } from 'lucide-react';
+import { Camera, Loader2, Pencil, Plus, ShieldCheck, Trash2, Video } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 import { ROLES, roleLabel } from '../../lib/roles';
 import StaffFormModal, { type StaffUser } from './StaffFormModal';
 
-// Saha personeli (fotoğrafçı / videocu) yönetimi.
-// Bu hesaplar admin panelinde sadece Çekim Listesi'ni görür.
+// Panel hesapları yönetimi: yöneticiler + saha personeli (fotoğrafçı / videocu).
+// Personel panelde sadece Çekim Listesi'ni görür; yönetici her şeyi.
 const StaffPanel = () => {
+  const { user: currentUser } = useAuth();
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -52,7 +54,10 @@ const StaffPanel = () => {
       await fetchStaff();
     } catch (error) {
       console.error('Personel silinemedi:', error);
-      toast.error('Personel silinemedi');
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || 'Personel silinemedi',
+      );
     } finally {
       setDeletingId(null);
     }
@@ -65,16 +70,27 @@ const StaffPanel = () => {
       year: 'numeric',
     }).format(new Date(date));
 
+  const roleBadgeStyles: Record<string, { icon: typeof Camera; className: string }> = {
+    [ROLES.ADMIN]: {
+      icon: ShieldCheck,
+      className: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    },
+    [ROLES.PHOTOGRAPHER]: {
+      icon: Camera,
+      className: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    },
+    [ROLES.VIDEOGRAPHER]: {
+      icon: Video,
+      className: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    },
+  };
+
   const roleBadge = (role: string) => {
-    const isPhoto = role === ROLES.PHOTOGRAPHER;
-    const Icon = isPhoto ? Camera : Video;
+    const { icon: Icon, className } =
+      roleBadgeStyles[role] ?? roleBadgeStyles[ROLES.VIDEOGRAPHER];
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full border ${
-          isPhoto
-            ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-            : 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-        }`}
+        className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-full border ${className}`}
       >
         <Icon className="w-3 h-3" />
         {roleLabel(role)}
@@ -86,14 +102,14 @@ const StaffPanel = () => {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <p className="text-gray-400 text-sm">
-          Fotoğrafçı ve videocu hesapları — panelde sadece Çekim Listesi&apos;ni görürler.
+          Yönetici, fotoğrafçı ve videocu hesapları. Fotoğrafçı ve videocu panelde sadece Çekim Listesi&apos;ni görür.
         </p>
         <button
           onClick={openCreate}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors self-start"
         >
           <Plus className="w-4 h-4" />
-          Personel Ekle
+          Hesap Ekle
         </button>
       </div>
 
@@ -122,7 +138,12 @@ const StaffPanel = () => {
               <tbody className="divide-y divide-gray-700/50">
                 {staff.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-700/20 transition-colors">
-                    <td className="px-4 py-3 text-white font-medium">{user.name || '-'}</td>
+                    <td className="px-4 py-3 text-white font-medium">
+                      {user.name || '-'}
+                      {user.id === currentUser?.id && (
+                        <span className="ml-2 text-[11px] font-normal text-amber-400">(Siz)</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-300 text-sm font-mono">
                       {user.username || '-'}
                     </td>
@@ -139,6 +160,7 @@ const StaffPanel = () => {
                           <Pencil className="w-4 h-4" />
                           Düzenle
                         </button>
+                        {user.id !== currentUser?.id && (
                         <button
                           onClick={() => handleDelete(user)}
                           disabled={deletingId === user.id}
@@ -151,6 +173,7 @@ const StaffPanel = () => {
                           )}
                           Sil
                         </button>
+                        )}
                       </div>
                     </td>
                   </tr>
