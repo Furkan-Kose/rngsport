@@ -1,18 +1,23 @@
 import { Resend } from "resend";
+import { env } from "../utils/env.js";
+
+// Panele .env'den kopyalanan değer tırnaklarıyla gelebiliyor ("RNG Sport <...>");
+// Railway bunları değerin parçası sayar ve Resend from alanını 422 ile reddeder.
+const unquote = (value) => value?.replace(/^(["'])(.*)\1$/, "$2");
 
 // MAIL_FROM tanımsızsa Resend'in paylaşımlı test adresine düşülür. DİKKAT: o adres
 // SADECE Resend hesabının kendi e-postasına gönderim yapabilir; başka bir alıcıya
 // gönderim 403 ile reddedilir ve sendSafe hatayı yuttuğu için sessizce kaybolur.
 // Canlıda mutlaka doğrulanmış bir alan adı kullanılmalı.
-const FROM = process.env.MAIL_FROM || "RNG Sport <onboarding@resend.dev>";
+const FROM = unquote(env("MAIL_FROM")) || "RNG Sport <onboarding@resend.dev>";
 // Gönderen adres bir posta kutusu olmayabilir (ör. bilgi@rngsport.com). Tanımlıysa
 // müşterinin "Yanıtla"sı gerçek bir kutuya düşer; tanımsızsa davranış değişmez.
-const REPLY_TO = process.env.MAIL_REPLY_TO;
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const REPLY_TO = unquote(env("MAIL_REPLY_TO"));
+const FRONTEND_URL = env("FRONTEND_URL") || "http://localhost:5173";
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+const RESEND_API_KEY = unquote(env("RESEND_API_KEY"));
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+if (resend) console.log(`[mail] Resend hazır, gönderen: ${FROM}`);
 
 // Mail hatası hiçbir API isteğini bozmamalı: asla throw etmez, sadece loglar.
 const sendSafe = async ({ to, subject, html }) => {
@@ -131,18 +136,27 @@ export const sendDeliveryEmail = (to, name, setPasswordToken = null) => {
   });
 };
 
-// Rezervasyon oluşturulduğunda gönderilir (elden nakit akışı — ödeme yarışma günü).
-export const sendReservationCreatedEmail = (to, reservation, setPasswordToken = null) => {
-  const claimUrl = setPasswordUrl(setPasswordToken);
-  const itemsHtml = reservation.items
-    .map(
-      (item) =>
-        `<tr>
+// Sipariş/rezervasyon kalemleri + toplam satırı
+const itemsTable = (items, totalPrice) => `
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;color:#3f3f46;">
+          ${items
+            .map(
+              (item) =>
+                `<tr>
            <td style="padding:6px 0;border-bottom:1px solid #f4f4f5;">${item.packageName} <span style="color:#a1a1aa;">(${item.seriesCount} seri)</span></td>
            <td style="padding:6px 0;border-bottom:1px solid #f4f4f5;text-align:right;">× ${item.quantity}</td>
          </tr>`
-    )
-    .join("");
+            )
+            .join("")}
+          <tr>
+            <td style="padding:10px 0;font-weight:bold;color:#18181b;">Toplam</td>
+            <td style="padding:10px 0;font-weight:bold;color:#18181b;text-align:right;">₺${totalPrice.toLocaleString("tr-TR")}</td>
+          </tr>
+        </table>`;
+
+// Rezervasyon oluşturulduğunda gönderilir (elden nakit akışı — ödeme yarışma günü).
+export const sendReservationCreatedEmail = (to, reservation, setPasswordToken = null) => {
+  const claimUrl = setPasswordUrl(setPasswordToken);
 
   return sendSafe({
     to,
@@ -151,13 +165,7 @@ export const sendReservationCreatedEmail = (to, reservation, setPasswordToken = 
       title: "Rezervasyonunuz Alındı",
       bodyHtml: `<p>${greet(reservation.athleteName)}</p>
         <p>Rezervasyonunuz oluşturuldu. Ödemenizi yarışma günü alandaki standımızda yapabilirsiniz.</p>
-        <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;color:#3f3f46;">
-          ${itemsHtml}
-          <tr>
-            <td style="padding:10px 0;font-weight:bold;color:#18181b;">Toplam</td>
-            <td style="padding:10px 0;font-weight:bold;color:#18181b;text-align:right;">₺${reservation.totalPrice.toLocaleString("tr-TR")}</td>
-          </tr>
-        </table>
+        ${itemsTable(reservation.items, reservation.totalPrice)}
         ${
           claimUrl
             ? "<p>Fotoğraflarınız çekim sonrası hesabınıza yüklenecek. Hesabınıza ulaşmak için şifrenizi belirleyin.</p>"
@@ -171,16 +179,6 @@ export const sendReservationCreatedEmail = (to, reservation, setPasswordToken = 
 };
 
 export const sendOrderPaidEmail = (to, order, setPasswordToken = null) => {
-  const itemsHtml = order.items
-    .map(
-      (item) =>
-        `<tr>
-           <td style="padding:6px 0;border-bottom:1px solid #f4f4f5;">${item.packageName} <span style="color:#a1a1aa;">(${item.seriesCount} seri)</span></td>
-           <td style="padding:6px 0;border-bottom:1px solid #f4f4f5;text-align:right;">× ${item.quantity}</td>
-         </tr>`
-    )
-    .join("");
-
   const claimUrl = setPasswordUrl(setPasswordToken);
 
   return sendSafe({
@@ -190,13 +188,7 @@ export const sendOrderPaidEmail = (to, order, setPasswordToken = null) => {
       title: "Ödemeniz Başarıyla Alındı",
       bodyHtml: `<p>${greet(order.athleteName)}</p>
         <p>Siparişiniz için teşekkürler! Ödemeniz başarıyla alındı, çekiminiz planlandığı şekilde gerçekleştirilecek.</p>
-        <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;color:#3f3f46;">
-          ${itemsHtml}
-          <tr>
-            <td style="padding:10px 0;font-weight:bold;color:#18181b;">Toplam</td>
-            <td style="padding:10px 0;font-weight:bold;color:#18181b;text-align:right;">₺${order.totalPrice.toLocaleString("tr-TR")}</td>
-          </tr>
-        </table>
+        ${itemsTable(order.items, order.totalPrice)}
         <p>Fotoğraflarınız hazır olduğunda size tekrar e-posta göndereceğiz.${
           claimUrl ? " Hesabınıza şimdiden ulaşmak için şifrenizi belirleyebilirsiniz." : ""
         }</p>`,

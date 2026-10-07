@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Images,
-  Download,
-  X,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Camera,
   Video,
   FolderDown,
-  Play,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import api, { API_URL } from "../lib/api";
 import SEO from "../components/SEO";
+import MediaLightbox from "../components/MediaLightbox";
+import type { MediaItem } from "../lib/media";
+import MediaGrid from "../components/MediaGrid";
+import { triggerDownload } from "../lib/download";
 
 interface GalleryPhoto {
   id: string;
@@ -34,8 +32,6 @@ interface Pagination {
 }
 
 type TypeFilter = "all" | "image" | "video";
-
-const isVideo = (photo: GalleryPhoto) => photo.contentType?.startsWith("video/");
 
 const MyGalleryPage = () => {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
@@ -92,12 +88,7 @@ const MyGalleryPage = () => {
     setDownloadingId(photo.id);
     try {
       const { data } = await api.get(`/api/gallery/my/${photo.id}/download`);
-      const link = document.createElement("a");
-      link.href = data.url;
-      link.download = photo.fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      triggerDownload(data.url, photo.fileName);
     } catch (error) {
       console.error("İndirme hatası:", error);
       toast.error("Fotoğraf indirilemedi");
@@ -107,35 +98,6 @@ const MyGalleryPage = () => {
   };
 
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
-  const lightboxPhoto = lightboxIndex !== null ? photos[lightboxIndex] : null;
-  const isLightboxOpen = lightboxPhoto !== null;
-
-  // Lightbox açıkken sayfa kaydırmasını kilitle + klavye kısayolları.
-  // Cleanup'lı effect: component açıkken unmount olsa bile scroll kilitli kalmaz.
-  useEffect(() => {
-    if (!isLightboxOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setLightboxIndex(null);
-      } else if (e.key === "ArrowLeft") {
-        setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
-      } else if (e.key === "ArrowRight") {
-        setLightboxIndex((prev) =>
-          prev !== null && prev < photos.length - 1 ? prev + 1 : prev
-        );
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [isLightboxOpen, photos.length]);
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
@@ -243,54 +205,12 @@ const MyGalleryPage = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {photos.map((photo, index) => (
-                  <div
-                    key={photo.id}
-                    className="relative group aspect-square rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 cursor-pointer"
-                    onClick={() => setLightboxIndex(index)}
-                  >
-                    {isVideo(photo) ? (
-                      <video
-                        src={photo.url}
-                        preload="metadata"
-                        muted
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <img
-                        src={photo.url}
-                        alt={photo.fileName}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    )}
-                    {isVideo(photo) && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                          <Play className="w-5 h-5 text-white ml-0.5" fill="currentColor" />
-                        </div>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300" />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownload(photo);
-                      }}
-                      disabled={downloadingId === photo.id}
-                      className="absolute bottom-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-white opacity-0 group-hover:opacity-100 hover:bg-emerald-600/80 transition-all duration-300"
-                      title="İndir"
-                    >
-                      {downloadingId === photo.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Download className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <MediaGrid
+                items={photos}
+                onOpen={setLightboxIndex}
+                onDownload={(item) => handleDownload(item as GalleryPhoto)}
+                downloadingId={downloadingId}
+              />
 
               {hasMore && (
                 <div className="flex justify-center mt-8">
@@ -309,94 +229,13 @@ const MyGalleryPage = () => {
         </motion.div>
       </div>
 
-      {/* Lightbox — document.body'ye portal'lanır: MainLayout'taki
-          `relative z-10` sarmalayıcı stacking context oluşturduğu için,
-          portal olmadan z-index ne olursa olsun header (z-50) üstte kalır. */}
-      {createPortal(
-        <AnimatePresence>
-          {lightboxPhoto && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
-              onClick={() => setLightboxIndex(null)}
-            >
-              <button
-                className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                onClick={() => setLightboxIndex(null)}
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              {lightboxIndex !== null && lightboxIndex > 0 && (
-                <button
-                  className="absolute left-2 sm:left-6 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLightboxIndex(lightboxIndex - 1);
-                  }}
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-              )}
-              {lightboxIndex !== null && lightboxIndex < photos.length - 1 && (
-                <button
-                  className="absolute right-2 sm:right-6 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLightboxIndex(lightboxIndex + 1);
-                  }}
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              )}
-
-              <motion.div
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.95 }}
-                className="max-w-5xl max-h-[85vh] flex flex-col items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {isVideo(lightboxPhoto) ? (
-                  <video
-                    key={lightboxPhoto.id}
-                    src={lightboxPhoto.url}
-                    controls
-                    autoPlay
-                    className="max-w-full max-h-[75vh] rounded-xl"
-                  />
-                ) : (
-                  <img
-                    src={lightboxPhoto.url}
-                    alt={lightboxPhoto.fileName}
-                    className="max-w-full max-h-[75vh] object-contain rounded-xl"
-                  />
-                )}
-                <div className="flex items-center gap-4 mt-4">
-                  <p className="text-sm text-zinc-400 truncate max-w-60">
-                    {lightboxPhoto.fileName}
-                  </p>
-                  <button
-                    onClick={() => handleDownload(lightboxPhoto)}
-                    disabled={downloadingId === lightboxPhoto.id}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-medium transition-all duration-300 disabled:opacity-50"
-                  >
-                    {downloadingId === lightboxPhoto.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4" />
-                    )}
-                    İndir
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+      <MediaLightbox
+        items={photos}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+        onDownload={(item: MediaItem) => handleDownload(item as GalleryPhoto)}
+        downloadingId={downloadingId}
+      />
     </div>
   );
 };

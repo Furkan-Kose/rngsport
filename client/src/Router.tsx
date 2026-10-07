@@ -20,6 +20,8 @@ import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
 import ProfilePage from "./pages/ProfilePage";
 import MyGalleryPage from "./pages/MyGalleryPage";
+import AwardCeremoniesPage from "./pages/AwardCeremoniesPage";
+import AwardCeremonyDetailPage from "./pages/AwardCeremonyDetailPage";
 
 import LoginPage from "./pages/admin/LoginPage";
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -31,6 +33,8 @@ import UsersPage from "./pages/admin/UsersPage";
 import UserDetailPage from "./pages/admin/UserDetailPage";
 import UserGalleryPage from "./pages/admin/UserGalleryPage";
 import TournamentsPage from "./pages/admin/TournamentsPage";
+import AdminAwardCeremoniesPage from "./pages/admin/AwardCeremoniesPage";
+import AwardCeremonyGalleryPage from "./pages/admin/AwardCeremonyGalleryPage";
 import { SHOOTING_LIST_ROLES } from "./lib/roles";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -54,6 +58,14 @@ export const router = createBrowserRouter([
       {
         path: "/galeri",
         element: <GalleryPage />,
+      },
+      {
+        path: "/odul-torenleri",
+        element: <AwardCeremoniesPage />,
+      },
+      {
+        path: "/odul-torenleri/:slug",
+        element: <AwardCeremonyDetailPage />,
       },
       {
         path: "/paketler",
@@ -181,6 +193,14 @@ export const router = createBrowserRouter([
       {
         path: "/admin/tournaments",
         element: <TournamentsPage />,
+      },
+      {
+        path: "/admin/award-ceremonies",
+        element: <AdminAwardCeremoniesPage />,
+      },
+      {
+        path: "/admin/award-ceremonies/:id",
+        element: <AwardCeremonyGalleryPage />,
       },
     ],
   },

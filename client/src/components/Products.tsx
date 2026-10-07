@@ -52,13 +52,13 @@ export const ProductCard = ({ product }: { product: Product }) => (
 
 /**
  * Ana sayfa "Özel Ürünler" bölümü.
- * Ana sayfadaki siyah ↔ zinc-950 alternasyonuna dahil: Paketler (zinc) ile
- * Galeri (zinc) arasında siyah zeminde durur, iki yanında da SectionDivider ile
+ * Ana sayfadaki siyah ↔ zinc-950 alternasyonuna dahil: Ödül Törenleri (siyah) ile
+ * Galeri (siyah) arasında zinc zeminde durur, iki yanında da SectionDivider ile
  * çapraz geçiş vardır.
  */
 const Products = () => {
   return (
-    <section id="urunler" className="relative py-24 bg-black">
+    <section id="urunler" className="relative py-24 bg-zinc-950">
       <div className="container mx-auto px-4">
         <SectionHeader
           eyebrow="Özel Ürünler"

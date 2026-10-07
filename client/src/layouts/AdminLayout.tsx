@@ -91,6 +91,17 @@ const AdminLayout = () => {
       ),
     },
     {
+      name: 'Ödül Törenleri',
+      path: '/admin/award-ceremonies',
+      roles: [ROLES.ADMIN],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="6" strokeWidth={2} />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+        </svg>
+      ),
+    },
+    {
       name: 'Kullanıcılar',
       path: '/admin/users',
       roles: [ROLES.ADMIN],

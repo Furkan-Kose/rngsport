@@ -1,26 +1,20 @@
 import crypto from "node:crypto";
-import { ZipArchive } from "archiver";
 import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { slugify } from "../utils/slugify.js";
+import {
+  assertUploadBatch,
+  validateUploadFile,
+  fileRecordFields,
+  streamZip,
+  zipFileName,
+} from "../utils/uploads.js";
 import {
   presignUpload,
   presignView,
   presignDownload,
   deleteObject,
-  getObjectStream,
 } from "../lib/r2.js";
-
-const MAX_FILES_PER_BATCH = 100;
-const MAX_IMAGE_SIZE = 30 * 1024 * 1024; // 30MB
-const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
-const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
-const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm"]);
-
-const getExtension = (fileName) => {
-  const ext = String(fileName).split(".").pop()?.toLowerCase();
-  return IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext) ? ext : null;
-};
 
 const sanitizeAlbum = (value) => {
   const trimmed = value ? String(value).trim().slice(0, 100) : "";
@@ -103,36 +97,9 @@ export const downloadAllMyPhotos = async (req, res) => {
     throw new AppError("İndirilecek dosya bulunamadı", 404);
   }
 
-  const zipName = album ? `rngsport-${slugify(album) || "galeri"}.zip` : "rngsport-galerim.zip";
-  res.setHeader("Content-Type", "application/zip");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename*=UTF-8''${encodeURIComponent(zipName)}`
-  );
-
-  // Foto/videolar zaten sıkıştırılmış — level 0 (store) ile CPU harcamadan paketle
-  const archive = new ZipArchive({ zlib: { level: 0 } });
-  archive.on("error", (err) => {
-    console.error("Zip stream hatası:", err);
-    res.destroy(err);
-  });
-  archive.pipe(res);
-
-  // Aynı dosya adları çakışmasın diye takip et; albümler zip içinde klasör olur
-  const usedNames = new Set();
-  for (const photo of photos) {
-    let name = photo.fileName;
-    if (usedNames.has(`${photo.album}/${name}`)) {
-      name = `${photo.id.slice(-6)}-${name}`;
-    }
-    usedNames.add(`${photo.album}/${name}`);
-    const entryName = photo.album ? `${photo.album}/${name}` : name;
-
-    const body = await getObjectStream(photo.r2Key);
-    archive.append(body, { name: entryName });
-  }
-
-  await archive.finalize();
+  const zipName = album ? zipFileName(album, "galeri") : "rngsport-galerim.zip";
+  // Albümler zip içinde klasör olur
+  await streamZip(res, photos, zipName, (photo) => photo.album);
 };
 
 // Tek fotoğraf için indirme URL'i (sahiplik kontrolü)
@@ -155,12 +122,10 @@ export const downloadMyPhoto = async (req, res) => {
 export const presignPhotoUploads = async (req, res) => {
   const { userId, album, files } = req.body;
 
-  if (!userId || !Array.isArray(files) || files.length === 0) {
-    throw new AppError("Kullanıcı ve dosya listesi gerekli", 400);
+  if (!userId) {
+    throw new AppError("Kullanıcı gerekli", 400);
   }
-  if (files.length > MAX_FILES_PER_BATCH) {
-    throw new AppError(`Tek seferde en fazla ${MAX_FILES_PER_BATCH} dosya yüklenebilir`, 400);
-  }
+  assertUploadBatch(files);
 
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true } });
   if (!user) {
@@ -169,31 +134,12 @@ export const presignPhotoUploads = async (req, res) => {
 
   const results = await Promise.all(
     files.map(async (file) => {
-      const { fileName, contentType, size } = file || {};
-      if (!fileName || !contentType) {
-        throw new AppError("Her dosya için ad ve tür gerekli", 400);
-      }
-      const isImage = String(contentType).startsWith("image/");
-      const isVideo = String(contentType).startsWith("video/");
-      if (!isImage && !isVideo) {
-        throw new AppError(`Sadece görsel veya video yüklenebilir: ${fileName}`, 400);
-      }
-      if (size && isImage && size > MAX_IMAGE_SIZE) {
-        throw new AppError(`Fotoğraf 30MB'ı aşamaz: ${fileName}`, 400);
-      }
-      if (size && isVideo && size > MAX_VIDEO_SIZE) {
-        throw new AppError(`Video 500MB'ı aşamaz: ${fileName}`, 400);
-      }
-      const ext = getExtension(fileName);
-      if (!ext) {
-        throw new AppError(`Desteklenmeyen dosya türü (jpg/png/webp/mp4/mov/webm): ${fileName}`, 400);
-      }
-
+      const ext = validateUploadFile(file);
       const key = buildUploadKey(user, album, ext);
       return {
         key,
-        fileName,
-        uploadUrl: await presignUpload(key, contentType),
+        fileName: file.fileName,
+        uploadUrl: await presignUpload(key, file.contentType),
       };
     })
   );
@@ -218,20 +164,15 @@ export const confirmPhotoUploads = async (req, res) => {
   // Eski (users/{id}/...) ve yeni (users/{isim}_{id}/...) şemaların ikisi de kabul edilir.
   const validPrefixes = [buildUserPrefix(user), `users/${userId}/`];
   const data = files.map((file) => {
-    const { key, fileName, size, contentType } = file || {};
+    const key = file?.key;
     if (!key || !validPrefixes.some((prefix) => String(key).startsWith(prefix))) {
       throw new AppError("Geçersiz dosya anahtarı", 400);
-    }
-    if (!fileName) {
-      throw new AppError("Dosya adı gerekli", 400);
     }
     return {
       userId,
       r2Key: key,
-      fileName: String(fileName).slice(0, 255),
       album: sanitizeAlbum(album),
-      size: Number.isFinite(size) ? Math.round(size) : null,
-      contentType: contentType ? String(contentType).slice(0, 100) : null,
+      ...fileRecordFields(file),
     };
   });
 

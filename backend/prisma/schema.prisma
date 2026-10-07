@@ -232,3 +232,36 @@ model ShootingListEntry {
   @@index([position])
   @@map("shooting_list_entries")
 }
+
+// Herkese açık ödül töreni galerileri (/odul-torenleri). Müşteri galerisinden
+// bağımsız: fotoğraflar kişiye değil törene bağlı, giriş gerekmeden görüntülenir.
+model AwardCeremony {
+  id          String   @id @default(cuid())
+  slug        String   @unique // URL: /odul-torenleri/{slug}
+  title       String
+  description String?
+  date        String? // Serbest metin: "12 Ekim 2026"
+  location    String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  photos AwardPhoto[]
+
+  @@map("award_ceremonies")
+}
+
+model AwardPhoto {
+  id          String   @id @default(cuid())
+  ceremonyId  String
+  r2Key       String   @unique // odul-torenleri/{slug}_{ceremonyId}/{uuid}.{ext}
+  fileName    String
+  size        Int?
+  contentType String?
+  createdAt   DateTime @default(now())
+
+  ceremony AwardCeremony @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+
+  @@index([ceremonyId])
+  @@map("award_photos")
+}

@@ -31,6 +31,7 @@ const Header = () => {
     { name: "Ana Sayfa", href: "/#" },
     { name: "Hakkımızda", href: "/hakkimizda" },
     { name: "Galeri", href: "/galeri" },
+    { name: "Ödül Törenleri", href: "/odul-torenleri" },
     { name: "Ürünler", href: "/urunler" },
     { name: "Paketler", href: "/paketler" },
   ];
