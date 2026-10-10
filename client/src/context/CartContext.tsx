@@ -14,6 +14,8 @@ export interface Package {
     2: number;
     3: number;
   };
+  // Sadakat puanı (seri başına). Eski sepetlerde (localStorage) olmayabilir.
+  loyaltyPoints?: number;
 }
 
 export interface CartItem {

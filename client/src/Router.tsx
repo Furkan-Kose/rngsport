@@ -1,7 +1,7 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 
 import MainLayout from "./layouts/MainLayout";
-import AdminLayout from "./layouts/AdminLayout";
 
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
@@ -23,18 +23,6 @@ import MyGalleryPage from "./pages/MyGalleryPage";
 import AwardCeremoniesPage from "./pages/AwardCeremoniesPage";
 import AwardCeremonyDetailPage from "./pages/AwardCeremonyDetailPage";
 
-import LoginPage from "./pages/admin/LoginPage";
-import DashboardPage from "./pages/admin/DashboardPage";
-import OrdersPage from "./pages/admin/OrdersPage";
-import ReservationsPage from "./pages/admin/ReservationsPage";
-import AdminPackagesPage from "./pages/admin/PackagesPage";
-import ShootingListPage from "./pages/admin/ShootingListPage";
-import UsersPage from "./pages/admin/UsersPage";
-import UserDetailPage from "./pages/admin/UserDetailPage";
-import UserGalleryPage from "./pages/admin/UserGalleryPage";
-import TournamentsPage from "./pages/admin/TournamentsPage";
-import AdminAwardCeremoniesPage from "./pages/admin/AwardCeremoniesPage";
-import AwardCeremonyGalleryPage from "./pages/admin/AwardCeremonyGalleryPage";
 import { SHOOTING_LIST_ROLES } from "./lib/roles";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -42,6 +30,25 @@ import KvkkMetni from "./pages/legal/KvkkMetni";
 import MesafeliSatis from "./pages/legal/MesafeliSatis";
 import IadeKosullari from "./pages/legal/IadeKosullari";
 import GizlilikPolitikasi from "./pages/legal/GizlilikPolitikasi";
+
+// Admin paneli ayrı parçalara bölünür (lazy): müşteriler admin kodunu indirmez.
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const LoginPage = lazy(() => import("./pages/admin/LoginPage"));
+const DashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
+const OrdersPage = lazy(() => import("./pages/admin/OrdersPage"));
+const ReservationsPage = lazy(() => import("./pages/admin/ReservationsPage"));
+const AdminPackagesPage = lazy(() => import("./pages/admin/PackagesPage"));
+const ShootingListPage = lazy(() => import("./pages/admin/ShootingListPage"));
+const UsersPage = lazy(() => import("./pages/admin/UsersPage"));
+const UserDetailPage = lazy(() => import("./pages/admin/UserDetailPage"));
+const UserGalleryPage = lazy(() => import("./pages/admin/UserGalleryPage"));
+const TournamentsPage = lazy(() => import("./pages/admin/TournamentsPage"));
+const AdminAwardCeremoniesPage = lazy(() => import("./pages/admin/AwardCeremoniesPage"));
+const AwardCeremonyGalleryPage = lazy(() => import("./pages/admin/AwardCeremonyGalleryPage"));
+const LoyaltyPage = lazy(() => import("./pages/admin/LoyaltyPage"));
+
+// Admin parçası yüklenirken (lazy) gösterilen boş koyu ekran
+const adminFallback = <div className="min-h-screen bg-gray-900" />;
 
 export const router = createBrowserRouter([
   {
@@ -152,13 +159,19 @@ export const router = createBrowserRouter([
   // Admin Login (Unprotected)
   {
     path: "/admin/login",
-    element: <LoginPage />,
+    element: (
+      <Suspense fallback={adminFallback}>
+        <LoginPage />
+      </Suspense>
+    ),
   },
   // Admin Panel (Protected — sadece admin rolü)
   {
     element: (
       <ProtectedRoute requiredRole="admin">
-        <AdminLayout />
+        <Suspense fallback={adminFallback}>
+          <AdminLayout />
+        </Suspense>
       </ProtectedRoute>
     ),
     children: [
@@ -202,6 +215,10 @@ export const router = createBrowserRouter([
         path: "/admin/award-ceremonies/:id",
         element: <AwardCeremonyGalleryPage />,
       },
+      {
+        path: "/admin/loyalty",
+        element: <LoyaltyPage />,
+      },
     ],
   },
   // Çekim Listesi — admin + saha personeli (fotografci / videocu).
@@ -209,7 +226,9 @@ export const router = createBrowserRouter([
   {
     element: (
       <ProtectedRoute requiredRoles={SHOOTING_LIST_ROLES}>
-        <AdminLayout />
+        <Suspense fallback={adminFallback}>
+          <AdminLayout />
+        </Suspense>
       </ProtectedRoute>
     ),
     children: [

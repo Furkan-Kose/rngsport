@@ -8,12 +8,14 @@ import {
   FolderDown,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import api, { API_URL } from "../lib/api";
+import api from "../lib/api";
 import SEO from "../components/SEO";
 import MediaLightbox from "../components/MediaLightbox";
 import type { MediaItem } from "../lib/media";
 import MediaGrid from "../components/MediaGrid";
 import { triggerDownload } from "../lib/download";
+import { useZipDownload } from "../hooks/useZipDownload";
+import { isMobileDevice } from "../lib/zipDownload";
 
 interface GalleryPhoto {
   id: string;
@@ -76,12 +78,11 @@ const MyGalleryPage = () => {
     fetchPhotos(pagination.page + 1, activeAlbum, typeFilter, true);
   };
 
-  // Zip indirme: authenticated GET navigasyonu — cookie tarayıcı tarafından gönderilir
+  // Toplu indirme: zip tarayıcıda, dosyalar doğrudan R2'den (bkz. lib/zipDownload)
+  const zip = useZipDownload();
   const handleDownloadAll = () => {
-    const params = new URLSearchParams();
-    if (activeAlbum) params.set("album", activeAlbum);
-    const query = params.toString();
-    window.location.href = `${API_URL}/api/gallery/my/download-all${query ? `?${query}` : ""}`;
+    const query = activeAlbum ? `?${new URLSearchParams({ album: activeAlbum })}` : "";
+    zip.start(`/api/gallery/my/download-manifest${query}`, `/api/gallery/my/download-all${query}`);
   };
 
   const handleDownload = async (photo: GalleryPhoto) => {
@@ -127,13 +128,24 @@ const MyGalleryPage = () => {
             {photos.length > 0 && (
               <button
                 onClick={handleDownloadAll}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
+                disabled={zip.isRunning}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
               >
-                <FolderDown className="w-4 h-4" />
-                {activeAlbum ? "Bu Albümü İndir" : "Tümünü İndir"} (.zip)
+                {zip.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
+                {zip.progress
+                  ? zip.progress.total
+                    ? `Hazırlanıyor ${zip.progress.done}/${zip.progress.total}`
+                    : "Hazırlanıyor..."
+                  : `${activeAlbum ? "Bu Albümü İndir" : "Tümünü İndir"} (.zip)`}
               </button>
             )}
           </div>
+
+          {photos.length > 0 && isMobileDevice() && (
+              <p className="text-xs text-zinc-500 mb-4 -mt-4">
+                📱 Telefonda fotoğraf ve videoları tek tek indirirseniz doğrudan galerinize kaydedilir. Zip dosyası telefonda &quot;Dosyalar&quot; uygulamasına iner.
+              </p>
+            )}
 
           {/* Filtreler: yarışma/albüm + tür */}
           <div className="flex flex-wrap items-center gap-2 mb-6">

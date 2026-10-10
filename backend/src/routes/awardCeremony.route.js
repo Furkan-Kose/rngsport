@@ -4,6 +4,7 @@ import {
   getCeremonyBySlug,
   downloadCeremonyPhoto,
   downloadAllCeremonyPhotos,
+  getCeremonyZipManifest,
   getCeremonyAdmin,
   createCeremony,
   updateCeremony,
@@ -29,6 +30,7 @@ router.post("/:id/confirm", ...admin, confirmCeremonyUploads);
 // Public — giriş gerekmez
 router.get("/", getAllCeremonies);
 router.get("/:slug", getCeremonyBySlug);
+router.get("/:slug/download-manifest", getCeremonyZipManifest);
 router.get("/:slug/download-all", downloadAllCeremonyPhotos);
 router.get("/:slug/photos/:photoId/download", downloadCeremonyPhoto);
 

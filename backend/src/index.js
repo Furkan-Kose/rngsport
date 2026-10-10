@@ -16,6 +16,7 @@ import galleryRoutes from "./routes/gallery.route.js";
 import userRoutes from "./routes/user.route.js";
 import tournamentRoutes from "./routes/tournament.route.js";
 import awardCeremonyRoutes from "./routes/awardCeremony.route.js";
+import loyaltyRoutes from "./routes/loyalty.route.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkEnv } from "./utils/env.js";
 
@@ -58,6 +59,7 @@ app.use("/api/gallery", galleryRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/award-ceremonies", awardCeremonyRoutes);
+app.use("/api/loyalty", loyaltyRoutes);
 
 app.use(errorHandler);
 

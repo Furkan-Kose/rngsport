@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Outlet, NavLink, Link, useNavigate, useLocation } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, SHOOTING_LIST_ROLES, roleLabel } from "../lib/roles";
@@ -98,6 +98,16 @@ const AdminLayout = () => {
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="8" r="6" strokeWidth={2} />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Sadakat',
+      path: '/admin/loyalty',
+      roles: [ROLES.ADMIN],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.48 3.5a.56.56 0 011.04 0l2.13 5.11a.56.56 0 00.47.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 00-.18.56l1.28 5.39a.56.56 0 01-.84.61l-4.73-2.89a.56.56 0 00-.58 0l-4.73 2.89a.56.56 0 01-.84-.61l1.28-5.39a.56.56 0 00-.18-.56l-4.2-3.6a.56.56 0 01.32-.99l5.52-.44a.56.56 0 00.47-.35l2.13-5.11z" />
         </svg>
       ),
     },
@@ -248,7 +258,16 @@ const AdminLayout = () => {
       {/* Main Content */}
       <main className="flex-1 min-w-0 overflow-x-hidden">
         <div className="p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          {/* Sayfa parçası (lazy) yüklenirken menü yerinde kalsın */}
+          <Suspense
+            fallback={
+              <div className="flex justify-center py-20">
+                <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

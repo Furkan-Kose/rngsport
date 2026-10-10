@@ -18,6 +18,9 @@ import {
   Check,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
+import { useMyLoyalty } from "../hooks/useMyLoyalty";
+import LoyaltyPriceLines from "../components/LoyaltyPriceLines";
+import { applyDiscount, formatTL, pointsFor } from "../lib/loyalty";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart, type CartItem } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -207,6 +210,16 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 const CartPage = () => {
   const { items, getTotalPrice, clearCart } = useCart();
   const { user, isAuthenticated } = useAuth();
+
+  // Sadakat önizlemesi (asıl indirim ve puan backend'de hesaplanır)
+  const loyalty = useMyLoyalty();
+  const subtotal = getTotalPrice();
+  const discountPercent = loyalty?.tier?.discountPercent ?? 0;
+  const { totalPrice: discountedTotal } = applyDiscount(subtotal, discountPercent);
+  const earnPoints = items.reduce(
+    (sum, it) => sum + pointsFor(it.package.loyaltyPoints, it.seriesCount, it.quantity),
+    0,
+  );
   const [searchParams] = useSearchParams();
   const isEmpty = items.length === 0;
 
@@ -514,7 +527,7 @@ const CartPage = () => {
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-white">Toplam</span>
                         <span className="text-2xl font-bold text-gradient-brand">
-                          ₺{getTotalPrice().toLocaleString("tr-TR")}
+                          {formatTL(discountedTotal)}
                         </span>
                       </div>
                     </div>
@@ -710,9 +723,19 @@ const CartPage = () => {
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-zinc-400">Toplam Tutar</span>
                         <span className="text-xl font-bold text-emerald-400">
-                          ₺{getTotalPrice().toLocaleString("tr-TR")}
+                          {formatTL(discountedTotal)}
                         </span>
                       </div>
+
+                      <LoyaltyPriceLines
+                        subtotal={subtotal}
+                        discountPercent={discountPercent}
+                        tierName={loyalty?.tier?.name}
+                        redeemPoints={loyalty?.tier?.minPoints ?? 0}
+                        earnPoints={earnPoints}
+                        isGuest={!isAuthenticated}
+                        loginRedirect="/sepet"
+                      />
 
                       {/* Hesap bağlama bilgisi */}
                       {isAuthenticated ? (

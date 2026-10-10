@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Plus, Pencil } from 'lucide-react';
 import api from '../../lib/api';
+import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import ReservationFormModal from '../../components/admin/ReservationFormModal';
 import { getApparatusLabel } from '../../constants/apparatuses';
@@ -23,6 +24,9 @@ interface Reservation {
   customerPhone: string;
   customerEmail: string;
   notes: string | null;
+  subtotal: number | null;
+  discountPercent: number;
+  discountAmount: number;
   totalPrice: number;
   status: string;
   createdAt: string;
@@ -554,6 +558,12 @@ const ReservationsPage = () => {
                     </div>
                   ))}
                 </div>
+                <DiscountLine
+                  subtotal={selectedReservation.subtotal}
+                  discountPercent={selectedReservation.discountPercent}
+                  discountAmount={selectedReservation.discountAmount}
+                  formatPrice={formatPrice}
+                />
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
                   <span className="text-lg font-medium text-white">Toplam</span>
                   <span className="text-xl font-bold text-violet-400">

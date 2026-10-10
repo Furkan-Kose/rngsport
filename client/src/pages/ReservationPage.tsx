@@ -14,7 +14,7 @@ import {
   Package as PackageIcon,
   Mail,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import api from "../lib/api";
 import { toast } from "react-toastify";
@@ -24,6 +24,15 @@ import Reveal from "../components/ui/Reveal";
 import { APPARATUSES } from "../constants/apparatuses";
 import { emptyCustomerForm, fillCustomerFormGaps } from "../lib/customerForm";
 import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCard";
+import { ROLES } from "../lib/roles";
+import { useMyLoyalty } from "../hooks/useMyLoyalty";
+import LoyaltyPriceLines from "../components/LoyaltyPriceLines";
+import { applyDiscount, formatTL, pointsFor } from "../lib/loyalty";
+import {
+  ACTIVE_RESERVATION_STATUSES,
+  isCustomerEditable,
+  type MyReservation,
+} from "../lib/myReservations";
 
 interface Package {
   id: string;
@@ -42,6 +51,7 @@ interface Package {
     2: number;
     3: number;
   };
+  loyaltyPoints?: number;
 }
 
 interface SelectedPackage {
@@ -54,8 +64,23 @@ interface SelectedPackage {
   apparatuses: string[];
 }
 
+// Seri sayısına göre rezervasyon (elden nakit) fiyatı
+const reservationPriceFor = (pkg: Package, seriesCount: 1 | 2 | 3) =>
+  seriesCount === 1 ? pkg.reservationPrice : pkg.reservationDiscounts[seriesCount];
+
 const ReservationPage = () => {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get("duzenle");
+
+  // Tek rezervasyon kuralı: müşterinin aktif rezervasyonu varsa form onu düzenler.
+  // editingId → PUT /my/:id; lockedReservation → ödeme sonrası, form yerine bilgi.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [lockedReservation, setLockedReservation] = useState<MyReservation | null>(null);
+  // Düzenlemede rezervasyonun oluşturulduğu andaki indirim yüzdesi kullanılır
+  const [editDiscountPercent, setEditDiscountPercent] = useState(0);
+  const loyalty = useMyLoyalty();
 
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>(
@@ -112,6 +137,60 @@ const ReservationPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (user?.role !== ROLES.CUSTOMER || packages.length === 0) return;
+    let cancelled = false;
+
+    api
+      .get("/api/reservations/my")
+      .then(({ data }) => {
+        if (cancelled) return;
+        const mine: MyReservation[] = data.data || [];
+        const target =
+          mine.find((r) => r.id === editParam) ||
+          mine.find((r) => ACTIVE_RESERVATION_STATUSES.includes(r.status));
+        if (!target || !ACTIVE_RESERVATION_STATUSES.includes(target.status)) return;
+
+        if (!isCustomerEditable(target.status)) {
+          setLockedReservation(target);
+          return;
+        }
+
+        setEditingId(target.id);
+        setEditDiscountPercent(target.discountPercent || 0);
+        setKvkkAccepted(true); // ilk rezervasyonda zaten onaylandı
+        setForm({
+          athleteName: target.athleteName,
+          clubName: target.clubName,
+          birthYear: target.birthYear,
+          customerPhone: target.customerPhone,
+          customerEmail: target.customerEmail,
+          notes: target.notes || "",
+        });
+        setSelectedPackages(
+          target.items.map((item, index) => {
+            const pkg = packages.find((p) => p.id === item.package.id);
+            const seriesCount = item.seriesCount as 1 | 2 | 3;
+            return {
+              id: `edit-${index}`,
+              // Paket artık satışta değilse boş bırak — müşteri yenisini seçer
+              packageId: pkg ? pkg.id : "",
+              packageName: pkg ? pkg.name : "",
+              seriesCount,
+              quantity: item.quantity,
+              price: pkg ? reservationPriceFor(pkg, seriesCount) : 0,
+              apparatuses: item.apparatuses,
+            };
+          }),
+        );
+      })
+      .catch((err) => console.error("Rezervasyonunuz yüklenemedi:", err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, packages, editParam]);
+
   const addNewPackageRow = () => {
     const newId = `temp-${Date.now()}`;
     setSelectedPackages([
@@ -151,10 +230,7 @@ const ReservationPage = () => {
             const pkg = packages.find((p) => p.id === sp.packageId);
             const newCount = value as 1 | 2 | 3;
             if (pkg) {
-              const price =
-                newCount === 1
-                  ? pkg.reservationPrice
-                  : pkg.reservationDiscounts[newCount as 2 | 3];
+              const price = reservationPriceFor(pkg, newCount);
               return {
                 ...sp,
                 seriesCount: newCount,
@@ -180,6 +256,15 @@ const ReservationPage = () => {
       return total + sp.price * sp.quantity;
     }, 0);
   };
+
+  // Sadakat önizlemesi (asıl hesap backend'de)
+  const subtotal = calculateTotal();
+  const discountPercent = editingId ? editDiscountPercent : (loyalty?.tier?.discountPercent ?? 0);
+  const { totalPrice: discountedTotal } = applyDiscount(subtotal, discountPercent);
+  const earnPoints = selectedPackages.reduce((sum, sp) => {
+    const pkg = packages.find((p) => p.id === sp.packageId);
+    return sum + pointsFor(pkg?.loyaltyPoints, sp.seriesCount, sp.quantity);
+  }, 0);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -226,7 +311,7 @@ const ReservationPage = () => {
     setIsSubmitting(true);
 
     try {
-      const { data } = await api.post("/api/reservations", {
+      const payload = {
         ...form,
         items: selectedPackages.map((sp) => {
           const pkg = packages.find((p) => p.id === sp.packageId);
@@ -247,7 +332,16 @@ const ReservationPage = () => {
           };
         }),
         totalPrice: calculateTotal(),
-      });
+      };
+
+      if (editingId) {
+        await api.put(`/api/reservations/my/${editingId}`, payload);
+        toast.success("Rezervasyonunuz güncellendi");
+        navigate("/profil");
+        return;
+      }
+
+      const { data } = await api.post("/api/reservations", payload);
 
       // Başarılı. Otomatik ana sayfa yönlendirmesi YOK — müşteri bu ekranda
       // şifresini belirleyip hesabına giriyor.
@@ -295,6 +389,30 @@ const ReservationPage = () => {
           >
             <ArrowLeft className="w-5 h-5" />
             Ana Sayfaya Dön
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (lockedReservation) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 py-24">
+        <SEO title="Rezervasyon" description="Rezervasyonunuzu görüntüleyin." />
+        <div className="w-full max-w-md text-center bg-zinc-900/60 border border-zinc-800 rounded-2xl p-8">
+          <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-8 h-8 text-emerald-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Zaten bir rezervasyonunuz var</h2>
+          <p className="text-zinc-400 text-sm mb-6">
+            {lockedReservation.athleteName} adına yaptığınız rezervasyonun ödemesi alındı.
+            Değişiklik için bizimle iletişime geçebilirsiniz.
+          </p>
+          <Link
+            to="/profil"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
+          >
+            Rezervasyonumu Gör
           </Link>
         </div>
       </div>
@@ -382,10 +500,12 @@ const ReservationPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gradient-brand">
-                Rezervasyon Formu
+                {editingId ? "Rezervasyonu Düzenle" : "Rezervasyon Formu"}
               </h1>
               <p className="text-zinc-500 text-sm">
-                Paketleri seçin ve bilgilerinizi girin
+                {editingId
+                  ? "Mevcut rezervasyonunuzu güncelleyin"
+                  : "Paketleri seçin ve bilgilerinizi girin"}
               </p>
             </div>
           </div>
@@ -673,9 +793,15 @@ const ReservationPage = () => {
                   name="customerEmail"
                   value={form.customerEmail}
                   onChange={handleChange}
+                  readOnly={!!editingId}
                   placeholder="ornek@gmail.com"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors read-only:opacity-60 read-only:cursor-not-allowed"
                 />
+                {editingId && (
+                  <p className="text-xs text-zinc-500 mt-1">
+                    E-posta hesabınıza bağlı olduğu için değiştirilemez.
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -710,9 +836,19 @@ const ReservationPage = () => {
                 </p>
               </div>
               <div className="text-3xl font-bold text-gradient-brand">
-                ₺{calculateTotal().toLocaleString("tr-TR")}
+                {formatTL(discountedTotal)}
               </div>
             </div>
+
+            <LoyaltyPriceLines
+              subtotal={subtotal}
+              discountPercent={discountPercent}
+              tierName={editingId ? null : loyalty?.tier?.name}
+              redeemPoints={editingId ? 0 : (loyalty?.tier?.minPoints ?? 0)}
+              earnPoints={earnPoints}
+              isGuest={!isAuthenticated}
+              loginRedirect="/rezervasyon"
+            />
 
             <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
               <p className="text-xs text-amber-400 text-center">
@@ -783,7 +919,7 @@ const ReservationPage = () => {
               ) : (
                 <>
                   <Calendar className="w-5 h-5" />
-                  Rezervasyonu Onayla
+                  {editingId ? "Rezervasyonu Güncelle" : "Rezervasyonu Onayla"}
                 </>
               )}
             </button>

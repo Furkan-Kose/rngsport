@@ -18,6 +18,7 @@ import api from '../../lib/api';
 import StatusBadge from '../../lib/orderStatus';
 import CustomerFormModal, { type CustomerUser } from '../../components/admin/CustomerFormModal';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import UserLoyaltyPanel from '../../components/admin/UserLoyaltyPanel';
 
 /** Ham OrderItem / ReservationItem satırı (backend include: { items: true }) */
 interface RecordItem {
@@ -305,6 +306,8 @@ const UserDetailPage = () => {
           Galeriyi Yönet
         </Link>
       </div>
+
+      <UserLoyaltyPanel userId={user.id} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <RecordList title="Rezervasyonlar" records={user.reservations} />

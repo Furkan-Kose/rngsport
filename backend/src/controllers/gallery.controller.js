@@ -8,6 +8,7 @@ import {
   fileRecordFields,
   streamZip,
   zipFileName,
+  zipManifest,
 } from "../utils/uploads.js";
 import {
   presignUpload,
@@ -84,21 +85,30 @@ export const getMyPhotos = async (req, res) => {
   res.json(await listPhotosForUser(req.user.id, req.query));
 };
 
-// Tüm galeriyi (veya bir albümü) zip olarak stream'ler
-export const downloadAllMyPhotos = async (req, res) => {
+// Toplu indirilecek dosyalar (tüm galeri veya bir albüm)
+const findMyZipPhotos = async (req) => {
   const album = req.query.album ? String(req.query.album).slice(0, 100) : undefined;
-
   const photos = await prisma.galleryPhoto.findMany({
     where: { userId: req.user.id, ...(album && { album }) },
     orderBy: { createdAt: "asc" },
   });
-
   if (photos.length === 0) {
     throw new AppError("İndirilecek dosya bulunamadı", 404);
   }
-
   const zipName = album ? zipFileName(album, "galeri") : "rngsport-galerim.zip";
+  return { photos, zipName };
+};
+
+// Tarayıcıda zip için dosya listesi (asıl yol — dosyalar doğrudan R2'den iner)
+export const getMyZipManifest = async (req, res) => {
+  const { photos, zipName } = await findMyZipPhotos(req);
   // Albümler zip içinde klasör olur
+  res.json(await zipManifest(photos, zipName, (photo) => photo.album));
+};
+
+// Sunucuda zip (yedek yol: tarayıcının kaldıramayacağı kadar büyük galeriler)
+export const downloadAllMyPhotos = async (req, res) => {
+  const { photos, zipName } = await findMyZipPhotos(req);
   await streamZip(res, photos, zipName, (photo) => photo.album);
 };
 

@@ -17,6 +17,7 @@ interface Package {
   reservationPrice: number;
   reservationDiscount2: number;
   reservationDiscount3: number;
+  loyaltyPoints: number;
   isActive: boolean;
   sortOrder: number;
 }
@@ -33,6 +34,7 @@ interface PackageFormData {
   reservationPrice: number;
   reservationDiscount2: number;
   reservationDiscount3: number;
+  loyaltyPoints: number;
   isActive: boolean;
   sortOrder: number;
 }
@@ -49,6 +51,7 @@ const initialFormData: PackageFormData = {
   reservationPrice: 0,
   reservationDiscount2: 0,
   reservationDiscount3: 0,
+  loyaltyPoints: 0,
   isActive: true,
   sortOrder: 0,
 };
@@ -110,6 +113,7 @@ const PackagesPage = () => {
       reservationPrice: pkg.reservationPrice || pkg.price,
       reservationDiscount2: pkg.reservationDiscount2 || pkg.discount2,
       reservationDiscount3: pkg.reservationDiscount3 || pkg.discount3,
+      loyaltyPoints: pkg.loyaltyPoints ?? 0,
       isActive: pkg.isActive,
       sortOrder: pkg.sortOrder,
     });
@@ -275,6 +279,9 @@ const PackagesPage = () => {
                     {pkg.isActive ? 'Aktif' : 'Pasif'}
                   </span>
                   <span className="text-gray-500 text-[11px]">Sıra: {pkg.sortOrder}</span>
+                  {pkg.loyaltyPoints > 0 && (
+                    <span className="text-amber-400 text-[11px]">★ {pkg.loyaltyPoints} puan/seri</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -532,6 +539,23 @@ const PackagesPage = () => {
                     className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
+              </div>
+
+              {/* Sadakat puanı */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Sadakat Puanı (seri başına)</label>
+                <input
+                  type="number"
+                  name="loyaltyPoints"
+                  min={0}
+                  step={1}
+                  value={formData.loyaltyPoints}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Müşteri ödeme sonrası puan × seri × adet kadar puan kazanır. 0 = puan verilmez.
+                </p>
               </div>
 
               {/* Paket Görseli */}

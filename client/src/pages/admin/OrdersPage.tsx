@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
+import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import { getApparatusLabel } from '../../constants/apparatuses';
 
@@ -21,6 +22,9 @@ interface Order {
   birthYear: string;
   customerPhone: string;
   notes: string | null;
+  subtotal: number | null;
+  discountPercent: number;
+  discountAmount: number;
   totalPrice: number;
   status: string;
   paymentId: string | null;
@@ -440,6 +444,12 @@ const OrdersPage = () => {
                     </div>
                   ))}
                 </div>
+                <DiscountLine
+                  subtotal={selectedOrder.subtotal}
+                  discountPercent={selectedOrder.discountPercent}
+                  discountAmount={selectedOrder.discountAmount}
+                  formatPrice={formatPrice}
+                />
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
                   <span className="text-lg font-medium text-white">Toplam</span>
                   <span className="text-xl font-bold text-amber-400">

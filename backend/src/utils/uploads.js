@@ -1,7 +1,7 @@
 import { ZipArchive } from "archiver";
 import { AppError } from "./errors.js";
 import { slugify } from "./slugify.js";
-import { getObjectStream } from "../lib/r2.js";
+import { getObjectStream, presignView } from "../lib/r2.js";
 
 // Müşteri galerisi ve ödül töreni galerileri aynı yükleme kurallarını paylaşır.
 export const MAX_FILES_PER_BATCH = 100;
@@ -61,7 +61,41 @@ export const fileRecordFields = ({ fileName, size, contentType }) => {
   };
 };
 
-// Dosyaları R2'den okuyup zip olarak response'a stream'ler.
+// Zip içindeki dosya yolları. Aynı klasörde aynı ad iki kez geçerse id ile ayrışır.
+// Sunucu zip'i ve tarayıcıda oluşturulan zip aynı adları üretsin diye ortak.
+const zipEntryNames = (photos, folderOf) => {
+  const usedNames = new Set();
+  return photos.map((photo) => {
+    const folder = folderOf(photo);
+    let name = photo.fileName;
+    if (usedNames.has(`${folder}/${name}`)) {
+      name = `${photo.id.slice(-6)}-${name}`;
+    }
+    usedNames.add(`${folder}/${name}`);
+    return folder ? `${folder}/${name}` : name;
+  });
+};
+
+// Tarayıcıda zip için dosya listesi: zip içi ad + boyut + doğrudan R2 linki.
+// Dosyalar Railway'den geçmez (R2 çıkış trafiği ücretsiz). Linkler 1 saat geçerli.
+export const zipManifest = async (photos, zipName, folderOf = () => null) => {
+  const names = zipEntryNames(photos, folderOf);
+  const files = await Promise.all(
+    photos.map(async (photo, i) => ({
+      name: names[i],
+      size: photo.size ?? null,
+      url: await presignView(photo.r2Key),
+    }))
+  );
+  return {
+    zipName,
+    totalSize: photos.reduce((sum, p) => sum + (p.size || 0), 0),
+    files,
+  };
+};
+
+// Dosyaları R2'den okuyup zip olarak response'a stream'ler (yedek yol: tarayıcının
+// zip'i oluşturamadığı çok büyük galeriler — örn. telefonda).
 // folderOf(photo): zip içindeki klasör adı (yoksa kök).
 export const streamZip = async (res, photos, zipName, folderOf = () => null) => {
   res.setHeader("Content-Type", "application/zip");
@@ -78,18 +112,10 @@ export const streamZip = async (res, photos, zipName, folderOf = () => null) => 
   });
   archive.pipe(res);
 
-  // Aynı dosya adları çakışmasın diye takip et
-  const usedNames = new Set();
-  for (const photo of photos) {
-    const folder = folderOf(photo);
-    let name = photo.fileName;
-    if (usedNames.has(`${folder}/${name}`)) {
-      name = `${photo.id.slice(-6)}-${name}`;
-    }
-    usedNames.add(`${folder}/${name}`);
-
+  const names = zipEntryNames(photos, folderOf);
+  for (const [i, photo] of photos.entries()) {
     const body = await getObjectStream(photo.r2Key);
-    archive.append(body, { name: folder ? `${folder}/${name}` : name });
+    archive.append(body, { name: names[i] });
   }
 
   await archive.finalize();

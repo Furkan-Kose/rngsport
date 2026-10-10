@@ -8,24 +8,28 @@ datasource db {
 }
 
 model Order {
-  id             String      @id @default(cuid())
-  athleteName    String
-  clubName       String
-  birthYear      String
-  customerPhone  String
-  customerEmail  String?
-  notes          String?
-  totalPrice     Float
-  status         OrderStatus @default(PENDING)
-  paymentId      String?
-  conversationId String?
+  id              String      @id @default(cuid())
+  athleteName     String
+  clubName        String
+  birthYear       String
+  customerPhone   String
+  customerEmail   String?
+  notes           String?
+  totalPrice      Float // Ödenecek son tutar (indirim düşülmüş)
+  subtotal        Float? // İndirimsiz tutar (sadakat sisteminden önceki kayıtlarda null)
+  discountPercent Int         @default(0) // Oluşturma anında sabitlenen seviye indirimi
+  discountAmount  Float       @default(0)
+  redeemPoints    Int         @default(0) // İndirim için harcanan seviye puanı (rezervasyonda oluşturunca, siparişte ödeyince düşer)
+  status          OrderStatus @default(PENDING)
+  paymentId       String?
+  conversationId  String?
   // Çekim listesi alanları
-  expectedTime   String? // Excel'den gelecek beklenen çıkış saati ("14:23" gibi)
-  shootStartedAt DateTime? // Çekimin gerçek başlangıç saati
-  shootEndedAt   DateTime? // Çekimin gerçek bitiş saati
-  userId         String? // Girişli kullanıcı sipariş verdiyse bağlanır
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  expectedTime    String? // Excel'den gelecek beklenen çıkış saati ("14:23" gibi)
+  shootStartedAt  DateTime? // Çekimin gerçek başlangıç saati
+  shootEndedAt    DateTime? // Çekimin gerçek bitiş saati
+  userId          String? // Girişli kullanıcı sipariş verdiyse bağlanır
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   user                User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   items               OrderItem[]
@@ -45,6 +49,7 @@ model OrderItem {
   seriesCount Int
   quantity    Int
   apparatuses String[] @default([]) // Bu paket satırı için seçilen aletler (length === seriesCount)
+  points      Int      @default(0) // Satış anındaki sadakat puanı (paket puanı × seri × adet)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -63,7 +68,7 @@ model User {
   id                   String    @id @default(cuid())
   username             String?   @unique // Admin girişi için (müşterilerde null)
   email                String?   @unique // Müşteri girişi için (lowercase saklanır)
-  password             String?   // null = sipariş/rezervasyonla otomatik açıldı, şifre henüz belirlenmedi
+  password             String? // null = sipariş/rezervasyonla otomatik açıldı, şifre henüz belirlenmedi
   // Sporcu bilgileri — rezervasyon formunun ön-doldurması ve galeri klasörü bunlardan gelir
   name                 String? // Sporcu adı soyadı
   clubName             String?
@@ -82,6 +87,7 @@ model User {
   photos       GalleryPhoto[]
   orders       Order[]
   reservations Reservation[]
+  points       PointTransaction[]
 
   @@map("users")
 }
@@ -116,6 +122,7 @@ model Package {
   reservationPrice     Float? // Rezervasyon baz fiyatı (null ise price kullanılır)
   reservationDiscount2 Float? // 2 seri rezervasyon fiyatı
   reservationDiscount3 Float? // 3 seri rezervasyon fiyatı
+  loyaltyPoints        Int      @default(0) // Sadakat puanı (seri başına; × seri × adet)
   isActive             Boolean  @default(true)
   sortOrder            Int      @default(0)
   createdAt            DateTime @default(now())
@@ -125,22 +132,26 @@ model Package {
 }
 
 model Reservation {
-  id             String            @id @default(cuid())
-  athleteName    String
-  clubName       String
-  birthYear      String
-  customerPhone  String
-  customerEmail  String
-  notes          String?
-  totalPrice     Float
-  status         ReservationStatus @default(PENDING)
+  id              String            @id @default(cuid())
+  athleteName     String
+  clubName        String
+  birthYear       String
+  customerPhone   String
+  customerEmail   String
+  notes           String?
+  totalPrice      Float // Ödenecek son tutar (indirim düşülmüş)
+  subtotal        Float? // İndirimsiz tutar (sadakat sisteminden önceki kayıtlarda null)
+  discountPercent Int               @default(0) // Oluşturma anında sabitlenen seviye indirimi
+  discountAmount  Float             @default(0)
+  redeemPoints    Int               @default(0) // İndirim için harcanan seviye puanı (rezervasyonda oluşturunca, siparişte ödeyince düşer)
+  status          ReservationStatus @default(PENDING)
   // Çekim listesi alanları
-  expectedTime   String?
-  shootStartedAt DateTime?
-  shootEndedAt   DateTime?
-  userId         String? // Girişli kullanıcı rezervasyon yaptıysa bağlanır
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  expectedTime    String?
+  shootStartedAt  DateTime?
+  shootEndedAt    DateTime?
+  userId          String? // Girişli kullanıcı rezervasyon yaptıysa bağlanır
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   user                User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   items               ReservationItem[]
@@ -160,6 +171,7 @@ model ReservationItem {
   seriesCount   Int
   quantity      Int
   apparatuses   String[] @default([]) // Bu paket satırı için seçilen aletler (length === seriesCount)
+  points        Int      @default(0) // Satış anındaki sadakat puanı (paket puanı × seri × adet)
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -264,4 +276,36 @@ model AwardPhoto {
 
   @@index([ceremonyId])
   @@map("award_photos")
+}
+
+// Sadakat puan defteri. Bakiye = amount toplamı. Kaynak (rezervasyon/sipariş) FK
+// DEĞİL, düz metin: yarışma sonrası kayıtlar silinse de puan geçmişi kalır.
+model PointTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Int // + kazanım, − geri alma / düşüş
+  type        String // EARN | REVERSE | REDEEM | REFUND | ADJUST
+  sourceType  String? // reservation | order (ADJUST'ta null)
+  sourceId    String?
+  note        String?
+  createdById String? // ADJUST'u yapan admin
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sourceType, sourceId])
+  @@map("point_transactions")
+}
+
+// Sadakat seviyeleri — toplam puan minPoints'e ulaşınca discountPercent indirim
+model LoyaltyTier {
+  id              String   @id @default(cuid())
+  name            String
+  minPoints       Int      @unique
+  discountPercent Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("loyalty_tiers")
 }

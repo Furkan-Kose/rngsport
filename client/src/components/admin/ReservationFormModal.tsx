@@ -539,6 +539,9 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
             <div>
               <p className="text-xs text-gray-400">Toplam Tutar</p>
               <p className="text-2xl font-bold text-violet-400">{formatPrice(totalPrice)}</p>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                Müşterinin sadakat indirimi varsa kayıtta otomatik düşülür
+              </p>
             </div>
             <div className="flex gap-2">
               <button

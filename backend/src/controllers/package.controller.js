@@ -22,6 +22,13 @@ const resolveImage = (image) => {
   return image;
 };
 
+// Sadakat puanı: 0..10000 arası tam sayı; geçersiz/boş → undefined (alan değişmez)
+const sanitizePoints = (value) => {
+  if (value === undefined || value === null || value === "") return undefined;
+  const n = Math.round(Number(value));
+  return Number.isFinite(n) ? Math.min(10000, Math.max(0, n)) : undefined;
+};
+
 // Public response: frontend'in beklediği format
 const formatPackagePublic = (pkg) => ({
   id: pkg.slug,
@@ -40,6 +47,8 @@ const formatPackagePublic = (pkg) => ({
     2: pkg.reservationDiscount2 ?? pkg.discount2,
     3: pkg.reservationDiscount3 ?? pkg.discount3,
   },
+  // Sadakat puanı (seri başına) — formda "bu rezervasyondan +X puan" için
+  loyaltyPoints: pkg.loyaltyPoints,
 });
 
 // Admin response: tüm alanlar (pasifler dahil)
@@ -58,6 +67,7 @@ const formatPackageAdmin = (pkg) => ({
   reservationPrice: pkg.reservationPrice,
   reservationDiscount2: pkg.reservationDiscount2,
   reservationDiscount3: pkg.reservationDiscount3,
+  loyaltyPoints: pkg.loyaltyPoints,
   isActive: pkg.isActive,
   sortOrder: pkg.sortOrder,
   createdAt: pkg.createdAt,
@@ -115,6 +125,7 @@ export const createPackage = async (req, res) => {
     reservationPrice,
     reservationDiscount2,
     reservationDiscount3,
+    loyaltyPoints,
     sortOrder,
   } = req.body;
 
@@ -137,6 +148,7 @@ export const createPackage = async (req, res) => {
         reservationPrice: reservationPrice || null,
         reservationDiscount2: reservationDiscount2 || null,
         reservationDiscount3: reservationDiscount3 || null,
+        loyaltyPoints: sanitizePoints(loyaltyPoints) ?? 0,
         sortOrder: sortOrder || 0,
       },
     })
@@ -159,6 +171,7 @@ export const updatePackage = async (req, res) => {
     reservationPrice,
     reservationDiscount2,
     reservationDiscount3,
+    loyaltyPoints,
     isActive,
     sortOrder,
   } = req.body;
@@ -187,6 +200,9 @@ export const updatePackage = async (req, res) => {
         ...(reservationPrice !== undefined && { reservationPrice }),
         ...(reservationDiscount2 !== undefined && { reservationDiscount2 }),
         ...(reservationDiscount3 !== undefined && { reservationDiscount3 }),
+        ...(sanitizePoints(loyaltyPoints) !== undefined && {
+          loyaltyPoints: sanitizePoints(loyaltyPoints),
+        }),
         ...(typeof isActive === "boolean" && { isActive }),
         ...(sortOrder !== undefined && { sortOrder }),
       },

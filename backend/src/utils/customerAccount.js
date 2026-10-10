@@ -110,6 +110,59 @@ export const resolveGuestAccount = async (customer) => {
 };
 
 /**
+ * İsteği atanın rolü. optionalAuth eski (role claim'i olmayan) token'larda rolü
+ * boş bırakır — o durumda DB'den okunur. Misafirse null.
+ */
+export const requesterRole = async (req) => {
+  if (!req.user?.id) return null;
+  if (req.user.role) return req.user.role;
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: { role: true },
+  });
+  return user?.role ?? null;
+};
+
+/**
+ * Sipariş/rezervasyonun bağlanacağı hesap.
+ *
+ * Sadece MÜŞTERİ girişliyse kayıt onun hesabına bağlanır. Admin panelden
+ * rezervasyon eklerken istek admin çerezini taşıyor; eskiden kayıt admin
+ * hesabına bağlanıyor ve müşterinin profilinde hiç görünmüyordu. Admin/personel
+ * de misafir gibi ele alınır: hesap formdaki e-postadan bulunur/açılır.
+ */
+export const resolveAccountFor = async (req, customer) => {
+  if ((await requesterRole(req)) === ROLES.CUSTOMER) {
+    return { userId: req.user.id, status: "linked" };
+  }
+  return resolveGuestAccount(customer);
+};
+
+/**
+ * "Rezervasyonlarım / Siparişlerim" sorgusunun where'i.
+ *
+ * Normalde kayıt userId ile bağlı. Yedek: sahipsiz (userId null) ya da yanlışlıkla
+ * admin/personel hesabına bağlanmış kayıtlar e-posta eşleşmesiyle de gelir.
+ * Yeni bir güven eklemiyor — hesap bağlama zaten bu e-postaya göre yapılıyor.
+ */
+export const ownRecordsWhere = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  if (!user?.email) return { userId };
+  return {
+    OR: [
+      { userId },
+      {
+        customerEmail: user.email,
+        OR: [{ userId: null }, { user: { role: { not: ROLES.CUSTOMER } } }],
+      },
+    ],
+  };
+};
+
+/**
  * Şifresiz hesap için "şifreni belirle" token'ı üretir. Mevcut şifre sıfırlama
  * altyapısını (resetTokenHash + /sifre-sifirla?token=) yeniden kullanır; tek fark
  * daha uzun TTL. Başarılı sıfırlama e-postayı da doğrulanmış sayıyor.

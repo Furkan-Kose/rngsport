@@ -11,12 +11,19 @@ import {
   buildCustomerSearchWhere,
 } from "../utils/pagination.js";
 import {
-  resolveGuestAccount,
+  resolveAccountFor,
+  requesterRole,
+  ownRecordsWhere,
   syncProfileGaps,
   claimStatusFor,
   issueSetPasswordTokenIfUnclaimed,
 } from "../utils/customerAccount.js";
 import { sendDeliveryEmail } from "../lib/mail.js";
+import {
+  createWithDiscount,
+  discountAccountFor,
+  syncPointsForRecord,
+} from "../utils/loyalty.js";
 
 const VALID_ORDER_STATUSES = ["PENDING", "PAID", "FAILED", "CANCELLED", "DELIVERED"];
 
@@ -28,6 +35,9 @@ const formatOrderForResponse = (order) => ({
   customerPhone: order.customerPhone,
   customerEmail: order.customerEmail,
   notes: order.notes,
+  subtotal: order.subtotal,
+  discountPercent: order.discountPercent,
+  discountAmount: order.discountAmount,
   totalPrice: order.totalPrice,
   status: order.status,
   createdAt: order.createdAt,
@@ -41,6 +51,7 @@ const formatOrderForResponse = (order) => ({
     quantity: item.quantity,
     price: item.price,
     apparatuses: item.apparatuses,
+    points: item.points,
   })),
 });
 
@@ -50,30 +61,31 @@ export const createOrder = async (req, res) => {
   }
 
   const customer = validateRequiredCustomerInfo(req.body);
-  const { items, totalPrice } = await validateAndPriceItems(req.body.items, {
+  const { items, totalPrice: subtotal } = await validateAndPriceItems(req.body.items, {
     reservationPricing: false,
     activeOnly: true,
   });
 
-  // optionalAuth: girişliyse kendi hesabı; misafirse e-postasından hesap açılır/bulunur.
+  // Girişli müşteriyse kendi hesabı; misafir/admin ise e-postasından hesap açılır/bulunur.
   // Sipariş maili ödeme onaylanınca gidiyor (payment.controller.js), burada mail yok.
-  const account = req.user?.id
-    ? { userId: req.user.id, status: "linked" }
-    : await resolveGuestAccount(customer);
+  const account = await resolveAccountFor(req, customer);
 
-  // Girişli kullanıcının profilindeki BOŞ sporcu alanlarını doldur (doluyu ezmeden),
+  // Müşterinin profilindeki BOŞ sporcu alanlarını doldur (doluyu ezmeden),
   // böylece bir sonraki sefer form ön-dolu gelir. Beklenmez — siparişi geciktirmesin.
-  if (req.user?.id) syncProfileGaps(req.user.id, customer);
+  if (account.userId && account.userId === req.user?.id) syncProfileGaps(req.user.id, customer);
 
-  const order = await prisma.order.create({
+  // Sadakat: seviyesi varsa indirim otomatik uygulanır (misafire uygulanmaz).
+  // Puan siparişte ÖDEME BAŞARILI olunca harcanır — terk edilen sepet puan yakmaz.
+  const order = await createWithDiscount({
+    model: "order",
+    discountUserId: discountAccountFor(await requesterRole(req), req.user?.id, account.userId),
+    subtotal,
     data: {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
-      totalPrice,
       ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
-    include: { items: true },
   });
 
   res.status(201).json({
@@ -84,6 +96,9 @@ export const createOrder = async (req, res) => {
       athleteName: order.athleteName,
       clubName: order.clubName,
       customerEmail: order.customerEmail,
+      subtotal: order.subtotal,
+      discountPercent: order.discountPercent,
+      discountAmount: order.discountAmount,
       totalPrice: order.totalPrice,
       items: order.items.map((item) => ({
         package: { id: item.packageId, name: item.packageName },
@@ -123,7 +138,7 @@ export const getAllOrders = async (req, res) => {
 // Girişli kullanıcının kendi siparişleri
 export const getMyOrders = async (req, res) => {
   const orders = await prisma.order.findMany({
-    where: { userId: req.user.id },
+    where: await ownRecordsWhere(req.user.id),
     include: { items: true },
     orderBy: { createdAt: "desc" },
   });
@@ -180,7 +195,11 @@ export const updateOrder = async (req, res) => {
     })
     .catch(rethrowPrismaError({ notFound: "Sipariş bulunamadı" }));
 
-  if (status) bus.emit("shooting-list-changed");
+  if (status) {
+    bus.emit("shooting-list-changed");
+    // Sadakat: ödendi/teslim → puan; iptal → geri al
+    syncPointsForRecord("order", order);
+  }
 
   // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget).
   // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.

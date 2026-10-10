@@ -4,6 +4,7 @@ import prisma from "../lib/prisma.js";
 import bus from "../lib/events.js";
 import { sendOrderPaidEmail } from "../lib/mail.js";
 import { issueSetPasswordTokenIfUnclaimed } from "../utils/customerAccount.js";
+import { distributeTotal, hasPointsForOrder, syncPointsForRecord } from "../utils/loyalty.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -47,11 +48,22 @@ export const createCheckoutForm = async (req, res, next) => {
       return res.status(400).json({ message: "Sipariş içeriği bulunamadı" });
     }
 
-    // Sepet itemları hazırla ve toplam fiyatı doğrula
-    let calculatedTotal = 0;
-    const basketItems = order.items.map((item) => {
-      const itemTotal = item.price * item.quantity;
-      calculatedTotal += itemTotal;
+    // Seviye indirimi uygulanmış siparişte, puan ödeme anında harcanacak: bakiye
+    // sipariş oluşturulduktan sonra başka yerde harcanmış olabilir.
+    if (!(await hasPointsForOrder(order))) {
+      return res.status(400).json({
+        message: "Puan bakiyeniz bu indirim için artık yetersiz. Lütfen sepetinizden yeniden sipariş oluşturun.",
+      });
+    }
+
+    // Sepet itemları hazırla ve toplam fiyatı doğrula. Sadakat indirimi kalemlere
+    // oranlı dağıtılır (iyzico kalem toplamı = ödenecek tutar olmalı).
+    const lineTotals = order.items.map((item) => item.price * item.quantity);
+    const subtotal = lineTotals.reduce((sum, v) => sum + v, 0);
+    const basketPrices = distributeTotal(lineTotals, order.totalPrice);
+    const calculatedTotal = basketPrices.reduce((sum, v) => sum + v, 0);
+    const basketItems = order.items.map((item, index) => {
+      const itemTotal = basketPrices[index];
       return {
         id: item.id,
         name: `${item.packageName} (${item.seriesCount} Seri)`,
@@ -67,8 +79,12 @@ export const createCheckoutForm = async (req, res, next) => {
       };
     });
 
-    // Veritabanındaki totalPrice ile hesaplanan toplam tutarlılık kontrolü
-    if (Math.abs(calculatedTotal - order.totalPrice) > 0.01) {
+    // Kalemler (indirimsiz) + kayıttaki indirim, totalPrice ile tutarlı olmalı
+    const expectedTotal = subtotal - (order.discountAmount || 0);
+    if (
+      Math.abs(expectedTotal - order.totalPrice) > 0.01 ||
+      Math.abs(calculatedTotal - order.totalPrice) > 0.01
+    ) {
       console.error(
         `Fiyat tutarsızlığı! Order: ${order.id}, DB: ${order.totalPrice}, Calculated: ${calculatedTotal}`,
       );
@@ -280,6 +296,9 @@ export const paymentCallback = async (req, res) => {
 
       // Çekim listesi sayfaları anlık güncellenmesi için
       bus.emit("shooting-list-changed");
+
+      // Sadakat puanı (fire-and-forget; hata ödeme akışını bozmaz)
+      syncPointsForRecord("order", { ...order, status: "PAID" });
 
       // Sipariş onay maili (fire-and-forget). Hesap hâlâ şifresizse şifre belirleme
       // linki de iliştirilir — başarı ekranındaki kartı atlayanlar için yedek yol.

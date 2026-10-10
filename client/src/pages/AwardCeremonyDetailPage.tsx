@@ -3,12 +3,14 @@ import { Link, useParams } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft, Award, Calendar, FolderDown, Images, Loader2, MapPin } from "lucide-react";
 import { toast } from "react-toastify";
-import api, { API_URL } from "../lib/api";
+import api from "../lib/api";
 import SEO from "../components/SEO";
 import MediaGrid from "../components/MediaGrid";
 import MediaLightbox from "../components/MediaLightbox";
 import type { MediaItem } from "../lib/media";
 import { triggerDownload } from "../lib/download";
+import { useZipDownload } from "../hooks/useZipDownload";
+import { isMobileDevice } from "../lib/zipDownload";
 import type { AwardCeremony, AwardPhoto, Pagination } from "../lib/awardCeremonies";
 
 const AwardCeremonyDetailPage = () => {
@@ -57,10 +59,13 @@ const AwardCeremonyDetailPage = () => {
     fetchPage(pagination.page + 1, true);
   };
 
-  // Zip: düz navigasyon — tarayıcı dosyayı stream olarak indirir
-  const handleDownloadAll = () => {
-    window.location.href = `${API_URL}/api/award-ceremonies/${slug}/download-all`;
-  };
+  // Toplu indirme: zip tarayıcıda, dosyalar doğrudan R2'den (bkz. lib/zipDownload)
+  const zip = useZipDownload();
+  const handleDownloadAll = () =>
+    zip.start(
+      `/api/award-ceremonies/${slug}/download-manifest`,
+      `/api/award-ceremonies/${slug}/download-all`,
+    );
 
   const handleDownload = async (item: MediaItem) => {
     setDownloadingId(item.id);
@@ -146,13 +151,24 @@ const AwardCeremonyDetailPage = () => {
               {photos.length > 0 && (
                 <button
                   onClick={handleDownloadAll}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold transition-all duration-300"
+                  disabled={zip.isRunning}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold transition-all duration-300"
                 >
-                  <FolderDown className="w-4 h-4" />
-                  Tümünü İndir (.zip)
+                  {zip.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
+                  {zip.progress
+                  ? zip.progress.total
+                    ? `Hazırlanıyor ${zip.progress.done}/${zip.progress.total}`
+                    : "Hazırlanıyor..."
+                  : "Tümünü İndir (.zip)"}
                 </button>
               )}
             </div>
+
+            {photos.length > 0 && isMobileDevice() && (
+              <p className="text-xs text-zinc-500 mb-4">
+                📱 Telefonda fotoğraf ve videoları tek tek indirirseniz doğrudan galerinize kaydedilir. Zip dosyası telefonda &quot;Dosyalar&quot; uygulamasına iner.
+              </p>
+            )}
 
             {photos.length === 0 ? (
               <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-12 text-center">

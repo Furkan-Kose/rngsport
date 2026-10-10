@@ -176,6 +176,22 @@ async function main() {
     console.log(`  ✓ Skipped (${tournamentCount} tournaments already exist)`);
   }
 
+  // Sadakat seviyeleri — sadece tablo boşsa (admin panelden düzenleniyor)
+  console.log("\nSeeding loyalty tiers...");
+  const tierCount = await prisma.loyaltyTier.count();
+  if (tierCount === 0) {
+    await prisma.loyaltyTier.createMany({
+      data: [
+        { name: "Bronz", minPoints: 100, discountPercent: 5 },
+        { name: "Gümüş", minPoints: 250, discountPercent: 10 },
+        { name: "Altın", minPoints: 500, discountPercent: 15 },
+      ],
+    });
+    console.log("  ✓ 3 tiers created");
+  } else {
+    console.log(`  ✓ Skipped (${tierCount} tiers already exist)`);
+  }
+
   console.log("\nSeeding completed!");
 }
 

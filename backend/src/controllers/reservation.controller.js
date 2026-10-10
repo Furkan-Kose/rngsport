@@ -14,14 +14,90 @@ import {
 import { matchKey } from "../utils/names.js";
 import {
   resolveGuestAccount,
+  resolveAccountFor,
+  requesterRole,
+  ownRecordsWhere,
   syncProfileGaps,
   issueSetPasswordToken,
   issueSetPasswordTokenIfUnclaimed,
 } from "../utils/customerAccount.js";
 import { sendDeliveryEmail, sendReservationCreatedEmail } from "../lib/mail.js";
+import { ROLES } from "../utils/roles.js";
+import {
+  applyDiscount,
+  createWithDiscount,
+  discountAccountFor,
+  refundIfUnpaid,
+  syncPointsForRecord,
+} from "../utils/loyalty.js";
 
 const VALID_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "PAID", "CANCELLED", "DELIVERED"];
 const RESERVATION_NOT_FOUND = { notFound: "Rezervasyon bulunamadı" };
+
+// Tek rezervasyon kuralında sayılan durumlar (iptal edilen sayılmaz)
+const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "PAID", "DELIVERED"];
+// Müşterinin kendi rezervasyonunu düzenleyip silebildiği durumlar (ödeme öncesi)
+const CUSTOMER_EDITABLE_STATUSES = ["PENDING", "CONFIRMED"];
+
+// Müşteri başına tek aktif rezervasyon. Girişli müşteri kendi hesabına, misafir
+// formdaki e-postaya göre kontrol edilir — hesap açmadan ÖNCE, boşuna hesap açılmasın.
+const assertNoActiveReservation = async (req, role, customerEmail) => {
+  let where;
+  if (role === ROLES.CUSTOMER) {
+    where = await ownRecordsWhere(req.user.id);
+  } else {
+    const owner = await prisma.user.findUnique({
+      where: { email: customerEmail },
+      select: { id: true, role: true },
+    });
+    where = {
+      OR: [
+        { customerEmail },
+        ...(owner?.role === ROLES.CUSTOMER ? [{ userId: owner.id }] : []),
+      ],
+    };
+  }
+
+  const existing = await prisma.reservation.findFirst({
+    where: { AND: [where, { status: { in: ACTIVE_STATUSES } }] },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new AppError(
+      role === ROLES.CUSTOMER
+        ? "Zaten bir rezervasyonunuz var. Profilinizden düzenleyebilirsiniz."
+        : "Bu e-posta ile zaten bir rezervasyon var. Giriş yapıp profilinizden düzenleyebilirsiniz.",
+      409
+    );
+  }
+};
+
+// Silmeden önce: ödenmemiş rezervasyonda indirim için harcanan puanı iade et
+const refundOnDelete = async (id) => {
+  const record = await prisma.reservation.findUnique({
+    where: { id },
+    select: { id: true, userId: true, status: true, athleteName: true },
+  });
+  if (record) await refundIfUnpaid("reservation", record);
+};
+
+// Müşterinin kendi, hâlâ değiştirilebilir rezervasyonu (değilse 404/403)
+const findOwnEditableReservation = async (req) => {
+  const reservation = await prisma.reservation.findFirst({
+    where: { AND: [{ id: req.params.id }, await ownRecordsWhere(req.user.id)] },
+    select: { id: true, status: true, discountPercent: true },
+  });
+  if (!reservation) {
+    throw new AppError("Rezervasyon bulunamadı", 404);
+  }
+  if (!CUSTOMER_EDITABLE_STATUSES.includes(reservation.status)) {
+    throw new AppError(
+      "Bu rezervasyon artık değiştirilemez. Değişiklik için bizimle iletişime geçin.",
+      403
+    );
+  }
+  return reservation;
+};
 
 export const getAllReservations = async (req, res) => {
   const { page, limit, skip, status, search } = parsePaginationQuery(req);
@@ -76,6 +152,9 @@ export const getReservation = async (req, res) => {
     customerPhone: reservation.customerPhone,
     customerEmail: reservation.customerEmail,
     notes: reservation.notes,
+    subtotal: reservation.subtotal,
+    discountPercent: reservation.discountPercent,
+    discountAmount: reservation.discountAmount,
     totalPrice: reservation.totalPrice,
     status: reservation.status,
     createdAt: reservation.createdAt,
@@ -99,29 +178,36 @@ export const createReservation = async (req, res) => {
   }
 
   const customer = validateRequiredCustomerInfo(req.body);
-  const { items, totalPrice } = await validateAndPriceItems(req.body.items, {
+  const { items, totalPrice: subtotal } = await validateAndPriceItems(req.body.items, {
     reservationPricing: true,
     activeOnly: true,
   });
 
-  // optionalAuth: girişliyse kendi hesabı; misafirse e-postasından hesap açılır/bulunur
-  const account = req.user?.id
-    ? { userId: req.user.id, status: "linked" }
-    : await resolveGuestAccount(customer);
+  // Admin panelden eklerken kural yok (kardeşler vb. özel durumlar için)
+  const role = await requesterRole(req);
+  if (role !== ROLES.ADMIN) {
+    await assertNoActiveReservation(req, role, customer.customerEmail);
+  }
 
-  // Girişli kullanıcının profilindeki BOŞ sporcu alanlarını doldur (doluyu ezmeden),
+  // Girişli müşteriyse kendi hesabı; misafir/admin ise e-postasından hesap açılır/bulunur
+  const account = await resolveAccountFor(req, customer);
+
+  // Müşterinin profilindeki BOŞ sporcu alanlarını doldur (doluyu ezmeden),
   // böylece bir sonraki sefer form ön-dolu gelir. Beklenmez — siparişi geciktirmesin.
-  if (req.user?.id) syncProfileGaps(req.user.id, customer);
+  if (role === ROLES.CUSTOMER) syncProfileGaps(req.user.id, customer);
 
-  const reservation = await prisma.reservation.create({
+  // Sadakat: seviyesi varsa indirim otomatik uygulanır ve seviyenin puanı harcanır.
+  // Yüzde kayda sabitlenir (sonraki düzenlemelerde de o kullanılır).
+  const reservation = await createWithDiscount({
+    model: "reservation",
+    discountUserId: discountAccountFor(role, req.user?.id, account.userId),
+    subtotal,
     data: {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
-      totalPrice,
       ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
-    include: { items: true },
   });
 
   // Rezervasyon onay maili (fire-and-forget — token üretimi response'u bekletmesin).
@@ -141,6 +227,9 @@ export const createReservation = async (req, res) => {
       athleteName: reservation.athleteName,
       clubName: reservation.clubName,
       customerEmail: reservation.customerEmail,
+      subtotal: reservation.subtotal,
+      discountPercent: reservation.discountPercent,
+      discountAmount: reservation.discountAmount,
       totalPrice: reservation.totalPrice,
       status: reservation.status,
       items: reservation.items.map((item) => ({
@@ -152,10 +241,10 @@ export const createReservation = async (req, res) => {
   });
 };
 
-// Girişli kullanıcının kendi rezervasyonları
+// Girişli kullanıcının kendi rezervasyonları (düzenleme formu için tüm alanlarıyla)
 export const getMyReservations = async (req, res) => {
   const reservations = await prisma.reservation.findMany({
-    where: { userId: req.user.id },
+    where: await ownRecordsWhere(req.user.id),
     include: { items: true },
     orderBy: { createdAt: "desc" },
   });
@@ -165,6 +254,13 @@ export const getMyReservations = async (req, res) => {
       id: r.id,
       athleteName: r.athleteName,
       clubName: r.clubName,
+      birthYear: r.birthYear,
+      customerPhone: r.customerPhone,
+      customerEmail: r.customerEmail,
+      notes: r.notes,
+      subtotal: r.subtotal,
+      discountPercent: r.discountPercent,
+      discountAmount: r.discountAmount,
       totalPrice: r.totalPrice,
       status: r.status,
       createdAt: r.createdAt,
@@ -174,9 +270,50 @@ export const getMyReservations = async (req, res) => {
         quantity: item.quantity,
         price: item.price,
         apparatuses: item.apparatuses,
+        points: item.points,
       })),
     })),
   });
+};
+
+// Müşteri: kendi rezervasyonunu günceller (ödeme öncesi). E-posta hesabın bağı
+// olduğu için değiştirilemez; fiyatlar her zaman DB'den yeniden hesaplanır.
+export const updateMyReservation = async (req, res) => {
+  const { id, discountPercent } = await findOwnEditableReservation(req);
+  const { customerEmail: _ignored, ...input } = req.body;
+  const data = buildPartialCustomerUpdate(input);
+  const { items: newItems, totalPrice: subtotal } = await validateAndPriceItems(req.body.items, {
+    reservationPricing: true,
+    activeOnly: true,
+  });
+  // Oluşturma anında sabitlenen indirim yüzdesi korunur
+  const pricing = applyDiscount(subtotal, discountPercent);
+
+  const reservation = await prisma.$transaction(async (tx) => {
+    await tx.reservationItem.deleteMany({ where: { reservationId: id } });
+    return tx.reservation.update({
+      where: { id },
+      data: { ...data, ...pricing, items: { create: newItems } },
+    });
+  });
+
+  bus.emit("shooting-list-changed");
+  res.json({
+    message: "Rezervasyon güncellendi",
+    reservation: { id: reservation.id, totalPrice: pricing.totalPrice },
+  });
+};
+
+// Müşteri: kendi rezervasyonunu siler (ödeme öncesi)
+export const deleteMyReservation = async (req, res) => {
+  const { id } = await findOwnEditableReservation(req);
+  await refundOnDelete(id);
+  await prisma.reservation
+    .delete({ where: { id } })
+    .catch(rethrowPrismaError(RESERVATION_NOT_FOUND));
+
+  bus.emit("shooting-list-changed");
+  res.json({ message: "Rezervasyon silindi" });
 };
 
 export const updateReservation = async (req, res) => {
@@ -195,15 +332,31 @@ export const updateReservation = async (req, res) => {
   // Teslimat maili için önceki durumu bilmemiz gerekiyor
   const existing = await prisma.reservation.findUnique({
     where: { id },
-    select: { status: true },
+    select: {
+      status: true,
+      discountPercent: true,
+      customerEmail: true,
+      athleteName: true,
+      clubName: true,
+      birthYear: true,
+      customerPhone: true,
+    },
   });
   if (!existing) {
     throw new AppError("Rezervasyon bulunamadı", 404);
   }
 
+  // E-posta değiştiyse kayıt yeni e-postanın hesabına taşınır (profilinde görünsün)
+  if (data.customerEmail && data.customerEmail !== existing.customerEmail) {
+    const account = await resolveGuestAccount({ ...existing, ...data });
+    data.userId = account.userId;
+  }
+
   // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget).
   // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.
+  // Durum değiştiyse sadakat puanı da senkronlanır (ödendi → puan, iptal → geri al).
   const notifyDelivered = (reservation) => {
+    if (status) syncPointsForRecord("reservation", reservation);
     if (status === "DELIVERED" && existing.status !== "DELIVERED" && reservation.customerEmail) {
       issueSetPasswordTokenIfUnclaimed(reservation.userId)
         .then((token) =>
@@ -228,17 +381,18 @@ export const updateReservation = async (req, res) => {
   // Items gönderildiyse: fiyatları DB'den yeniden hesapla, eski item'ları silip
   // yenilerini transaction içinde oluştur. activeOnly:false → admin pasif paketleri
   // de düzenleyebilsin.
-  const { items: newItems, totalPrice } = await validateAndPriceItems(items, {
+  const { items: newItems, totalPrice: subtotal } = await validateAndPriceItems(items, {
     reservationPricing: true,
     activeOnly: false,
   });
+  const pricing = applyDiscount(subtotal, existing.discountPercent);
 
   const reservation = await prisma
     .$transaction(async (tx) => {
       await tx.reservationItem.deleteMany({ where: { reservationId: id } });
       return tx.reservation.update({
         where: { id },
-        data: { ...data, totalPrice, items: { create: newItems } },
+        data: { ...data, ...pricing, items: { create: newItems } },
         include: { items: true },
       });
     })
@@ -251,6 +405,7 @@ export const updateReservation = async (req, res) => {
 };
 
 export const deleteReservation = async (req, res) => {
+  await refundOnDelete(req.params.id);
   await prisma.reservation
     .delete({ where: { id: req.params.id } })
     .catch(rethrowPrismaError(RESERVATION_NOT_FOUND));

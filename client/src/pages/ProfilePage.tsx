@@ -9,12 +9,19 @@ import {
   Package,
   Lock,
   MailWarning,
+  Pencil,
+  Trash2,
+  Loader2,
+  RotateCw,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
 import SEO from "../components/SEO";
 import ProfileCard from "../components/ProfileCard";
+import LoyaltyCard from "../components/LoyaltyCard";
+import { useMyLoyalty } from "../hooks/useMyLoyalty";
+import { isCustomerEditable } from "../lib/myReservations";
 
 interface MyItem {
   package: { id: string; name: string; category: string };
@@ -54,7 +61,128 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-const RecordList = ({ title, records }: { title: string; records: MyRecord[] }) => {
+interface RecordListProps {
+  title: string;
+  records: MyRecord[];
+  status: LoadStatus;
+  onRetry: () => void;
+  // Verilirse (rezervasyonlar) ödeme öncesi kayıtlarda Düzenle/Sil gösterilir
+  onDelete?: (id: string) => Promise<void>;
+}
+
+// Rezervasyon kartının alt satırı: ödeme öncesi Düzenle/Sil, sonrası bilgi notu
+const ReservationActions = ({
+  record,
+  onDelete,
+}: {
+  record: MyRecord;
+  onDelete: (id: string) => Promise<void>;
+}) => {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  if (!isCustomerEditable(record.status)) {
+    return record.status === "CANCELLED" ? null : (
+      <p className="text-xs text-zinc-500 mt-3">
+        Ödeme alındıktan sonra değişiklik için bizimle iletişime geçin.
+      </p>
+    );
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete(record.id);
+    } finally {
+      setIsDeleting(false);
+      setIsConfirming(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-zinc-700/50">
+      {isConfirming ? (
+        <>
+          <span className="text-sm text-red-400 mr-1">Rezervasyon silinsin mi?</span>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Sil
+          </button>
+          <button
+            onClick={() => setIsConfirming(false)}
+            disabled={isDeleting}
+            className="px-3 py-1.5 rounded-lg bg-zinc-700/50 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
+          >
+            Vazgeç
+          </button>
+        </>
+      ) : (
+        <>
+          <Link
+            to={`/rezervasyon?duzenle=${record.id}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-sm font-medium transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Düzenle
+          </Link>
+          <button
+            onClick={() => setIsConfirming(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-700/40 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 text-sm transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Sil
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
+type LoadStatus = "loading" | "error" | "ready";
+
+// Tek bir "/my" listesini bağımsız yükler. Rezervasyonlar ve siparişler eskiden
+// tek Promise.all'daydı: sipariş isteği düşünce rezervasyonlar da kayboluyor ve
+// müşteri hatayı değil "Henüz kaydınız yok" görüyordu.
+const useMyRecords = (url: string) => {
+  const [records, setRecords] = useState<MyRecord[]>([]);
+  const [status, setStatus] = useState<LoadStatus>("loading");
+
+  // "Tekrar dene" bu sayacı artırır, effect isteği yeniden atar
+  const [attempt, setAttempt] = useState(0);
+
+  // İlk yükleme: status zaten "loading" ile başlıyor
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get(url)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setRecords(data.data || []);
+        setStatus("ready");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error(`Kayıtlar yüklenemedi (${url}):`, error);
+        setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url, attempt]);
+
+  const reload = () => {
+    setStatus("loading");
+    setAttempt((n) => n + 1);
+  };
+
+  return { records, setRecords, status, reload };
+};
+
+const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListProps) => {
   return (
     <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
       <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
@@ -62,7 +190,22 @@ const RecordList = ({ title, records }: { title: string; records: MyRecord[] }) 
         <Calendar className="w-5 h-5 text-emerald-400" />
         {title}
       </h2>
-      {records.length === 0 ? (
+      {status === "loading" ? (
+        <div className="flex justify-center py-4">
+          <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+        </div>
+      ) : status === "error" ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-red-400">Kayıtlar yüklenemedi.</p>
+          <button
+            onClick={onRetry}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm transition-colors"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+            Tekrar dene
+          </button>
+        </div>
+      ) : records.length === 0 ? (
         <p className="text-sm text-zinc-500">Henüz kaydınız yok.</p>
       ) : (
       <div className="space-y-3">
@@ -101,6 +244,7 @@ const RecordList = ({ title, records }: { title: string; records: MyRecord[] }) 
                 year: "numeric",
               })}
             </p>
+            {onDelete && <ReservationActions record={r} onDelete={onDelete} />}
           </div>
         ))}
       </div>
@@ -209,8 +353,9 @@ const ChangePasswordCard = () => {
 const ProfilePage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [reservations, setReservations] = useState<MyRecord[]>([]);
-  const [orders, setOrders] = useState<MyRecord[]>([]);
+  const reservations = useMyRecords("/api/reservations/my");
+  const orders = useMyRecords("/api/orders/my");
+  const loyalty = useMyLoyalty();
   const [isResending, setIsResending] = useState(false);
 
   const handleResendVerification = async () => {
@@ -226,25 +371,20 @@ const ProfilePage = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchRecords = async () => {
-      try {
-        const [resRes, ordRes] = await Promise.all([
-          api.get("/api/reservations/my"),
-          api.get("/api/orders/my"),
-        ]);
-        setReservations(resRes.data.data || []);
-        setOrders(ordRes.data.data || []);
-      } catch (error) {
-        console.error("Kayıtlar yüklenemedi:", error);
-      }
-    };
-    fetchRecords();
-  }, []);
-
   const handleLogout = async () => {
     await logout();
     navigate("/");
+  };
+
+  const handleDeleteReservation = async (id: string) => {
+    try {
+      await api.delete(`/api/reservations/my/${id}`);
+      reservations.setRecords((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Rezervasyon silindi");
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      toast.error(errorObj.response?.data?.message || "Rezervasyon silinemedi");
+    }
   };
 
   return (
@@ -281,6 +421,8 @@ const ProfilePage = () => {
 
           <ProfileCard onLogout={handleLogout} />
 
+          {loyalty && <LoyaltyCard summary={loyalty} />}
+
           {/* Şifre değiştirme */}
           <ChangePasswordCard />
 
@@ -303,8 +445,19 @@ const ProfilePage = () => {
             <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
           </Link>
 
-          <RecordList title="Rezervasyonlarım" records={reservations} />
-          <RecordList title="Siparişlerim" records={orders} />
+          <RecordList
+            title="Rezervasyonlarım"
+            records={reservations.records}
+            status={reservations.status}
+            onRetry={reservations.reload}
+            onDelete={handleDeleteReservation}
+          />
+          <RecordList
+            title="Siparişlerim"
+            records={orders.records}
+            status={orders.status}
+            onRetry={orders.reload}
+          />
         </motion.div>
       </div>
     </div>

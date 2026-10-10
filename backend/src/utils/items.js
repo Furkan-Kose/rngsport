@@ -89,6 +89,8 @@ export const validateAndPriceItems = async (
       seriesCount,
       quantity,
       apparatuses,
+      // Sadakat puanı satış anında sabitlenir (paket puanı sonradan değişebilir)
+      points: (pkg.loyaltyPoints || 0) * seriesCount * quantity,
     });
   }
 

@@ -8,6 +8,7 @@ import {
   fileRecordFields,
   streamZip,
   zipFileName,
+  zipManifest,
 } from "../utils/uploads.js";
 import {
   presignUpload,
@@ -148,9 +149,9 @@ export const downloadCeremonyPhoto = async (req, res) => {
   res.json({ url: await presignDownload(photo.r2Key, photo.fileName) });
 };
 
-// Public: törenin tüm dosyaları zip olarak
-export const downloadAllCeremonyPhotos = async (req, res) => {
-  const ceremony = await findCeremony({ slug: req.params.slug });
+// Toplu indirilecek dosyalar
+const findCeremonyZipPhotos = async (slug) => {
+  const ceremony = await findCeremony({ slug });
   const photos = await prisma.awardPhoto.findMany({
     where: { ceremonyId: ceremony.id },
     orderBy: { createdAt: "asc" },
@@ -158,7 +159,19 @@ export const downloadAllCeremonyPhotos = async (req, res) => {
   if (photos.length === 0) {
     throw new AppError("İndirilecek dosya bulunamadı", 404);
   }
-  await streamZip(res, photos, zipFileName(ceremony.title, "odul-toreni"));
+  return { photos, zipName: zipFileName(ceremony.title, "odul-toreni") };
+};
+
+// Public: tarayıcıda zip için dosya listesi (asıl yol — dosyalar doğrudan R2'den iner)
+export const getCeremonyZipManifest = async (req, res) => {
+  const { photos, zipName } = await findCeremonyZipPhotos(req.params.slug);
+  res.json(await zipManifest(photos, zipName));
+};
+
+// Public: sunucuda zip (yedek yol: çok büyük galeri + tarayıcı kaldıramıyor)
+export const downloadAllCeremonyPhotos = async (req, res) => {
+  const { photos, zipName } = await findCeremonyZipPhotos(req.params.slug);
+  await streamZip(res, photos, zipName);
 };
 
 // Admin: tek tören (id ile — slug'dan bağımsız)
