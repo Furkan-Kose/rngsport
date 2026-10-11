@@ -168,6 +168,7 @@ export const getReservation = async (req, res) => {
       quantity: item.quantity,
       price: item.price,
       apparatuses: item.apparatuses,
+      priority: item.priority,
     })),
   });
 };
@@ -234,6 +235,7 @@ export const createReservation = async (req, res) => {
       status: reservation.status,
       items: reservation.items.map((item) => ({
         package: { id: item.packageId, name: item.packageName },
+        priority: item.priority,
         seriesCount: item.seriesCount,
         quantity: item.quantity,
       })),
@@ -271,6 +273,7 @@ export const getMyReservations = async (req, res) => {
         price: item.price,
         apparatuses: item.apparatuses,
         points: item.points,
+        priority: item.priority,
       })),
     })),
   });

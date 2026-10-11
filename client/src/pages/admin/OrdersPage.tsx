@@ -4,6 +4,7 @@ import api from '../../lib/api';
 import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import { getApparatusLabel } from '../../constants/apparatuses';
+import PriorityBadge from '../../components/PriorityBadge';
 
 interface OrderItem {
   packageId: string;
@@ -13,6 +14,7 @@ interface OrderItem {
   seriesCount: number;
   quantity: number;
   apparatuses: string[];
+  priority?: boolean;
 }
 
 interface Order {
@@ -423,7 +425,7 @@ const OrdersPage = () => {
                       className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-900/50 rounded-lg p-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-white font-medium truncate">{item.packageName}</p>
+                        <p className="text-white font-medium truncate">{item.packageName}<PriorityBadge show={item.priority} /></p>
                         <p className="text-gray-400 text-xs sm:text-sm">
                           {getCategoryLabel(item.category)} • {item.seriesCount} Seri x {item.quantity} Adet
                         </p>

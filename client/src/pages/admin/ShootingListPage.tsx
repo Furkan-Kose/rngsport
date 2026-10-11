@@ -21,6 +21,7 @@ import ShootingTimeEditModal from '../../components/admin/ShootingTimeEditModal'
 import { useAuth } from '../../context/AuthContext';
 import { TRACK_LABELS, type Track } from '../../lib/roles';
 import { trackTimes, type ShootTrack } from '../../lib/shooting';
+import PriorityBadge from '../../components/PriorityBadge';
 
 interface ShootingItem {
   packageName: string;
@@ -28,6 +29,7 @@ interface ShootingItem {
   seriesCount: number;
   quantity: number;
   apparatuses?: string[];
+  priority?: boolean;
 }
 
 interface ShootingEntry {
@@ -665,6 +667,7 @@ const ShootingListPage = () => {
                               <div key={i}>
                                 <p className="text-gray-300">
                                   <span className="text-white">{it.packageName}</span>
+                                  <PriorityBadge show={it.priority} />
                                   <span className="text-gray-500">
                                     {' · '}
                                     {it.seriesCount}'li × {it.quantity}
@@ -789,6 +792,7 @@ const ShootingListPage = () => {
                                       <span className="text-white">
                                         {it.packageName}
                                       </span>
+                                      <PriorityBadge show={it.priority} />
                                       <span className="text-gray-500">
                                         {' · '}
                                         {it.seriesCount}'li × {it.quantity}

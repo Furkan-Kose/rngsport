@@ -60,6 +60,7 @@ const mapItems = (items, track) => {
       seriesCount: it.seriesCount,
       quantity: it.quantity,
       apparatuses: it.apparatuses,
+      priority: it.priority,
     }));
 };
 
@@ -416,7 +417,7 @@ const toExcelRow = (e) => ({
   "Video Bitiş": excelTime(e.videoEndedAt),
   "Telefon": e.customerPhone || "",
   "Paket / Seri": (e.items || [])
-    .map((it) => `${it.packageName} (${it.seriesCount}×${it.quantity})`)
+    .map((it) => `${it.packageName}${it.priority ? " [ÖNCELİKLİ]" : ""} (${it.seriesCount}×${it.quantity})`)
     .join(", "),
   "Not": e.notes || "",
 });

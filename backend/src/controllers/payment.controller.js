@@ -66,7 +66,7 @@ export const createCheckoutForm = async (req, res, next) => {
       const itemTotal = basketPrices[index];
       return {
         id: item.id,
-        name: `${item.packageName} (${item.seriesCount} Seri)`,
+        name: `${item.packageName}${item.priority ? " - Öncelikli" : ""} (${item.seriesCount} Seri)`,
         category1:
           item.category === "photo"
             ? "Fotoğraf"

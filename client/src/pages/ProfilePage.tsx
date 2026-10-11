@@ -22,12 +22,14 @@ import ProfileCard from "../components/ProfileCard";
 import LoyaltyCard from "../components/LoyaltyCard";
 import { useMyLoyalty } from "../hooks/useMyLoyalty";
 import { isCustomerEditable } from "../lib/myReservations";
+import PriorityBadge from '../components/PriorityBadge';
 
 interface MyItem {
   package: { id: string; name: string; category: string };
   seriesCount: number;
   quantity: number;
   price: number;
+  priority?: boolean;
 }
 
 interface MyRecord {
@@ -234,6 +236,7 @@ const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListPro
                 >
                   <Package className="w-3 h-3 text-emerald-400/70" />
                   {item.package.name} × {item.quantity} ({item.seriesCount} seri)
+                  <PriorityBadge show={item.priority} />
                 </span>
               ))}
             </div>

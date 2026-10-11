@@ -27,6 +27,7 @@ import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCa
 import { ROLES } from "../lib/roles";
 import { useMyLoyalty } from "../hooks/useMyLoyalty";
 import LoyaltyPriceLines from "../components/LoyaltyPriceLines";
+import PriorityCheckbox from "../components/PriorityCheckbox";
 import { applyDiscount, formatTL, pointsFor } from "../lib/loyalty";
 import {
   ACTIVE_RESERVATION_STATUSES,
@@ -52,6 +53,8 @@ interface Package {
     3: number;
   };
   loyaltyPoints?: number;
+  // Öncelikli ek ücreti (seri başına); null = bu pakette öncelik yok
+  priorityFee?: number | null;
 }
 
 interface SelectedPackage {
@@ -62,11 +65,18 @@ interface SelectedPackage {
   quantity: number;
   price: number;
   apparatuses: string[];
+  priority: boolean;
 }
 
 // Seri sayısına göre rezervasyon (elden nakit) fiyatı
 const reservationPriceFor = (pkg: Package, seriesCount: 1 | 2 | 3) =>
   seriesCount === 1 ? pkg.reservationPrice : pkg.reservationDiscounts[seriesCount];
+
+// Satır birim fiyatı: taban + (öncelikliyse seri başına ek ücret). Önizleme —
+// asıl fiyatı backend aynı kuralla hesaplar (utils/items.js).
+const rowPrice = (pkg: Package, seriesCount: 1 | 2 | 3, priority: boolean) =>
+  reservationPriceFor(pkg, seriesCount) +
+  (priority && pkg.priorityFee ? pkg.priorityFee * seriesCount : 0);
 
 const ReservationPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -171,6 +181,7 @@ const ReservationPage = () => {
           target.items.map((item, index) => {
             const pkg = packages.find((p) => p.id === item.package.id);
             const seriesCount = item.seriesCount as 1 | 2 | 3;
+            const priority = !!item.priority && pkg?.priorityFee != null;
             return {
               id: `edit-${index}`,
               // Paket artık satışta değilse boş bırak — müşteri yenisini seçer
@@ -178,8 +189,9 @@ const ReservationPage = () => {
               packageName: pkg ? pkg.name : "",
               seriesCount,
               quantity: item.quantity,
-              price: pkg ? reservationPriceFor(pkg, seriesCount) : 0,
+              price: pkg ? rowPrice(pkg, seriesCount, priority) : 0,
               apparatuses: item.apparatuses,
+              priority,
             };
           }),
         );
@@ -203,6 +215,7 @@ const ReservationPage = () => {
         quantity: 1,
         price: 0,
         apparatuses: [],
+        priority: false,
       },
     ]);
   };
@@ -214,39 +227,34 @@ const ReservationPage = () => {
   const updatePackageRow = (id: string, field: string, value: any) => {
     setSelectedPackages(
       selectedPackages.map((sp) => {
-        if (sp.id === id) {
-          if (field === "packageId") {
-            const pkg = packages.find((p) => p.id === value);
-            if (pkg) {
-              return {
-                ...sp,
-                packageId: value,
-                packageName: pkg.name,
-                price: pkg.reservationPrice, // Rezervasyon fiyatı kullan
-              };
-            }
-          }
-          if (field === "seriesCount") {
-            const pkg = packages.find((p) => p.id === sp.packageId);
-            const newCount = value as 1 | 2 | 3;
-            if (pkg) {
-              const price = reservationPriceFor(pkg, newCount);
-              return {
-                ...sp,
-                seriesCount: newCount,
-                price,
-                apparatuses: sp.apparatuses.slice(0, newCount),
-              };
-            }
-            return {
-              ...sp,
-              seriesCount: newCount,
-              apparatuses: sp.apparatuses.slice(0, newCount),
-            };
-          }
-          return { ...sp, [field]: value };
+        if (sp.id !== id) return sp;
+        const pkg = packages.find((p) => p.id === (field === "packageId" ? value : sp.packageId));
+
+        if (field === "packageId") {
+          if (!pkg) return sp;
+          // Yeni pakette öncelik yoksa (ör. Full Event) seçim düşer
+          const priority = sp.priority && pkg.priorityFee != null;
+          return {
+            ...sp,
+            packageId: value,
+            packageName: pkg.name,
+            priority,
+            price: rowPrice(pkg, sp.seriesCount, priority),
+          };
         }
-        return sp;
+        if (field === "seriesCount") {
+          const newCount = value as 1 | 2 | 3;
+          return {
+            ...sp,
+            seriesCount: newCount,
+            apparatuses: sp.apparatuses.slice(0, newCount),
+            ...(pkg && { price: rowPrice(pkg, newCount, sp.priority) }),
+          };
+        }
+        if (field === "priority") {
+          return { ...sp, priority: value, ...(pkg && { price: rowPrice(pkg, sp.seriesCount, value) }) };
+        }
+        return { ...sp, [field]: value };
       }),
     );
   };
@@ -329,6 +337,7 @@ const ReservationPage = () => {
             seriesCount: sp.seriesCount,
             quantity: sp.quantity,
             apparatuses: sp.apparatuses,
+            priority: sp.priority,
           };
         }),
         totalPrice: calculateTotal(),
@@ -662,6 +671,16 @@ const ReservationPage = () => {
                             <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
+
+                        {/* Öncelikli (pakette öncelik ücreti tanımlıysa) */}
+                        {selectedPkg?.priorityFee != null && (
+                          <PriorityCheckbox
+                            className="md:col-span-12"
+                            checked={sp.priority}
+                            onChange={(checked) => updatePackageRow(sp.id, "priority", checked)}
+                            fee={selectedPkg.priorityFee}
+                          />
+                        )}
 
                         {/* Alet seçimi (seriesCount kadar zorunlu) */}
                         <div className="md:col-span-12 mt-1">

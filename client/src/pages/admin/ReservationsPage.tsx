@@ -5,6 +5,7 @@ import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import ReservationFormModal from '../../components/admin/ReservationFormModal';
 import { getApparatusLabel } from '../../constants/apparatuses';
+import PriorityBadge from '../../components/PriorityBadge';
 
 interface ReservationItem {
   packageId: string;
@@ -14,6 +15,7 @@ interface ReservationItem {
   seriesCount: number;
   quantity: number;
   apparatuses: string[];
+  priority?: boolean;
 }
 
 interface Reservation {
@@ -537,7 +539,7 @@ const ReservationsPage = () => {
                       className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gray-900/50 rounded-lg p-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-white font-medium truncate">{item.packageName}</p>
+                        <p className="text-white font-medium truncate">{item.packageName}<PriorityBadge show={item.priority} /></p>
                         <p className="text-gray-400 text-xs sm:text-sm">
                           {getCategoryLabel(item.category)} • {item.seriesCount} Seri x {item.quantity} Adet
                         </p>

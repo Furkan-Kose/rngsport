@@ -50,6 +50,7 @@ model OrderItem {
   quantity    Int
   apparatuses String[] @default([]) // Bu paket satırı için seçilen aletler (length === seriesCount)
   points      Int      @default(0) // Satış anındaki sadakat puanı (paket puanı × seri × adet)
+  priority    Boolean  @default(false) // Öncelikli seçildi mi (ücret price içinde)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -123,6 +124,7 @@ model Package {
   reservationDiscount2 Float? // 2 seri rezervasyon fiyatı
   reservationDiscount3 Float? // 3 seri rezervasyon fiyatı
   loyaltyPoints        Int      @default(0) // Sadakat puanı (seri başına; × seri × adet)
+  priorityFee          Float? // Öncelikli ek ücreti (seri başına); null = bu pakette öncelik seçilemez
   isActive             Boolean  @default(true)
   sortOrder            Int      @default(0)
   createdAt            DateTime @default(now())
@@ -172,6 +174,7 @@ model ReservationItem {
   quantity      Int
   apparatuses   String[] @default([]) // Bu paket satırı için seçilen aletler (length === seriesCount)
   points        Int      @default(0) // Satış anındaki sadakat puanı (paket puanı × seri × adet)
+  priority      Boolean  @default(false) // Öncelikli seçildi mi (ücret price içinde)
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 

@@ -29,6 +29,13 @@ const sanitizePoints = (value) => {
   return Number.isFinite(n) ? Math.min(10000, Math.max(0, n)) : undefined;
 };
 
+// Öncelikli ek ücreti: pozitif sayı; boş/0/geçersiz → null (öncelik yok)
+const sanitizeFee = (value) => {
+  if (value === undefined || value === null || value === "") return null;
+  const n = Math.round(Number(value) * 100) / 100;
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 1000000) : null;
+};
+
 // Public response: frontend'in beklediği format
 const formatPackagePublic = (pkg) => ({
   id: pkg.slug,
@@ -49,6 +56,8 @@ const formatPackagePublic = (pkg) => ({
   },
   // Sadakat puanı (seri başına) — formda "bu rezervasyondan +X puan" için
   loyaltyPoints: pkg.loyaltyPoints,
+  // Öncelikli ek ücreti (seri başına); null = bu pakette öncelik seçilemez
+  priorityFee: pkg.priorityFee,
 });
 
 // Admin response: tüm alanlar (pasifler dahil)
@@ -68,6 +77,7 @@ const formatPackageAdmin = (pkg) => ({
   reservationDiscount2: pkg.reservationDiscount2,
   reservationDiscount3: pkg.reservationDiscount3,
   loyaltyPoints: pkg.loyaltyPoints,
+  priorityFee: pkg.priorityFee,
   isActive: pkg.isActive,
   sortOrder: pkg.sortOrder,
   createdAt: pkg.createdAt,
@@ -126,6 +136,7 @@ export const createPackage = async (req, res) => {
     reservationDiscount2,
     reservationDiscount3,
     loyaltyPoints,
+    priorityFee,
     sortOrder,
   } = req.body;
 
@@ -149,6 +160,7 @@ export const createPackage = async (req, res) => {
         reservationDiscount2: reservationDiscount2 || null,
         reservationDiscount3: reservationDiscount3 || null,
         loyaltyPoints: sanitizePoints(loyaltyPoints) ?? 0,
+        priorityFee: sanitizeFee(priorityFee) ?? null,
         sortOrder: sortOrder || 0,
       },
     })
@@ -172,6 +184,7 @@ export const updatePackage = async (req, res) => {
     reservationDiscount2,
     reservationDiscount3,
     loyaltyPoints,
+    priorityFee,
     isActive,
     sortOrder,
   } = req.body;
@@ -203,6 +216,8 @@ export const updatePackage = async (req, res) => {
         ...(sanitizePoints(loyaltyPoints) !== undefined && {
           loyaltyPoints: sanitizePoints(loyaltyPoints),
         }),
+        // null/boş → öncelik kapatılır
+        ...(priorityFee !== undefined && { priorityFee: sanitizeFee(priorityFee) ?? null }),
         ...(typeof isActive === "boolean" && { isActive }),
         ...(sortOrder !== undefined && { sortOrder }),
       },

@@ -19,6 +19,7 @@ import StatusBadge from '../../lib/orderStatus';
 import CustomerFormModal, { type CustomerUser } from '../../components/admin/CustomerFormModal';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import UserLoyaltyPanel from '../../components/admin/UserLoyaltyPanel';
+import PriorityBadge from '../../components/PriorityBadge';
 
 /** Ham OrderItem / ReservationItem satırı (backend include: { items: true }) */
 interface RecordItem {
@@ -29,6 +30,7 @@ interface RecordItem {
   quantity: number;
   price: number;
   apparatuses: string[];
+  priority?: boolean;
 }
 
 interface CustomerRecord {
@@ -107,6 +109,7 @@ const RecordList = ({ title, records }: { title: string; records: CustomerRecord
                 >
                   <Package className="w-3 h-3 text-amber-500/70" />
                   {item.packageName} × {item.quantity} ({item.seriesCount} seri)
+                  <PriorityBadge show={item.priority} />
                 </span>
               ))}
             </div>

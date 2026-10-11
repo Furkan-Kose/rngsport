@@ -9,6 +9,7 @@ interface PackageOption {
   category: string;
   reservationPrice: number;
   reservationDiscounts: { 2: number; 3: number };
+  priorityFee?: number | null; // seri başına; null = öncelik yok
 }
 
 export interface ReservationItemInput {
@@ -17,6 +18,7 @@ export interface ReservationItemInput {
   seriesCount: 1 | 2 | 3;
   quantity: number;
   apparatuses: string[];
+  priority: boolean;
 }
 
 export interface ReservationFormPayload {
@@ -32,6 +34,7 @@ export interface ReservationFormPayload {
     seriesCount: number;
     quantity: number;
     apparatuses: string[];
+    priority: boolean;
   }[];
 }
 
@@ -49,6 +52,7 @@ interface ExistingReservation {
     seriesCount: number;
     quantity: number;
     apparatuses?: string[];
+    priority?: boolean;
   }[];
 }
 
@@ -133,6 +137,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
           seriesCount: (it.seriesCount as 1 | 2 | 3) ?? 1,
           quantity: it.quantity,
           apparatuses: it.apparatuses ?? [],
+          priority: !!it.priority,
         })),
       );
     } else {
@@ -143,15 +148,16 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
 
   if (!isOpen) return null;
 
-  const getItemPrice = (packageId: string, seriesCount: 1 | 2 | 3) => {
+  // Birim fiyat önizlemesi: taban + (öncelikliyse seri başına ek ücret). Asıl fiyatı backend hesaplar.
+  const getItemPrice = (packageId: string, seriesCount: 1 | 2 | 3, priority: boolean) => {
     const pkg = packages.find((p) => p.id === packageId);
     if (!pkg) return 0;
-    if (seriesCount === 1) return pkg.reservationPrice;
-    return pkg.reservationDiscounts[seriesCount];
+    const base = seriesCount === 1 ? pkg.reservationPrice : pkg.reservationDiscounts[seriesCount];
+    return base + (priority && pkg.priorityFee ? pkg.priorityFee * seriesCount : 0);
   };
 
   const totalPrice = items.reduce(
-    (sum, it) => sum + getItemPrice(it.packageId, it.seriesCount) * it.quantity,
+    (sum, it) => sum + getItemPrice(it.packageId, it.seriesCount, it.priority) * it.quantity,
     0,
   );
 
@@ -167,6 +173,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
         seriesCount: 1,
         quantity: 1,
         apparatuses: [],
+        priority: false,
       },
     ]);
   };
@@ -183,6 +190,11 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
         // seriesCount değişirse fazla seçili aletleri kırp
         if (patch.seriesCount !== undefined && patch.seriesCount !== it.seriesCount) {
           next.apparatuses = it.apparatuses.slice(0, patch.seriesCount);
+        }
+        // Yeni pakette öncelik yoksa (ör. Full Event) seçim düşer
+        if (patch.packageId !== undefined) {
+          const pkg = packages.find((p) => p.id === patch.packageId);
+          if (pkg?.priorityFee == null) next.priority = false;
         }
         return next;
       }),
@@ -235,6 +247,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
         seriesCount: it.seriesCount,
         quantity: it.quantity,
         apparatuses: it.apparatuses,
+        priority: it.priority,
       })),
     };
 
@@ -416,7 +429,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
               <div className="space-y-2">
                 {items.map((it) => {
                   const pkg = packages.find((p) => p.id === it.packageId);
-                  const lineTotal = getItemPrice(it.packageId, it.seriesCount) * it.quantity;
+                  const lineTotal = getItemPrice(it.packageId, it.seriesCount, it.priority) * it.quantity;
                   return (
                     <div
                       key={it.rowId}
@@ -495,6 +508,22 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
+
+                      {/* Öncelikli (pakette öncelik ücreti tanımlıysa) */}
+                      {pkg?.priorityFee != null && (
+                        <label className="md:col-span-12 flex items-center gap-2 cursor-pointer select-none w-fit">
+                          <input
+                            type="checkbox"
+                            checked={it.priority}
+                            onChange={(e) => updateRow(it.rowId, { priority: e.target.checked })}
+                            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
+                          />
+                          <span className="text-xs text-gray-300">
+                            ⚡ <strong className="text-amber-300">Öncelikli</strong>{' '}
+                            <span className="text-gray-500">(+{formatPrice(pkg.priorityFee)} / seri)</span>
+                          </span>
+                        </label>
+                      )}
 
                       {/* Alet seçimi */}
                       <div className="md:col-span-12 mt-1">

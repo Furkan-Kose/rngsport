@@ -6,6 +6,7 @@ export interface MyReservationItem {
   quantity: number;
   price: number;
   apparatuses: string[];
+  priority?: boolean;
 }
 
 export interface MyReservation {

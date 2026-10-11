@@ -52,6 +52,7 @@ const formatOrderForResponse = (order) => ({
     price: item.price,
     apparatuses: item.apparatuses,
     points: item.points,
+    priority: item.priority,
   })),
 });
 
@@ -102,6 +103,7 @@ export const createOrder = async (req, res) => {
       totalPrice: order.totalPrice,
       items: order.items.map((item) => ({
         package: { id: item.packageId, name: item.packageName },
+        priority: item.priority,
         seriesCount: item.seriesCount,
         quantity: item.quantity,
       })),

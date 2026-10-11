@@ -16,12 +16,15 @@ export interface Package {
   };
   // Sadakat puanı (seri başına). Eski sepetlerde (localStorage) olmayabilir.
   loyaltyPoints?: number;
+  // Öncelikli ek ücreti (seri başına); null/yok = bu pakette öncelik seçilemez
+  priorityFee?: number | null;
 }
 
 export interface CartItem {
   package: Package;
   seriesCount: 1 | 2 | 3;
   quantity: number;
+  priority?: boolean;
 }
 
 interface CartContextType {
@@ -30,6 +33,7 @@ interface CartContextType {
   removeFromCart: (packageId: string, seriesCount: 1 | 2 | 3) => void;
   updateQuantity: (packageId: string, seriesCount: 1 | 2 | 3, quantity: number) => void;
   updateSeriesCount: (packageId: string, oldSeriesCount: 1 | 2 | 3, newSeriesCount: 1 | 2 | 3) => void;
+  setPriority: (packageId: string, seriesCount: 1 | 2 | 3, priority: boolean) => void;
   clearCart: () => void;
   getItemPrice: (item: CartItem) => number;
   getTotalPrice: () => number;
@@ -137,6 +141,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const setPriority = (packageId: string, seriesCount: 1 | 2 | 3, priority: boolean) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.package.id === packageId && item.seriesCount === seriesCount
+          ? { ...item, priority }
+          : item
+      )
+    );
+  };
+
   const clearCart = () => {
     setItems([]);
   };
@@ -149,7 +163,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         : seriesCount === 2
         ? pkg.discounts[2]
         : pkg.discounts[3];
-    return basePrice * quantity;
+    // Öncelikli: seri başına ek ücret (önizleme — asıl fiyat backend'de hesaplanır)
+    const priorityFee = item.priority && pkg.priorityFee ? pkg.priorityFee * seriesCount : 0;
+    return (basePrice + priorityFee) * quantity;
   };
 
   const getTotalPrice = (): number => {
@@ -172,6 +188,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         removeFromCart,
         updateQuantity,
         updateSeriesCount,
+        setPriority,
         clearCart,
         getItemPrice,
         getTotalPrice,

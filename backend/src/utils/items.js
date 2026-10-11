@@ -78,7 +78,15 @@ export const validateAndPriceItems = async (
       );
     }
 
-    const itemPrice = pickPrice(pkg, seriesCount);
+    // Öncelikli: seri başına ek ücret, paketteki priorityFee'den (istemciden fiyat alınmaz).
+    // priorityFee null olan pakette (ör. Full Event) seçilemez.
+    const priority = item.priority === true;
+    if (priority && pkg.priorityFee == null) {
+      throw new AppError(`${pkg.name} paketinde öncelikli seçeneği yok`, 400);
+    }
+
+    // price = birim fiyat (öncelik ücreti dahil) → toplamlar ve iyzico sepeti değişmeden çalışır
+    const itemPrice = pickPrice(pkg, seriesCount) + (priority ? pkg.priorityFee * seriesCount : 0);
     totalPrice += itemPrice * quantity;
 
     processedItems.push({
@@ -89,7 +97,8 @@ export const validateAndPriceItems = async (
       seriesCount,
       quantity,
       apparatuses,
-      // Sadakat puanı satış anında sabitlenir (paket puanı sonradan değişebilir)
+      priority,
+      // Sadakat puanı (öncelik ücreti ek puan getirmez) satış anında sabitlenir (paket puanı sonradan değişebilir)
       points: (pkg.loyaltyPoints || 0) * seriesCount * quantity,
     });
   }

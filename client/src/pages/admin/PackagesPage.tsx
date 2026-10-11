@@ -18,6 +18,7 @@ interface Package {
   reservationDiscount2: number;
   reservationDiscount3: number;
   loyaltyPoints: number;
+  priorityFee: number | null;
   isActive: boolean;
   sortOrder: number;
 }
@@ -35,6 +36,7 @@ interface PackageFormData {
   reservationDiscount2: number;
   reservationDiscount3: number;
   loyaltyPoints: number;
+  priorityFee: number | null;
   isActive: boolean;
   sortOrder: number;
 }
@@ -52,6 +54,7 @@ const initialFormData: PackageFormData = {
   reservationDiscount2: 0,
   reservationDiscount3: 0,
   loyaltyPoints: 0,
+  priorityFee: 0,
   isActive: true,
   sortOrder: 0,
 };
@@ -114,6 +117,7 @@ const PackagesPage = () => {
       reservationDiscount2: pkg.reservationDiscount2 || pkg.discount2,
       reservationDiscount3: pkg.reservationDiscount3 || pkg.discount3,
       loyaltyPoints: pkg.loyaltyPoints ?? 0,
+      priorityFee: pkg.priorityFee ?? 0,
       isActive: pkg.isActive,
       sortOrder: pkg.sortOrder,
     });
@@ -279,6 +283,9 @@ const PackagesPage = () => {
                     {pkg.isActive ? 'Aktif' : 'Pasif'}
                   </span>
                   <span className="text-gray-500 text-[11px]">Sıra: {pkg.sortOrder}</span>
+                  {pkg.priorityFee != null && (
+                    <span className="text-amber-300 text-[11px]">⚡ Öncelikli +{formatPrice(pkg.priorityFee)}/seri</span>
+                  )}
                   {pkg.loyaltyPoints > 0 && (
                     <span className="text-amber-400 text-[11px]">★ {pkg.loyaltyPoints} puan/seri</span>
                   )}
@@ -539,6 +546,23 @@ const PackagesPage = () => {
                     className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
+              </div>
+
+              {/* Öncelikli ek ücreti */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Öncelikli Ek Ücreti (₺, seri başına)</label>
+                <input
+                  type="number"
+                  name="priorityFee"
+                  min={0}
+                  step={50}
+                  value={formData.priorityFee ?? 0}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Rezervasyon ve sepette &quot;Öncelikli&quot; kutucuğu çıkar; işaretlenirse seri başına bu tutar eklenir. 0 = bu pakette öncelik yok.
+                </p>
               </div>
 
               {/* Sadakat puanı */}

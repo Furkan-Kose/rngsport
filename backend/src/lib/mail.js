@@ -143,7 +143,7 @@ const itemsTable = (items, totalPrice) => `
             .map(
               (item) =>
                 `<tr>
-           <td style="padding:6px 0;border-bottom:1px solid #f4f4f5;">${item.packageName} <span style="color:#a1a1aa;">(${item.seriesCount} seri)</span></td>
+           <td style="padding:6px 0;border-bottom:1px solid #f4f4f5;">${item.packageName}${item.priority ? ' <strong style="color:#d97706;">· Öncelikli</strong>' : ""} <span style="color:#a1a1aa;">(${item.seriesCount} seri)</span></td>
            <td style="padding:6px 0;border-bottom:1px solid #f4f4f5;text-align:right;">× ${item.quantity}</td>
          </tr>`
             )

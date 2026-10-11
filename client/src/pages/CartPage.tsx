@@ -20,6 +20,7 @@ import {
 import { Link, useSearchParams } from "react-router";
 import { useMyLoyalty } from "../hooks/useMyLoyalty";
 import LoyaltyPriceLines from "../components/LoyaltyPriceLines";
+import PriorityCheckbox from "../components/PriorityCheckbox";
 import { applyDiscount, formatTL, pointsFor } from "../lib/loyalty";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart, type CartItem } from "../context/CartContext";
@@ -94,9 +95,9 @@ const IyzicoCheckoutForm = ({ html }: { html: string }) => {
 };
 
 const CartItemCard = ({ item }: { item: CartItem }) => {
-  const { removeFromCart, updateQuantity, updateSeriesCount, getItemPrice } =
+  const { removeFromCart, updateQuantity, updateSeriesCount, setPriority, getItemPrice } =
     useCart();
-  const { package: pkg, seriesCount, quantity } = item;
+  const { package: pkg, seriesCount, quantity, priority = false } = item;
 
   const handleSeriesChange = (newSeries: 1 | 2 | 3) => {
     if (newSeries !== seriesCount) {
@@ -167,6 +168,15 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
             </div>
           </div>
 
+          {pkg.priorityFee != null && (
+            <PriorityCheckbox
+              className="mb-4"
+              checked={priority}
+              onChange={(checked) => setPriority(pkg.id, seriesCount, checked)}
+              fee={pkg.priorityFee}
+            />
+          )}
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-xs text-zinc-500 uppercase tracking-wider">
@@ -208,7 +218,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 };
 
 const CartPage = () => {
-  const { items, getTotalPrice, clearCart } = useCart();
+  const { items, getTotalPrice, getItemPrice, clearCart } = useCart();
   const { user, isAuthenticated } = useAuth();
 
   // Sadakat önizlemesi (asıl indirim ve puan backend'de hesaplanır)
@@ -317,6 +327,7 @@ const CartPage = () => {
             discounts: item.package.discounts,
           },
           seriesCount: item.seriesCount,
+          priority: !!item.priority,
           quantity: item.quantity,
           apparatuses: itemApparatuses[itemKey(item)] ?? [],
         })),
@@ -508,17 +519,12 @@ const CartPage = () => {
                         className="flex justify-between text-sm"
                       >
                         <span className="text-zinc-400">
-                          {item.package.name} ({item.seriesCount} Seri) x
-                          {item.quantity}
+                          {item.package.name}
+                          {item.priority && <span className="text-amber-300"> ⚡ Öncelikli</span>} (
+                          {item.seriesCount} Seri) x{item.quantity}
                         </span>
                         <span className="text-zinc-200">
-                          ₺
-                          {(
-                            (item.seriesCount === 1
-                              ? item.package.price
-                              : item.package.discounts[item.seriesCount]) *
-                            item.quantity
-                          ).toLocaleString("tr-TR")}
+                          ₺{getItemPrice(item).toLocaleString("tr-TR")}
                         </span>
                       </div>
                     ))}
