@@ -185,17 +185,17 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
   );
 };
 
-// Sutun sayisi paket sayisindan turetilir; aksi halde 2 paket 3 sutunlu gridde
-// sola yaslanip ucuncu sutunu bos birakiyor. Tailwind dinamik sinif adi taramadigi
-// icin sabit tablo kullaniliyor.
+// Sutun sayisi paket sayisindan turetilir; aksi halde eksik satirda bos sutun kaliyor
+// (ornegin bir paket kaldirilinca). Tailwind dinamik sinif adi taramadigi icin sabit tablo.
 const GRID_BY_COUNT: Record<number, string> = {
   1: "md:grid-cols-1 max-w-sm",
   2: "md:grid-cols-2 max-w-2xl", // 2*320+32 -> kartlar uclü satirla ayni genislikte
   3: "md:grid-cols-3 max-w-5xl",
+  4: "md:grid-cols-2 xl:grid-cols-4 max-w-2xl xl:max-w-7xl", // 2x2, genis ekranda tek sira
 };
 
 const gridClassFor = (count: number) =>
-  GRID_BY_COUNT[Math.min(Math.max(count, 1), 3)];
+  count >= 5 ? GRID_BY_COUNT[3] : GRID_BY_COUNT[Math.max(count, 1)];
 
 const CategoryDivider = () => (
   <div className="flex items-center justify-center gap-3 my-12">
@@ -229,7 +229,9 @@ const Packages = () => {
   const getPackagesByCategory = (category: PackageCategory) =>
     packages.filter((pkg) => pkg.category === category);
 
+  // Full Event üstte tek başına; diğerleri (önce foto, sonra video) altında tek ızgarada
   const fullPackage = packages.find((pkg) => pkg.category === "full");
+  const otherPackages = [...getPackagesByCategory("photo"), ...getPackagesByCategory("video")];
 
   if (loading) {
     return (
@@ -251,8 +253,6 @@ const Packages = () => {
     );
   }
 
-  const videoPackages = getPackagesByCategory("video");
-
   return (
     <section id="paketler" className="relative py-20 bg-zinc-950">
       <div className="container mx-auto px-4 relative z-10">
@@ -264,47 +264,24 @@ const Packages = () => {
           className="mb-16"
         />
 
-        {(fullPackage || getPackagesByCategory("photo").length > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-5xl mx-auto">
-            {/* Full — DOM'da ilk: mobilde en üstte; masaüstünde ortada ve yukarıda */}
-            {fullPackage && (
-              <div className="mx-auto w-full max-w-sm md:max-w-none md:order-2 md:scale-105 md:z-10">
-                <Reveal delay={0.15} className="h-full">
-                  <PackageCard pkg={fullPackage} featured />
-                </Reveal>
-              </div>
-            )}
-            {/* Mobilde Full ile fotoğraflar arasında ayraç; masaüstünde gizli */}
-            {fullPackage && getPackagesByCategory("photo").length > 0 && (
-              <div className="md:hidden">
-                <CategoryDivider />
-              </div>
-            )}
-            {getPackagesByCategory("photo").map((pkg, i) => (
-              <div
-                key={pkg.id}
-                className={`mx-auto w-full max-w-sm md:max-w-none ${
-                  i === 0 ? "md:order-1" : "md:order-3"
-                }`}
-              >
-                <Reveal delay={i * 0.08} className="h-full">
-                  <PackageCard pkg={pkg} />
-                </Reveal>
-              </div>
-            ))}
+        {fullPackage && (
+          <div className="mx-auto w-full max-w-sm">
+            <Reveal className="h-full">
+              <PackageCard pkg={fullPackage} featured />
+            </Reveal>
           </div>
         )}
 
-        {videoPackages.length > 0 && (
+        {otherPackages.length > 0 && (
           <div>
-            <CategoryDivider />
+            {fullPackage && <CategoryDivider />}
 
             <div
               className={`grid grid-cols-1 gap-8 items-stretch mx-auto w-full ${gridClassFor(
-                videoPackages.length,
+                otherPackages.length,
               )}`}
             >
-              {videoPackages.map((pkg, i) => (
+              {otherPackages.map((pkg, i) => (
                 <Reveal
                   key={pkg.id}
                   delay={i * 0.08}
