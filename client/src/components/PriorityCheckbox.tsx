@@ -26,7 +26,7 @@ const PriorityCheckbox = ({ checked, onChange, fee, className = "" }: PriorityCh
         <span className="text-zinc-500">(+₺{fee.toLocaleString("tr-TR")} / seri)</span>
       </span>
       <span className="block text-xs text-zinc-500 mt-0.5">
-        Çekimleriniz sıraya alınmadan öncelikli olarak düzenlenir ve size daha hızlı teslim edilir.
+        Çekimleriniz öncelikli olarak düzenlenir ve 7 gün içinde teslim edilir.
       </span>
     </span>
   </label>
