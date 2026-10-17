@@ -448,6 +448,7 @@ const ProfilePage = () => {
             <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
           </Link>
 
+          <div>
           <RecordList
             title="Rezervasyonlarım"
             records={reservations.records}
@@ -455,6 +456,13 @@ const ProfilePage = () => {
             onRetry={reservations.reload}
             onDelete={handleDeleteReservation}
           />
+            <Link
+              to="/rezervasyon"
+              className="mt-2 inline-flex items-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              + Başka bir sporcu için rezervasyon yap
+            </Link>
+          </div>
           <RecordList
             title="Siparişlerim"
             records={orders.records}

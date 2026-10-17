@@ -39,9 +39,13 @@ const ACTIVE_STATUSES = ["PENDING", "CONFIRMED", "PAID", "DELIVERED"];
 // Müşterinin kendi rezervasyonunu düzenleyip silebildiği durumlar (ödeme öncesi)
 const CUSTOMER_EDITABLE_STATUSES = ["PENDING", "CONFIRMED"];
 
-// Müşteri başına tek aktif rezervasyon. Girişli müşteri kendi hesabına, misafir
-// formdaki e-postaya göre kontrol edilir — hesap açmadan ÖNCE, boşuna hesap açılmasın.
-const assertNoActiveReservation = async (req, role, customerEmail) => {
+// Sporcu başına tek aktif rezervasyon. Bir veli aynı hesapla kardeşler/ikizler için
+// ayrı rezervasyon yapabilir; AYNI sporcu için ikinci kez yapamaz (tekrar gönderim / çift
+// kayıt koruması). "Aynı sporcu" çekim listesi eşleşmesiyle aynı kuralla (matchKey)
+// belirlenir. Girişli müşteri kendi hesabına, misafir formdaki e-postaya göre kontrol
+// edilir — hesap açmadan ÖNCE, boşuna hesap açılmasın.
+// excludeId: müşteri düzenlemesinde kaydın kendisi sayılmasın.
+const assertNoActiveReservation = async (req, role, customerEmail, athleteName, excludeId) => {
   let where;
   if (role === ROLES.CUSTOMER) {
     where = await ownRecordsWhere(req.user.id);
@@ -58,15 +62,23 @@ const assertNoActiveReservation = async (req, role, customerEmail) => {
     };
   }
 
-  const existing = await prisma.reservation.findFirst({
-    where: { AND: [where, { status: { in: ACTIVE_STATUSES } }] },
-    select: { id: true },
+  const active = await prisma.reservation.findMany({
+    where: {
+      AND: [
+        where,
+        { status: { in: ACTIVE_STATUSES } },
+        ...(excludeId ? [{ id: { not: excludeId } }] : []),
+      ],
+    },
+    select: { athleteName: true },
   });
-  if (existing) {
+  const key = matchKey(athleteName);
+  const duplicate = active.find((r) => matchKey(r.athleteName) === key);
+  if (duplicate) {
     throw new AppError(
       role === ROLES.CUSTOMER
-        ? "Zaten bir rezervasyonunuz var. Profilinizden düzenleyebilirsiniz."
-        : "Bu e-posta ile zaten bir rezervasyon var. Giriş yapıp profilinizden düzenleyebilirsiniz.",
+        ? `${duplicate.athleteName} için zaten bir rezervasyonunuz var. Profilinizden düzenleyebilirsiniz.`
+        : `${duplicate.athleteName} için bu e-posta ile zaten bir rezervasyon var. Giriş yapıp profilinizden düzenleyebilirsiniz.`,
       409
     );
   }
@@ -187,7 +199,7 @@ export const createReservation = async (req, res) => {
   // Admin panelden eklerken kural yok (kardeşler vb. özel durumlar için)
   const role = await requesterRole(req);
   if (role !== ROLES.ADMIN) {
-    await assertNoActiveReservation(req, role, customer.customerEmail);
+    await assertNoActiveReservation(req, role, customer.customerEmail, customer.athleteName);
   }
 
   // Girişli müşteriyse kendi hesabı; misafir/admin ise e-postasından hesap açılır/bulunur
@@ -285,6 +297,10 @@ export const updateMyReservation = async (req, res) => {
   const { id, discountPercent } = await findOwnEditableReservation(req);
   const { customerEmail: _ignored, ...input } = req.body;
   const data = buildPartialCustomerUpdate(input);
+  // Sporcu adı kardeşinkine çevrilerek aynı sporcuya ikinci kayıt açılmasın
+  if (data.athleteName) {
+    await assertNoActiveReservation(req, ROLES.CUSTOMER, null, data.athleteName, id);
+  }
   const { items: newItems, totalPrice: subtotal } = await validateAndPriceItems(req.body.items, {
     reservationPricing: true,
     activeOnly: true,

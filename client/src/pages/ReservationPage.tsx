@@ -84,9 +84,12 @@ const ReservationPage = () => {
   const [searchParams] = useSearchParams();
   const editParam = searchParams.get("duzenle");
 
-  // Tek rezervasyon kuralı: müşterinin aktif rezervasyonu varsa form onu düzenler.
+  // Sporcu başına tek rezervasyon: veli kardeşler için ayrı rezervasyon yapabilir.
+  // Form varsayılan olarak YENİ rezervasyon; düzenleme sadece ?duzenle=id ile açılır.
   // editingId → PUT /my/:id; lockedReservation → ödeme sonrası, form yerine bilgi.
+  // myActive → formun üstünde "mevcut rezervasyonlarınız" listesi.
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [myActive, setMyActive] = useState<MyReservation[]>([]);
   const [lockedReservation, setLockedReservation] = useState<MyReservation | null>(null);
   // Düzenlemede rezervasyonun oluşturulduğu andaki indirim yüzdesi kullanılır
   const [editDiscountPercent, setEditDiscountPercent] = useState(0);
@@ -156,10 +159,15 @@ const ReservationPage = () => {
       .then(({ data }) => {
         if (cancelled) return;
         const mine: MyReservation[] = data.data || [];
-        const target =
-          mine.find((r) => r.id === editParam) ||
-          mine.find((r) => ACTIVE_RESERVATION_STATUSES.includes(r.status));
-        if (!target || !ACTIVE_RESERVATION_STATUSES.includes(target.status)) return;
+        setMyActive(mine.filter((r) => ACTIVE_RESERVATION_STATUSES.includes(r.status)));
+
+        // Düzenleme yalnızca profildeki "Düzenle" bağlantısıyla (?duzenle=id)
+        const target = editParam ? mine.find((r) => r.id === editParam) : undefined;
+        if (!target || !ACTIVE_RESERVATION_STATUSES.includes(target.status)) {
+          setEditingId(null);
+          setLockedReservation(null);
+          return;
+        }
 
         if (!isCustomerEditable(target.status)) {
           setLockedReservation(target);
@@ -526,6 +534,36 @@ const ReservationPage = () => {
           </p>
         </Reveal>
 
+        {/* Mevcut rezervasyonlar (kardeş için yeni rezervasyon yapılabilir) */}
+        {!editingId && myActive.length > 0 && (
+          <div className="mb-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-5 py-4">
+            <p className="text-sm text-zinc-300 mb-2">Mevcut rezervasyonlarınız:</p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {myActive.map((r) =>
+                isCustomerEditable(r.status) ? (
+                  <Link
+                    key={r.id}
+                    to={`/rezervasyon?duzenle=${r.id}`}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-800/80 border border-zinc-700 hover:border-emerald-500/50 text-sm text-white transition-colors"
+                  >
+                    {r.athleteName} <span className="text-emerald-400">· Düzenle</span>
+                  </Link>
+                ) : (
+                  <span
+                    key={r.id}
+                    className="px-3 py-1.5 rounded-lg bg-zinc-800/50 border border-zinc-700/60 text-sm text-zinc-400"
+                  >
+                    {r.athleteName} · Ödendi
+                  </span>
+                ),
+              )}
+            </div>
+            <p className="text-xs text-zinc-500">
+              Kardeşi ya da başka bir sporcu için aşağıdan yeni rezervasyon yapabilirsiniz.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Paket Seçimi */}
           <Reveal delay={0.1}>
@@ -734,6 +772,11 @@ const ReservationPage = () => {
             <h2 className="text-xl font-semibold text-white mb-4">
               Sporcu Bilgileri
             </h2>
+            {isAuthenticated && !editingId && (
+              <p className="-mt-2 mb-4 text-xs text-zinc-500">
+                Kardeşi için rezervasyon yapıyorsanız sporcu bilgilerini değiştirin.
+              </p>
+            )}
 
             {error && (
               <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
