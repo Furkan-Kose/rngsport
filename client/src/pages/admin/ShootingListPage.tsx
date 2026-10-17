@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Camera,
+  Folder,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -18,6 +19,7 @@ import api, { API_URL } from '../../lib/api';
 import { getApparatusLabel } from '../../constants/apparatuses';
 import UploadDayModal from '../../components/admin/UploadDayModal';
 import ShootingTimeEditModal from '../../components/admin/ShootingTimeEditModal';
+import PhotoFolderModal from '../../components/admin/PhotoFolderModal';
 import { useAuth } from '../../context/AuthContext';
 import { TRACK_LABELS, type Track } from '../../lib/roles';
 import { trackTimes, type ShootTrack } from '../../lib/shooting';
@@ -50,6 +52,9 @@ interface ShootingEntry {
   photoEndedAt: string | null;
   videoStartedAt: string | null;
   videoEndedAt: string | null;
+  /** Foto klasör numarası (günün foto çekim sırası, 100'den); başlatılmamışsa null */
+  photoFolder: number | null;
+  photoFolderEdited: boolean;
   createdAt: string;
   customerPhone: string | null;
   notes: string | null;
@@ -113,6 +118,7 @@ interface TrackTimerProps {
   busy: boolean;
   onAction: (entry: ShootingEntry, track: ShootTrack, action: 'start' | 'end') => void;
   onEdit: (entry: ShootingEntry) => void;
+  onEditFolder: (entry: ShootingEntry) => void;
 }
 
 // Bir izin açık (başlamış ama bitmemiş) olup olmadığı
@@ -123,7 +129,7 @@ const isTrackRecording = (entry: ShootingEntry, track: ShootTrack) => {
 
 // Bir satırın tek bir izi. Zincirleme akış: "Başlat" → sıradakine basınca kendiliğinden kapanır.
 // Ayrı bir durdur butonu yok; son kaydı kapatmak için yeşil rozete tıklanır.
-const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit }: TrackTimerProps) => {
+const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit, onEditFolder }: TrackTimerProps) => {
   const { startedAt, endedAt } = trackTimes(entry, track);
   const started = clock(startedAt);
   const ended = clock(endedAt);
@@ -166,6 +172,26 @@ const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit }: TrackTi
           {started} – {ended}
         </span>
       )}
+      {/* Foto klasörü: kamerada bu sporcunun fotoğraflarının olduğu klasör */}
+      {track === 'photo' && entry.photoFolder != null && (
+        <button
+          type="button"
+          onClick={() => onEditFolder(entry)}
+          title={
+            entry.photoFolderEdited
+              ? 'Klasör elle düzeltildi — düzenle'
+              : 'Kameradaki klasör — yanlışsa düzelt, sonrakiler kendiliğinden kayar'
+          }
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold border transition-colors ${
+            entry.photoFolderEdited
+              ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30'
+              : 'bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20'
+          }`}
+        >
+          <Folder className="w-3 h-3" />
+          {entry.photoFolder}
+        </button>
+      )}
       <button
         type="button"
         onClick={() => onEdit(entry)}
@@ -195,6 +221,7 @@ const ShootingListPage = () => {
   const pendingActionsRef = useRef(0);
   const [timerBusyKey, setTimerBusyKey] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<ShootingEntry | null>(null);
+  const [folderEntry, setFolderEntry] = useState<ShootingEntry | null>(null);
   const [entries, setEntries] = useState<ShootingEntry[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -325,6 +352,14 @@ const ShootingListPage = () => {
     setUploadOpen(true);
   };
 
+  // Gün sekmesi: fetchList aktif güne bağımlı değil (bkz. activeDayRef), bu yüzden
+  // sadece state'i değiştirmek veri çekmez — seçilen gün doğrudan verilmeli.
+  const handleDayChange = (dayId: string) => {
+    if (dayId === activeDayId) return;
+    setActiveDayId(dayId);
+    fetchList(1, false, dayId);
+  };
+
   const handleUploaded = (dayId: string) => {
     setActiveDayId(dayId);
     fetchList(1, false, dayId);
@@ -437,6 +472,7 @@ const ShootingListPage = () => {
         busy={timerBusyKey === `${entry.id}:${t}`}
         onAction={handleTimerAction}
         onEdit={setEditEntry}
+        onEditFolder={setFolderEntry}
       />
     ));
 
@@ -530,7 +566,7 @@ const ShootingListPage = () => {
           {days.map((day) => (
             <button
               key={day.id}
-              onClick={() => setActiveDayId(day.id)}
+              onClick={() => handleDayChange(day.id)}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium border-b-2 -mb-px transition-colors ${
                 day.id === activeDayId
                   ? 'border-amber-500 text-amber-400 bg-gray-800/50'
@@ -851,6 +887,13 @@ const ShootingListPage = () => {
         canEditExpected={isAdmin}
         clientId={clientIdRef.current}
         onClose={() => setEditEntry(null)}
+        onSaved={() => fetchList(pagination.page, true)}
+      />
+
+      <PhotoFolderModal
+        entry={folderEntry}
+        clientId={clientIdRef.current}
+        onClose={() => setFolderEntry(null)}
         onSaved={() => fetchList(pagination.page, true)}
       />
     </div>

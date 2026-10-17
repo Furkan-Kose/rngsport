@@ -391,7 +391,8 @@ export const updateReservation = async (req, res) => {
       .update({ where: { id }, data, include: { items: true } })
       .catch(rethrowPrismaError(RESERVATION_NOT_FOUND));
 
-    if (status) bus.emit("shooting-list-changed");
+    // Sporcu adı / alet / paket değişikliği de çekim listesi eşleşmesini etkiler
+    bus.emit("shooting-list-changed");
     notifyDelivered(reservation);
 
     return res.json({ message: "Rezervasyon güncellendi", reservation });
@@ -417,7 +418,8 @@ export const updateReservation = async (req, res) => {
     })
     .catch(rethrowPrismaError(RESERVATION_NOT_FOUND));
 
-  if (status) bus.emit("shooting-list-changed");
+  // Sporcu adı / alet / paket değişikliği de çekim listesi eşleşmesini etkiler
+  bus.emit("shooting-list-changed");
   notifyDelivered(reservation);
 
   res.json({ message: "Rezervasyon güncellendi", reservation });

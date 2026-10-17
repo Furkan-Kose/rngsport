@@ -64,7 +64,7 @@ const mapItems = (items, track) => {
     }));
 };
 
-const formatEntry = (entry, track = "all") => ({
+const formatEntry = (entry, track = "all", folders = null) => ({
   id: entry.id,
   position: entry.position,
   athleteName: entry.athleteName,
@@ -82,6 +82,9 @@ const formatEntry = (entry, track = "all") => ({
   photoEndedAt: entry.photoEndedAt,
   videoStartedAt: entry.videoStartedAt,
   videoEndedAt: entry.videoEndedAt,
+  // Foto klasör numarası (bkz. computePhotoFolders); başlatılmamışsa null
+  photoFolder: folders?.get(entry.id)?.folder ?? null,
+  photoFolderEdited: folders?.get(entry.id)?.edited ?? false,
   createdAt: entry.createdAt,
   customerPhone:
     entry.order?.customerPhone || entry.reservation?.customerPhone || null,
@@ -245,6 +248,9 @@ const buildOrderBy = (sortKey, track = "all") => {
 // İstatistik için gereken en dar kolon seti — tek sorguda çekilip JS'te sayılır.
 // (Ayrı ayrı count atmak uzak veritabanında 5 gidiş-dönüş demekti, ~2,3 sn.)
 const STAT_SELECT = {
+  id: true,
+  position: true,
+  photoFolderOverride: true,
   willBeShot: true,
   willBeShotPhoto: true,
   willBeShotVideo: true,
@@ -252,6 +258,32 @@ const STAT_SELECT = {
   photoEndedAt: true,
   videoStartedAt: true,
   videoEndedAt: true,
+};
+
+// Fotoğrafçı her sporcuyu kamerada ayrı klasöre koyuyor: günün ilk çekileni 100, sonra
+// 101, ... Numara saklanmaz, günün FOTO çekim sırasından (photoStartedAt) hesaplanır.
+// Sadece fotoğrafı ÇEKİLECEK (willBeShotPhoto) satırlar sayılır: çekilmeyecek bir satırda
+// "Başlat"a basılsa bile numara almaz ve sonrakileri kaydırmaz.
+// Elle düzeltme (photoFolderOverride) o satırdan itibaren yeni başlangıç olur: sonraki
+// satırlar override ?? önceki + 1 ile kendiliğinden kayar — tek tek güncellemek gerekmez.
+// rows: günün TÜM satırları (sayfalanmamış). Dönüş: id → { folder, edited }
+const FIRST_PHOTO_FOLDER = 100;
+const computePhotoFolders = (rows) => {
+  const started = rows
+    .filter((r) => r.willBeShotPhoto && r.photoStartedAt)
+    .sort(
+      (a, b) =>
+        new Date(a.photoStartedAt) - new Date(b.photoStartedAt) || a.position - b.position
+    );
+  const folders = new Map();
+  let previous = FIRST_PHOTO_FOLDER - 1;
+  for (const row of started) {
+    const edited = row.photoFolderOverride != null;
+    const folder = edited ? row.photoFolderOverride : previous + 1;
+    folders.set(row.id, { folder, edited });
+    previous = folder;
+  }
+  return folders;
 };
 
 // Bir satırın seçili izdeki durumu. "all" iki izi birden kapsar: herhangi biri
@@ -367,6 +399,21 @@ export const getShootingList = async (req, res) => {
     prisma.shootingListEntry.findMany({ where, select: STAT_SELECT }),
   ]);
 
+  // Klasör numaraları günün tamamından hesaplanmalı; arama varken statRows süzülmüş olur
+  const folderRows = search
+    ? await prisma.shootingListEntry.findMany({
+        where: { dayId: activeDay.id },
+        select: {
+          id: true,
+          position: true,
+          willBeShotPhoto: true,
+          photoStartedAt: true,
+          photoFolderOverride: true,
+        },
+      })
+    : statRows;
+  const folders = computePhotoFolders(folderRows);
+
   const stats = buildStats(statRows, track);
   const total = stats.total;
 
@@ -374,7 +421,7 @@ export const getShootingList = async (req, res) => {
     days,
     activeDayId: activeDay.id,
     track,
-    data: entries.map((entry) => formatEntry(entry, track)),
+    data: entries.map((entry) => formatEntry(entry, track, folders)),
     pagination: {
       page,
       limit,
@@ -411,6 +458,7 @@ const toExcelRow = (e) => ({
   "Çekilecek mi": e.willBeShot ? "Evet" : "Hayır",
   "Foto Çekilecek": e.willBeShotPhoto ? "Evet" : "Hayır",
   "Video Çekilecek": e.willBeShotVideo ? "Evet" : "Hayır",
+  "Foto Klasör": e.photoFolder ?? "",
   "Foto Başlangıç": excelTime(e.photoStartedAt),
   "Foto Bitiş": excelTime(e.photoEndedAt),
   "Video Başlangıç": excelTime(e.videoStartedAt),
@@ -444,7 +492,8 @@ export const exportShootingList = async (req, res) => {
     orderBy: buildOrderBy("position"),
   });
 
-  const rows = entries.map((entry) => toExcelRow(formatEntry(entry)));
+  const folders = computePhotoFolders(entries);
+  const rows = entries.map((entry) => toExcelRow(formatEntry(entry, "all", folders)));
 
   const worksheet = XLSX.utils.json_to_sheet(rows);
 
@@ -492,7 +541,7 @@ const closeOpenEntries = (tx, dayId, exceptId, track, now) => {
 // Saat alanları seçili izin kolonlarına yazılır; expectedTime sadece admin'e açık.
 // now dışarıdan gelir: önceki kaydın bitişi ile yeni kaydın başlangıcı aynı timestamp olsun.
 const buildUpdateData = (body, { isAdmin, track, now }) => {
-  const { action, expectedTime, startedAt, endedAt } = body;
+  const { action, expectedTime, startedAt, endedAt, photoFolder } = body;
 
   if (action !== undefined && !VALID_ACTIONS.has(action)) {
     throw new AppError("Geçersiz işlem", 400);
@@ -533,6 +582,22 @@ const buildUpdateData = (body, { isAdmin, track, now }) => {
     data[fields.startedAt] = parseTime(startedAt, "başlangıç");
   }
 
+  // Foto klasör düzeltmesi: sadece foto izinde (admin veya fotoğrafçı). null/"" = otomatik.
+  if (photoFolder !== undefined) {
+    if (track !== "photo") {
+      throw new AppError("Klasör numarası sadece fotoğraf ekibi için düzenlenebilir", 403);
+    }
+    if (photoFolder === null || photoFolder === "") {
+      data.photoFolderOverride = null;
+    } else {
+      const n = Number(photoFolder);
+      if (!Number.isInteger(n) || n < 1 || n > 9999) {
+        throw new AppError("Klasör numarası 1-9999 arası bir tam sayı olmalı", 400);
+      }
+      data.photoFolderOverride = n;
+    }
+  }
+
   if (endedAt !== undefined) {
     data[fields.endedAt] = parseTime(endedAt, "bitiş");
   }
@@ -554,6 +619,18 @@ export const updateShootingEntry = async (req, res) => {
   }
   const now = new Date();
   const data = buildUpdateData(req.body, { isAdmin, track, now });
+
+  // Klasör düzeltmesi sadece fotoğrafı çekilecek satıra (otomatik'e döndürmek serbest)
+  if (data.photoFolderOverride != null) {
+    const target = await prisma.shootingListEntry.findUnique({
+      where: { id },
+      select: { willBeShotPhoto: true },
+    });
+    if (!target) throw new AppError("Kayıt bulunamadı", 404);
+    if (!target.willBeShotPhoto) {
+      throw new AppError("Bu sporcunun fotoğrafı çekilmeyecek, klasör verilemez", 400);
+    }
+  }
 
   const include = {
     order: { select: { customerPhone: true, notes: true, status: true, items: true } },
@@ -667,6 +744,9 @@ export const uploadShootingList = async (req, res) => {
     return id;
   });
 
+  // Açık ekranlar (fotoğrafçı/videocu) yeni/yenilenen günü sayfa yenilemeden görsün
+  bus.emit("shooting-list-refresh");
+
   const willBeShotCount = entries.filter((e) => e.willBeShot).length;
   res.json({
     message: "Liste yüklendi",
@@ -688,6 +768,9 @@ export const clearShootingList = async (req, res) => {
   await prisma.shootingDay
     .delete({ where: { id: dayId } })
     .catch(rethrowPrismaError({ notFound: "Gün bulunamadı" }));
+
+  // Silinen günü açık tutan ekranlar kalan ilk güne geçsin (backend geçersiz dayId'de ilk günü döner)
+  bus.emit("shooting-list-refresh");
 
   res.json({ message: "Gün silindi" });
 };

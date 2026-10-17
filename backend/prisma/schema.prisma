@@ -217,27 +217,29 @@ model ShootingDay {
 }
 
 model ShootingListEntry {
-  id              String    @id @default(cuid())
-  dayId           String
-  position        Int
-  athleteName     String
-  clubName        String?
-  birthYear       String?
-  category        String?
-  expectedTime    String?
+  id                  String    @id @default(cuid())
+  dayId               String
+  position            Int
+  athleteName         String
+  clubName            String?
+  birthYear           String?
+  category            String?
+  expectedTime        String?
   // Eşleşme bayrakları: willBeShot = herhangi bir paket; diğerleri iz (track) bazlı
-  willBeShot      Boolean   @default(false)
-  willBeShotPhoto Boolean   @default(false) // photo + full paketler
-  willBeShotVideo Boolean   @default(false) // video + full paketler
-  orderId         String?
-  reservationId   String?
+  willBeShot          Boolean   @default(false)
+  willBeShotPhoto     Boolean   @default(false) // photo + full paketler
+  willBeShotVideo     Boolean   @default(false) // video + full paketler
+  orderId             String?
+  reservationId       String?
   // Foto ve video ekibi ayrı saat tutar; @map ile eski kolon adları korunur (veri kaybı yok)
-  photoStartedAt  DateTime? @map("shootStartedAt")
-  photoEndedAt    DateTime? @map("shootEndedAt")
-  videoStartedAt  DateTime?
-  videoEndedAt    DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  photoStartedAt      DateTime? @map("shootStartedAt")
+  photoEndedAt        DateTime? @map("shootEndedAt")
+  videoStartedAt      DateTime?
+  videoEndedAt        DateTime?
+  // Foto klasör numarası elle düzeltildiyse (boş = otomatik: günün foto çekim sırası, 100'den)
+  photoFolderOverride Int?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   day         ShootingDay  @relation(fields: [dayId], references: [id], onDelete: Cascade)
   order       Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
