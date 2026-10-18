@@ -2,6 +2,7 @@ import { Outlet, ScrollRestoration } from "react-router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import WpButton from "../components/WpButton";
+import LangSuggestBanner from "../components/LangSuggestBanner";
 
 const MainLayout = () => {
   return (
@@ -19,6 +20,7 @@ const MainLayout = () => {
       </div>
       <Footer />
       <WpButton />
+      <LangSuggestBanner />
     </main>
   );
 };

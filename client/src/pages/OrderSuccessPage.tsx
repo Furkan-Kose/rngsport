@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../components/LocalizedLink";
+import { formatNumber } from "../lib/format";
 import { CheckCircle, Package, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "../lib/api";
 import Reveal from "../components/ui/Reveal";
+import SEO from "../components/SEO";
 import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCard";
 
 interface OrderData {
@@ -25,6 +29,7 @@ const OrderSuccessPage = () => {
   const orderId = searchParams.get("id");
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (orderId) {
@@ -42,6 +47,7 @@ const OrderSuccessPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16 relative overflow-hidden">
+      <SEO title={t("pages.orderSuccess.title")} />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[32rem] h-[32rem] bg-emerald-600/[0.07] rounded-full blur-3xl" />
       </div>
@@ -73,13 +79,12 @@ const OrderSuccessPage = () => {
 
               <Reveal delay={0.2}>
                 <h1 className="text-4xl font-bold text-gradient-brand mb-4">
-                  Ödeme Başarılı!
+                  {t("pages.orderSuccess.title")}
                 </h1>
               </Reveal>
               <Reveal delay={0.3}>
                 <p className="text-zinc-400 mb-8 text-lg">
-                  Siparişiniz başarıyla alındı. En kısa sürede sizinle iletişime
-                  geçeceğiz.
+                  {t("pages.orderSuccess.text")}
                 </p>
               </Reveal>
 
@@ -90,39 +95,39 @@ const OrderSuccessPage = () => {
                       <div className="flex items-center gap-3 mb-4">
                         <Package className="w-5 h-5 text-emerald-400" />
                         <span className="font-semibold text-white">
-                          Sipariş Detayları
+                          {t("pages.orderSuccess.details")}
                         </span>
                       </div>
 
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-zinc-500">Sipariş No</span>
+                          <span className="text-zinc-500">{t("pages.orderSuccess.orderNo")}</span>
                           <span className="text-zinc-200 font-mono">
                             #{order.id.slice(-8).toUpperCase()}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-zinc-500">Sporcu</span>
+                          <span className="text-zinc-500">{t("pages.orderSuccess.athlete")}</span>
                           <span className="text-zinc-200">
                             {order.athleteName}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-zinc-500">Kulüp</span>
+                          <span className="text-zinc-500">{t("pages.orderSuccess.club")}</span>
                           <span className="text-zinc-200">
                             {order.clubName}
                           </span>
                         </div>
 
                         <div className="border-t border-zinc-800 pt-3 mt-3">
-                          <p className="text-zinc-500 mb-2">Paketler</p>
+                          <p className="text-zinc-500 mb-2">{t("pages.orderSuccess.packages")}</p>
                           {order.items.map((item, i) => (
                             <div
                               key={i}
                               className="flex justify-between text-zinc-300"
                             >
                               <span>
-                                {item.package.name} ({item.seriesCount} Seri)
+                                {item.package.name} ({t("common.series", { count: item.seriesCount })})
                               </span>
                               <span>x{item.quantity}</span>
                             </div>
@@ -132,10 +137,10 @@ const OrderSuccessPage = () => {
                         <div className="border-t border-zinc-800 pt-3 mt-3">
                           <div className="flex justify-between items-center">
                             <span className="text-zinc-400 font-medium">
-                              Toplam
+                              {t("pages.orderSuccess.total")}
                             </span>
                             <span className="text-xl font-bold text-gradient-brand">
-                              ₺{order.totalPrice.toLocaleString("tr-TR")}
+                              ₺{formatNumber(order.totalPrice)}
                             </span>
                           </div>
                         </div>
@@ -150,13 +155,13 @@ const OrderSuccessPage = () => {
               )}
 
               <Reveal delay={0.5}>
-                <Link
+                <LocalizedLink
                   to="/"
                   className="mt-8 inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 group"
                 >
-                  Ana Sayfaya Dön
+                  {t("pages.orderSuccess.backHome")}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                </LocalizedLink>
               </Reveal>
             </>
           )}

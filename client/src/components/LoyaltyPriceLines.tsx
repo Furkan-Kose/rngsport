@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
 import { Star } from "lucide-react";
 import { applyDiscount, formatTL } from "../lib/loyalty";
 
@@ -25,40 +26,43 @@ const LoyaltyPriceLines = ({
   loginRedirect,
 }: LoyaltyPriceLinesProps) => {
   const { discountAmount } = applyDiscount(subtotal, discountPercent);
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-2 mb-4">
       {discountPercent > 0 && subtotal > 0 && (
         <>
           <div className="flex justify-between text-sm text-zinc-400">
-            <span>Ara toplam</span>
+            <span>{t("checkout.loyalty.subtotal")}</span>
             <span>{formatTL(subtotal)}</span>
           </div>
           <div className="flex justify-between text-sm text-amber-300">
             <span className="flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5" fill="currentColor" />
-              {tierName ? `${tierName} indirimi` : "Seviye indirimi"} (%{discountPercent})
+              {tierName ? t("checkout.loyalty.tierDiscount", { tier: tierName }) : t("checkout.loyalty.levelDiscount")} (%{discountPercent})
             </span>
             <span>−{formatTL(discountAmount)}</span>
           </div>
           {redeemPoints > 0 && (
             <p className="text-xs text-amber-300/80">
-              Bu indirim için {redeemPoints} puanınız kullanılacak.
+              {t("checkout.loyalty.redeem", { points: redeemPoints })}
             </p>
           )}
         </>
       )}
       {earnPoints > 0 && (
         <p className="text-xs text-emerald-400/90">
-          Bu alışverişten ödeme sonrası <strong>+{earnPoints} puan</strong> kazanacaksınız.
+          {t("checkout.loyalty.earnBefore")}
+          <strong>{t("checkout.loyalty.earnPoints", { points: earnPoints })}</strong>
+          {t("checkout.loyalty.earnAfter")}
         </p>
       )}
       {isGuest && (
         <p className="text-xs text-zinc-500">
-          <Link to={`/giris?redirect=${loginRedirect}`} className="text-emerald-400 hover:underline">
-            Giriş yapın
-          </Link>{" "}
-          — sadakat seviyenizin indirimi uygulansın ve puanlarınızı takip edin.
+          <LocalizedLink to={`/giris?redirect=${loginRedirect}`} className="text-emerald-400 hover:underline">
+            {t("checkout.loyalty.login")}
+          </LocalizedLink>{" "}
+          {t("checkout.loyalty.loginHint")}
         </p>
       )}
     </div>

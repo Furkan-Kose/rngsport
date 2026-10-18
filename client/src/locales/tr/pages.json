@@ -1,0 +1,163 @@
+{
+  "media": {
+    "download": "İndir",
+    "files": "{{count}} dosya",
+    "loadMore": "Daha Fazla Yükle",
+    "preparing": "Hazırlanıyor...",
+    "preparingProgress": "Hazırlanıyor {{done}}/{{total}}",
+    "downloadAll": "Tümünü İndir (.zip)",
+    "downloadAlbum": "Bu Albümü İndir (.zip)",
+    "mobileHint": "📱 Telefonda fotoğraf ve videoları tek tek indirirseniz doğrudan galerinize kaydedilir. Zip dosyası telefonda \"Dosyalar\" uygulamasına iner.",
+    "loadError": "Fotoğraflar yüklenirken bir hata oluştu",
+    "downloadError": "Fotoğraf indirilemedi",
+    "zipDone": "Zip dosyası indirildi",
+    "zipServer": "Galeri büyük olduğu için zip sunucudan hazırlanıyor, indirme birazdan başlayacak",
+    "zipFailed": "Toplu indirme yarıda kaldı. Lütfen tekrar deneyin veya dosyaları tek tek indirin."
+  },
+  "myGallery": {
+    "seoTitle": "Fotoğraflarım",
+    "seoDescription": "Çekim fotoğraflarınızı görüntüleyin ve indirin.",
+    "title": "Galerim",
+    "subtitle": "Çekim fotoğraf ve videolarınız",
+    "allCompetitions": "Tüm Yarışmalar",
+    "all": "Hepsi",
+    "photos": "Fotoğraflar",
+    "videos": "Videolar",
+    "emptyTitle": "Henüz fotoğrafınız yüklenmedi",
+    "emptyText": "Çekiminiz tamamlandıktan sonra fotoğraflarınız burada görünecek. Teslim süresi paketinize göre değişiklik gösterir."
+  },
+  "awards": {
+    "seoTitle": "Ödül Törenleri",
+    "seoDescription": "Baby Games ödül töreni fotoğrafları. Minik yıldızların kürsü heyecanına ait fotoğraflara buradan ulaşabilir, tek tek veya toplu indirebilirsiniz.",
+    "seoKeywords": "ödül töreni fotoğrafları, baby games, ritmik cimnastik ödül töreni, kürsü fotoğrafı",
+    "imageAlt": "Baby Games ödül töreni",
+    "badge": "Ödül Törenleri",
+    "titleBefore": "Baby Games ",
+    "titleHighlight": "Ödül Töreni",
+    "titleAfter": " Fotoğrafları",
+    "intro": "Minik yıldızların kürsü heyecanına ortak olun! Baby Games ödül töreni fotoğrafları yarışma günü içerisinde bu sayfaya yüklenecektir. Çocuğunuzun bu özel anlarına ait fotoğraflara buradan ulaşabilirsiniz.",
+    "eyebrow": "Galeriler",
+    "listTitle": "Ödül Törenleri",
+    "listDescription": "Töreni seçin; fotoğrafları tek tek ya da hepsini birden indirebilirsiniz.",
+    "empty": "Fotoğraflar yarışma günü içerisinde burada yayınlanacak.",
+    "soon": "Yakında yüklenecek",
+    "open": "Galeriyi Aç",
+    "detailFallbackTitle": "Ödül Töreni",
+    "detailDescription": "Ödül töreni fotoğraflarını görüntüleyin, tek tek veya toplu olarak indirin.",
+    "back": "Tüm Ödül Törenleri",
+    "notFoundTitle": "Ödül töreni bulunamadı",
+    "notFoundText": "Bağlantı hatalı olabilir veya tören kaldırılmış olabilir.",
+    "noPhotosTitle": "Fotoğraflar henüz yüklenmedi",
+    "noPhotosText": "Ödül töreni fotoğrafları yarışma günü içerisinde bu sayfaya yüklenecektir."
+  },
+  "gallery": {
+    "seoTitle": "Galeri",
+    "seoDescription": "RNG Sport'un yarışma ve turnuvalardaki profesyonel fotoğraf ve video çekimlerinden örnekler. Ritmik cimnastik ve spor performanslarının en güzel anları.",
+    "seoKeywords": "rng sport galeri, ritmik cimnastik fotoğrafları, ritmik cimnastik videoları, spor fotoğrafçılığı, yarışma çekim örnekleri",
+    "imageAlt": "International Ritmika Cup Galeri",
+    "title": "Galeri",
+    "intro": "Geçtiğimiz yılın organizasyonunda yakaladığımız performanslardan seçilmiş kareler ve videolar.",
+    "photo": "Fotoğraf",
+    "video": "Video",
+    "empty": "Bu kategoride henüz içerik bulunmuyor."
+  },
+  "orderSuccess": {
+    "title": "Ödeme Başarılı!",
+    "text": "Siparişiniz başarıyla alındı. En kısa sürede sizinle iletişime geçeceğiz.",
+    "details": "Sipariş Detayları",
+    "orderNo": "Sipariş No",
+    "athlete": "Sporcu",
+    "club": "Kulüp",
+    "packages": "Paketler",
+    "total": "Toplam",
+    "backHome": "Ana Sayfaya Dön"
+  },
+  "orderFailed": {
+    "defaultError": "Ödeme işlemi tamamlanamadı",
+    "title": "Ödeme Başarısız",
+    "text": "Ödeme işleminiz tamamlanamadı. Kartınızdan herhangi bir tutar çekilmemiştir. Lütfen tekrar deneyin veya farklı bir ödeme yöntemi kullanın.",
+    "reference": "Sipariş Referans:",
+    "retry": "Tekrar Dene",
+    "home": "Ana Sayfa",
+    "stillProblem": "Sorun devam ederse",
+    "reasonsTitle": "Olası Nedenler",
+    "reasons": [
+      "Kart limiti yetersiz olabilir",
+      "Online alışveriş kapalı olabilir",
+      "3D Secure doğrulaması başarısız olmuş olabilir",
+      "Kart bilgileri hatalı girilmiş olabilir"
+    ]
+  },
+  "packagesPage": {
+    "seoTitle": "Paketler",
+    "seoDescription": "RNG Sport fotoğraf ve video çekim paketleri. Ritmik cimnastik yarışmaları için seri bazlı fiyatlandırma; online ön rezervasyon, ödeme yarışma günü standımızda.",
+    "seoKeywords": "ritmik cimnastik çekim paketleri, yarışma fotoğraf fiyatları, spor video çekim paket, rng sport paketler",
+    "imageAlt": "RNG Sport çekim paketleri",
+    "title": "Paketler",
+    "intro": "Sporcunuzun kaç serisini çektirmek istediğinize göre seçin. Rezervasyonu şimdi oluşturun, ödemeyi yarışma günü standımızda tamamlayın."
+  },
+  "cartToast": {
+    "removed": "Ürün sepetten çıkarıldı!"
+  },
+  "about": {
+    "seoTitle": "Hakkımızda",
+    "seoDescription": "RNG Sport, ritmik cimnastik başta olmak üzere spor organizasyonlarında fotoğraf ve video çekimi yapan bir spor medya ajansıdır. Yarışma günü nasıl çalıştığımızı buradan okuyabilirsiniz.",
+    "seoKeywords": "rng sport hakkında, spor medya ajansı, ritmik cimnastik çekim ekibi, yarışma fotoğrafçısı, turnuva video çekim",
+    "heroAlt": "International Ritmika Cup",
+    "heroBefore": "Doğru anı, ",
+    "heroHighlight": "doğru yerden",
+    "heroAfter": " takip ediyoruz.",
+    "heroText": "Doğru görüntü için ne zaman, nerede ve neyi takip etmemiz gerektiğini biliyoruz. Çekim planımızı organizasyonun ve branşın yapısına göre oluşturuyoruz.",
+    "orgAlt": "Ritmika Cup organizasyonu",
+    "eyebrow": "Biz Kimiz",
+    "title": "Hakkımızda",
+    "p1": "<1>RNG Sport,</1> spor organizasyonları için fotoğraf ve video prodüksiyon hizmeti sunan bir ekip.",
+    "p2": "Başta ritmik cimnastik olmak üzere farklı branşlardaki yarışma, turnuva ve etkinliklerde çekim yapıyoruz. Organizasyonun yapısına göre fotoğraf, video, reels ve sporcuya özel içerikler hazırlıyoruz.",
+    "partner": "<1>Range Media</1> resmi çözüm ortağı",
+    "howTitle": "Nasıl Çalışıyoruz?",
+    "how1": "Her sporun çekim şekli farklı. Bu yüzden organizasyona başlamadan önce branşı, saha düzenini ve yarışma akışını dikkate alarak çekim planımızı oluşturuyoruz.",
+    "how2": "Etkinlik boyunca sporcuların performanslarını takip ediyor, fotoğraf ve video çekimlerini gerçekleştiriyor ve çekim sonrasında içerikleri düzenleyerek teslim ediyoruz.",
+    "audiences": [
+      {
+        "title": "Sporcular İçin",
+        "paragraphs": [
+          "Sporcular ve veliler, etkinlik öncesinde RNG Sport üzerinden rezervasyon oluşturabiliyor.",
+          "Çekimler hazır olduğunda e-posta ile bilgilendirme yapılıyor. Kullanıcı hesabına giriş yapıldığında fotoğraf ve videolara kişisel galeri üzerinden ulaşılabiliyor."
+        ]
+      },
+      {
+        "title": "Organizatörler İçin",
+        "paragraphs": [
+          "Organizasyonun büyüklüğüne ve ihtiyaçlarına göre çekim ekibi, kamera sayısı ve içerik planlamasını birlikte belirliyoruz.",
+          "Amacımız organizasyon sırasında çekim sürecinin düzenli ilerlemesi ve içeriklerin sonrasında kolay şekilde sporculara ulaştırılması."
+        ]
+      }
+    ],
+    "stats": {
+      "athletes": "Sporcu",
+      "competitions": "Uluslararası yarışma",
+      "years": "Saha deneyimi",
+      "yearsSuffix": " Yıl",
+      "satisfaction": "Memnuniyet"
+    },
+    "ctaTitle": "International Baby Games 2026'da Yerinizi Ayırtın",
+    "ctaText": "Çekim listesinde öncelik rezervasyonlu sporcuların. Yerinizi şimdiden ayırtın.",
+    "ctaReserve": "Rezervasyon Yap",
+    "ctaPackages": "Paketleri İncele"
+  },
+  "products": {
+    "seoTitle": "Özel Ürünler",
+    "seoDescription": "RNG Sport kişiye özel sporcu figürü ve ışıklı cimnastik harfi. Sporcunun pozundan, isminden ve sporundan yola çıkılarak hazırlanan özel tasarım ürünler.",
+    "seoKeywords": "kişiye özel sporcu figürü, 3d cimnastikçi figür, ışıklı cimnastik harfi, ritmik cimnastik hediye",
+    "heroAlt": "RNG Sport özel ürünler",
+    "title": "Özel Ürünler",
+    "intro": "Seri üretim bir dekorasyon ürünü değil; sporcunun kendisinden yola çıkılarak kişiselleştirilen tasarımlar.",
+    "notYet": "Ürünler henüz siparişe açılmadı. Satışa çıktığında haberdar olmak için ürün sayfasından bize yazabilirsiniz.",
+    "notFoundTitle": "Ürün bulunamadı",
+    "notFoundText": "Aradığınız ürün kaldırılmış ya da adresi değişmiş olabilir.",
+    "backAll": "Tüm ürünlere dön",
+    "allProducts": "Tüm ürünler",
+    "comingSoon": "Çok Yakında",
+    "notifyMe": "Satışa Çıkınca Haber Ver"
+  }
+}

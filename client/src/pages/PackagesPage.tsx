@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import Packages from "../components/Packages";
@@ -7,13 +8,13 @@ const BLACK = "#000000";
 const ZINC = "#09090b";
 
 const PackagesPage = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen">
       <SEO
-        title="Paketler"
-        description="RNG Sport fotoğraf ve video çekim paketleri. Ritmik cimnastik yarışmaları için seri bazlı fiyatlandırma; online ön rezervasyon, ödeme yarışma günü standımızda."
-        keywords="ritmik cimnastik çekim paketleri, yarışma fotoğraf fiyatları, spor video çekim paket, rng sport paketler"
-        url="https://rngsport.com/paketler"
+        title={t("pages.packagesPage.seoTitle")}
+        description={t("pages.packagesPage.seoDescription")}
+        keywords={t("pages.packagesPage.seoKeywords")}
       />
 
       {/* Hero */}
@@ -21,7 +22,7 @@ const PackagesPage = () => {
         <div className="absolute inset-0">
           <img
             src="/gallery/20.webp"
-            alt="RNG Sport çekim paketleri"
+            alt={t("pages.packagesPage.imageAlt")}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/70 to-black/60" />
@@ -39,14 +40,12 @@ const PackagesPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Reveal delay={0.1}>
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                <span className="text-gradient-brand">Paketler</span>
+                <span className="text-gradient-brand">{t("pages.packagesPage.title")}</span>
               </h1>
             </Reveal>
             <Reveal delay={0.2}>
               <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
-                Sporcunuzun kaç serisini çektirmek istediğinize göre seçin.
-                Rezervasyonu şimdi oluşturun, ödemeyi yarışma günü standımızda
-                tamamlayın.
+                {t("pages.packagesPage.intro")}
               </p>
             </Reveal>
           </div>

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
@@ -15,6 +16,7 @@ interface MediaLightboxProps {
 
 // Foto/video lightbox'ı (indirme butonlu). Müşteri galerisi ve ödül törenleri ortak.
 const MediaLightbox = ({ items, index, onIndexChange, onDownload, downloadingId }: MediaLightboxProps) => {
+  const { t } = useTranslation();
   const item = index !== null ? items[index] : null;
   const isOpen = item != null;
 
@@ -119,7 +121,7 @@ const MediaLightbox = ({ items, index, onIndexChange, onDownload, downloadingId 
                 ) : (
                   <Download className="w-4 h-4" />
                 )}
-                İndir
+                {t("pages.media.download")}
               </button>
             </div>
           </motion.div>

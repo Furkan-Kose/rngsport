@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import i18n from "../i18n";
 import api from '../lib/api';
 import { ROLES, ROLE_TRACK, STAFF_ROLES, type Track } from '../lib/roles';
 
@@ -85,11 +86,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // user'ı da döndür: login sayfası role göre yönlendirme yapıyor
         return { success: true, user: data.user as User };
       } else {
-        return { success: false, message: data.message || 'Giriş başarısız' };
+        return { success: false, message: data.message || i18n.t("auth.errors.loginFailed") };
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      return { success: false, message: err.response?.data?.message || 'Sunucu hatası' };
+      return { success: false, message: err.response?.data?.message || i18n.t("auth.errors.generic") };
     }
   };
 
@@ -101,11 +102,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(data.user);
         return { success: true };
       } else {
-        return { success: false, message: data.message || 'Kayıt başarısız' };
+        return { success: false, message: data.message || i18n.t("auth.errors.registerFailed") };
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      return { success: false, message: err.response?.data?.message || 'Sunucu hatası' };
+      return { success: false, message: err.response?.data?.message || i18n.t("auth.errors.generic") };
     }
   };
 

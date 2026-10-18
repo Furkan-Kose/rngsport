@@ -10,6 +10,8 @@ import {
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
 import api from "../lib/api";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
 
 type TournamentStatus = "finished" | "ongoing" | "upcoming";
 
@@ -24,6 +26,7 @@ interface Tournament {
 }
 
 const StatusBadge = ({ status }: { status: TournamentStatus }) => {
+  const { t } = useTranslation();
   if (status === "ongoing") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-semibold uppercase tracking-wider">
@@ -31,7 +34,7 @@ const StatusBadge = ({ status }: { status: TournamentStatus }) => {
           <span className="animate-ping absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400" />
         </span>
-        Aktif
+        {t("home.tournaments.active")}
       </span>
     );
   }
@@ -40,7 +43,7 @@ const StatusBadge = ({ status }: { status: TournamentStatus }) => {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-semibold uppercase tracking-wider">
         <Clock className="w-3 h-3" />
-        Yakında
+        {t("home.tournaments.soon")}
       </span>
     );
   }
@@ -48,13 +51,14 @@ const StatusBadge = ({ status }: { status: TournamentStatus }) => {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-700/40 border border-zinc-600/50 text-zinc-400 text-[10px] font-semibold uppercase tracking-wider">
       <CheckCircle2 className="w-3 h-3" />
-      Tamamlandı
+      {t("home.tournaments.finished")}
     </span>
   );
 };
 
 const Tournaments = () => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     const fetchTournaments = async () => {
@@ -66,7 +70,7 @@ const Tournaments = () => {
       }
     };
     fetchTournaments();
-  }, []);
+  }, [i18n.language]);
 
   // Yüklenene kadar / hiç turnuva yoksa bölümü tamamen gizle
   if (tournaments.length === 0) return null;
@@ -75,10 +79,10 @@ const Tournaments = () => {
     <section id="tournament" className="relative py-24 bg-black">
       <div className="container mx-auto px-4">
         <SectionHeader
-          eyebrow="Yaklaşan Etkinlikler"
+          eyebrow={t("home.tournaments.eyebrow")}
           icon={CalendarCheck}
-          title="Turnuva Takvimi"
-          description="Katılacağımız yaklaşan turnuvalarda fotoğraf ve video çekimi için şimdiden yerinizi ayırtın."
+          title={t("home.tournaments.title")}
+          description={t("home.tournaments.description")}
           className="mb-16"
         />
 
@@ -144,26 +148,26 @@ const Tournaments = () => {
                     </div>
 
                     {tournament.status === "ongoing" && (
-                      <a
-                        href="/rezervasyon"
+                      <LocalizedLink
+                        to="/rezervasyon"
                         className="flex items-center justify-center md:justify-start gap-2 text-emerald-400 font-semibold hover:gap-4 transition-all whitespace-nowrap"
                       >
-                        Rezervasyon Yap
+                        {t("home.tournaments.reserve")}
                         <ArrowRight className="w-4 h-4" />
-                      </a>
+                      </LocalizedLink>
                     )}
 
                     {tournament.status === "upcoming" && (
                       <span className="flex items-center justify-center md:justify-start gap-2 text-amber-400/80 font-medium whitespace-nowrap">
                         <Clock className="w-4 h-4" />
-                        Yakında
+                        {t("home.tournaments.soon")}
                       </span>
                     )}
 
                     {tournament.status === "finished" && (
                       <span className="flex items-center justify-center md:justify-start gap-2 text-zinc-500 font-medium whitespace-nowrap">
                         <CheckCircle2 className="w-4 h-4" />
-                        Tamamlandı
+                        {t("home.tournaments.finished")}
                       </span>
                     )}
                   </div>

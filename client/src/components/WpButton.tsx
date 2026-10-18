@@ -1,6 +1,9 @@
+import { useTranslation } from "react-i18next";
+
 const WpButton = () => {
+  const { t } = useTranslation();
   const phoneNumber = "905398444521"; // WhatsApp numaranızı buraya yazın (ülke kodu ile, boşluksuz)
-  const message = "Merhaba, bilgi almak istiyorum.";
+  const message = t("common.whatsapp.message");
 
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
@@ -10,7 +13,7 @@ const WpButton = () => {
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 flex items-center gap-2 md:gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 md:px-6 md:py-4 md:pr-7 rounded-full shadow-lg shadow-emerald-600/20 hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
-      aria-label="WhatsApp ile iletişime geç"
+      aria-label={t("common.whatsapp.aria")}
     >
       {/* WhatsApp Icon */}
       <svg 
@@ -23,7 +26,7 @@ const WpButton = () => {
       
       {/* Text - hidden on mobile */}
       <span className="hidden md:block font-semibold text-sm">
-        Bize Ulaşın
+        {t("common.whatsapp.label")}
       </span>
     </a>
   );

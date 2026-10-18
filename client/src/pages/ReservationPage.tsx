@@ -14,7 +14,11 @@ import {
   Package as PackageIcon,
   Mail,
 } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../components/LocalizedLink";
+import { useLocalizedNavigate } from "../lib/localePath";
+import { formatNumber } from "../lib/format";
 import { motion } from "framer-motion";
 import api from "../lib/api";
 import { toast } from "react-toastify";
@@ -80,7 +84,8 @@ const rowPrice = (pkg: Package, seriesCount: 1 | 2 | 3, priority: boolean) =>
 
 const ReservationPage = () => {
   const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const navigate = useLocalizedNavigate();
   const [searchParams] = useSearchParams();
   const editParam = searchParams.get("duzenle");
 
@@ -137,7 +142,8 @@ const ReservationPage = () => {
 
   useEffect(() => {
     fetchPackages();
-  }, []);
+    // Paket adları sunucudan dile göre gelir
+  }, [i18n.language]);
 
   const fetchPackages = async () => {
     try {
@@ -300,19 +306,19 @@ const ReservationPage = () => {
       !form.customerPhone.trim() ||
       !form.customerEmail.trim()
     ) {
-      setError("Lütfen tüm zorunlu alanları doldurun");
+      setError(t("checkout.form.errors.required"));
       return;
     }
 
     if (!selectedPackages || selectedPackages.length === 0) {
-      setError("Lütfen en az bir paket seçin");
+      setError(t("checkout.form.errors.noPackage"));
       return;
     }
 
     // Paket seçimi kontrolü
     const invalidPackages = selectedPackages.filter((sp) => !sp.packageId);
     if (invalidPackages.length > 0) {
-      setError("Lütfen tüm satırlarda paket seçimi yapın");
+      setError(t("checkout.form.errors.rowPackage"));
       return;
     }
 
@@ -320,7 +326,7 @@ const ReservationPage = () => {
       (sp) => sp.apparatuses.length !== sp.seriesCount,
     );
     if (incompleteRow) {
-      setError("Her paket için seri sayısı kadar alet seçmelisiniz");
+      setError(t("checkout.form.errors.apparatus"));
       return;
     }
 
@@ -353,7 +359,7 @@ const ReservationPage = () => {
 
       if (editingId) {
         await api.put(`/api/reservations/my/${editingId}`, payload);
-        toast.success("Rezervasyonunuz güncellendi");
+        toast.success(t("checkout.reservation.toastUpdated"));
         navigate("/profil");
         return;
       }
@@ -366,10 +372,10 @@ const ReservationPage = () => {
         reservationId: data.reservation.id,
         account: data.account,
       });
-      toast.success("Rezervasyon başarıyla oluşturuldu!");
+      toast.success(t("checkout.reservation.toastCreated"));
     } catch (err: any) {
-      setError(err.response?.data?.message || "Bir hata oluştu");
-      toast.error(err.response?.data?.message || "Bir hata oluştu");
+      setError(err.response?.data?.message || t("checkout.form.errors.generic"));
+      toast.error(err.response?.data?.message || t("checkout.form.errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -382,9 +388,8 @@ const ReservationPage = () => {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <SEO
-          title="Rezervasyon"
-          description="RNG Sport ile yarışma ve turnuvalarınız için fotoğraf ve video çekim rezervasyonunuzu yapın."
-          url="https://rngsport.com/rezervasyon"
+          title={t("checkout.reservation.seoTitle")}
+          description={t("checkout.reservation.seoDescription")}
         />
         <div className="fixed inset-0 pointer-events-none">
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
@@ -394,19 +399,18 @@ const ReservationPage = () => {
             <Calendar className="w-10 h-10 text-amber-500" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">
-            Rezervasyonlar Şu Anda Kapalı
+            {t("checkout.reservation.closedTitle")}
           </h2>
           <p className="text-zinc-400 mb-6 max-w-md">
-            Rezervasyon sistemi geçici olarak kapatılmıştır. Lütfen daha sonra
-            tekrar deneyiniz.
+            {t("checkout.reservation.closedText")}
           </p>
-          <Link
+          <LocalizedLink
             to="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            Ana Sayfaya Dön
-          </Link>
+            {t("checkout.reservation.backHome")}
+          </LocalizedLink>
         </div>
       </div>
     );
@@ -415,22 +419,21 @@ const ReservationPage = () => {
   if (lockedReservation) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 py-24">
-        <SEO title="Rezervasyon" description="Rezervasyonunuzu görüntüleyin." />
+        <SEO title={t("checkout.reservation.seoTitle")} description={t("checkout.reservation.seoDescription")} />
         <div className="w-full max-w-md text-center bg-zinc-900/60 border border-zinc-800 rounded-2xl p-8">
           <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center mx-auto mb-4">
             <Calendar className="w-8 h-8 text-emerald-400" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Zaten bir rezervasyonunuz var</h2>
+          <h2 className="text-xl font-bold text-white mb-2">{t("checkout.reservation.lockedTitle")}</h2>
           <p className="text-zinc-400 text-sm mb-6">
-            {lockedReservation.athleteName} adına yaptığınız rezervasyonun ödemesi alındı.
-            Değişiklik için bizimle iletişime geçebilirsiniz.
+            {t("checkout.reservation.lockedText", { name: lockedReservation.athleteName })}
           </p>
-          <Link
+          <LocalizedLink
             to="/profil"
             className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
           >
-            Rezervasyonumu Gör
-          </Link>
+            {t("checkout.reservation.viewMine")}
+          </LocalizedLink>
         </div>
       </div>
     );
@@ -453,13 +456,13 @@ const ReservationPage = () => {
               </div>
             </motion.div>
             <h2 className="text-2xl font-bold text-gradient-brand mb-2">
-              Rezervasyon Başarılı!
+              {t("checkout.reservation.successTitle")}
             </h2>
             <p className="text-zinc-400 mb-3">
-              Rezervasyonunuz alınmıştır. Satış masasına uğrayarak ödemenizi yapabilirsiniz.
+              {t("checkout.reservation.successText")}
             </p>
             <p className="text-xs text-zinc-600 font-mono break-all">
-              Rezervasyon No: {result.reservationId}
+              {t("checkout.reservation.number", { id: result.reservationId })}
             </p>
           </div>
 
@@ -469,13 +472,13 @@ const ReservationPage = () => {
           />
 
           <div className="text-center mt-6">
-            <Link
+            <LocalizedLink
               to="/"
               className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Ana Sayfaya Dön
-            </Link>
+              {t("checkout.reservation.backHome")}
+            </LocalizedLink>
           </div>
         </div>
       </div>
@@ -485,10 +488,9 @@ const ReservationPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
-        title="Rezervasyon"
-        description="RNG Sport ile yarışma ve turnuvalarınız için fotoğraf ve video çekim rezervasyonunuzu yapın. Profesyonel ekibimizle performansınızı ölümsüzleştirin."
-        keywords="rng sport rezervasyon, spor fotoğraf rezervasyon, ritmik cimnastik çekim, yarışma video çekim, turnuva fotoğraf"
-        url="https://rngsport.com/rezervasyon"
+        title={t("checkout.reservation.seoTitle")}
+        description={t("checkout.reservation.seoDescription")}
+        keywords={t("checkout.reservation.seoKeywords")}
       />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
@@ -497,13 +499,13 @@ const ReservationPage = () => {
       <div className="container mx-auto px-4 relative z-10 max-w-6xl">
         <Reveal>
           <div className="flex items-center gap-4 mb-8">
-            <Link
+            <LocalizedLink
               to="/"
               className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">Ana Sayfa</span>
-            </Link>
+              <span className="text-sm font-medium">{t("checkout.reservation.home")}</span>
+            </LocalizedLink>
           </div>
         </Reveal>
 
@@ -517,49 +519,46 @@ const ReservationPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gradient-brand">
-                {editingId ? "Rezervasyonu Düzenle" : "Rezervasyon Formu"}
+                {editingId ? t("checkout.reservation.editTitle") : t("checkout.reservation.newTitle")}
               </h1>
               <p className="text-zinc-500 text-sm">
                 {editingId
-                  ? "Mevcut rezervasyonunuzu güncelleyin"
-                  : "Paketleri seçin ve bilgilerinizi girin"}
+                  ? t("checkout.reservation.editSubtitle")
+                  : t("checkout.reservation.newSubtitle")}
               </p>
             </div>
           </div>
           <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-3xl mb-10">
-            Paketini seç, bilgilerini gir ve hesabını oluştur. Rezervasyonunu
-            kullanıcı panelinden takip edebilir ve güncelleyebilirsin.
-            Çekimlerin hazır olduğunda e-posta ile bilgilendirilir, fotoğraf ve
-            videolarına kişisel galerinden ulaşırsın.
+            {t("checkout.reservation.intro")}
           </p>
         </Reveal>
 
         {/* Mevcut rezervasyonlar (kardeş için yeni rezervasyon yapılabilir) */}
         {!editingId && myActive.length > 0 && (
           <div className="mb-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-5 py-4">
-            <p className="text-sm text-zinc-300 mb-2">Mevcut rezervasyonlarınız:</p>
+            <p className="text-sm text-zinc-300 mb-2">{t("checkout.reservation.existing")}</p>
             <div className="flex flex-wrap gap-2 mb-2">
               {myActive.map((r) =>
                 isCustomerEditable(r.status) ? (
-                  <Link
+                  <LocalizedLink
                     key={r.id}
                     to={`/rezervasyon?duzenle=${r.id}`}
                     className="px-3 py-1.5 rounded-lg bg-zinc-800/80 border border-zinc-700 hover:border-emerald-500/50 text-sm text-white transition-colors"
                   >
-                    {r.athleteName} <span className="text-emerald-400">· Düzenle</span>
-                  </Link>
+                    {r.athleteName} <span className="text-emerald-400">· {t("checkout.reservation.edit")}</span>
+                  </LocalizedLink>
                 ) : (
                   <span
                     key={r.id}
                     className="px-3 py-1.5 rounded-lg bg-zinc-800/50 border border-zinc-700/60 text-sm text-zinc-400"
                   >
-                    {r.athleteName} · Ödendi
+                    {r.athleteName} · {t("checkout.reservation.paid")}
                   </span>
                 ),
               )}
             </div>
             <p className="text-xs text-zinc-500">
-              Kardeşi ya da başka bir sporcu için aşağıdan yeni rezervasyon yapabilirsiniz.
+              {t("checkout.reservation.siblingHint")}
             </p>
           </div>
         )}
@@ -570,14 +569,14 @@ const ReservationPage = () => {
           <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
             <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">Paket Seçimi</h2>
+              <h2 className="text-xl font-semibold text-white">{t("checkout.reservation.packages")}</h2>
               <button
                 type="button"
                 onClick={addNewPackageRow}
                 className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                Paket Ekle
+                {t("checkout.reservation.addPackage")}
               </button>
             </div>
 
@@ -591,7 +590,7 @@ const ReservationPage = () => {
                   <div className="text-center py-8 text-zinc-500">
                     <PackageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p>
-                      Henüz paket eklenmedi. "Paket Ekle" butonuna tıklayın.
+                      {t("checkout.reservation.noPackages")}
                     </p>
                   </div>
                 ) : (
@@ -607,7 +606,7 @@ const ReservationPage = () => {
                         {/* Paket Seçimi */}
                         <div className="md:col-span-4">
                           <label className="text-xs text-zinc-500 mb-1 block">
-                            Paket
+                            {t("checkout.reservation.package")}
                           </label>
                           <select
                             value={sp.packageId}
@@ -620,11 +619,11 @@ const ReservationPage = () => {
                             }
                             className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors"
                           >
-                            <option value="">Paket Seçin</option>
+                            <option value="">{t("checkout.reservation.choosePackage")}</option>
                             {packages.map((pkg) => (
                               <option key={pkg.id} value={pkg.id}>
                                 {pkg.name} - ₺
-                                {pkg.reservationPrice.toLocaleString("tr-TR")}
+                                {formatNumber(pkg.reservationPrice)}
                               </option>
                             ))}
                           </select>
@@ -633,7 +632,7 @@ const ReservationPage = () => {
                         {/* Seri Sayısı */}
                         <div className="md:col-span-3">
                           <label className="text-xs text-zinc-500 mb-1 block">
-                            Seri Sayısı
+                            {t("checkout.reservation.seriesCount")}
                           </label>
                           <select
                             value={sp.seriesCount}
@@ -648,22 +647,16 @@ const ReservationPage = () => {
                             className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <option value={1}>
-                              1 Seri - ₺
-                              {(
-                                selectedPkg?.reservationPrice || 0
-                              ).toLocaleString("tr-TR")}
+                              {t("common.series", { count: 1 })} - ₺
+                              {formatNumber(selectedPkg?.reservationPrice || 0)}
                             </option>
                             <option value={2}>
-                              2 Seri - ₺
-                              {(
-                                selectedPkg?.reservationDiscounts?.[2] || 0
-                              ).toLocaleString("tr-TR")}
+                              {t("common.series", { count: 2 })} - ₺
+                              {formatNumber(selectedPkg?.reservationDiscounts?.[2] || 0)}
                             </option>
                             <option value={3}>
-                              3 Seri - ₺
-                              {(
-                                selectedPkg?.reservationDiscounts?.[3] || 0
-                              ).toLocaleString("tr-TR")}
+                              {t("common.series", { count: 3 })} - ₺
+                              {formatNumber(selectedPkg?.reservationDiscounts?.[3] || 0)}
                             </option>
                           </select>
                         </div>
@@ -671,7 +664,7 @@ const ReservationPage = () => {
                         {/* Adet */}
                         <div className="md:col-span-2">
                           <label className="text-xs text-zinc-500 mb-1 block">
-                            Adet
+                            {t("checkout.reservation.quantity")}
                           </label>
                           <input
                             type="number"
@@ -692,10 +685,10 @@ const ReservationPage = () => {
                         {/* Toplam */}
                         <div className="md:col-span-2 flex flex-col justify-end">
                           <label className="text-xs text-zinc-500 mb-1 block">
-                            Toplam
+                            {t("checkout.form.total")}
                           </label>
                           <div className="text-base font-bold text-emerald-400">
-                            ₺{(sp.price * sp.quantity).toLocaleString("tr-TR")}
+                            ₺{formatNumber(sp.price * sp.quantity)}
                           </div>
                         </div>
 
@@ -723,11 +716,10 @@ const ReservationPage = () => {
                         {/* Alet seçimi (seriesCount kadar zorunlu) */}
                         <div className="md:col-span-12 mt-1">
                           <label className="text-xs text-zinc-500 mb-2 block">
-                            Aletler{" "}
+                            {t("checkout.apparatus.label")}{" "}
                             <span className="text-red-400">*</span>
                             <span className="ml-1 text-zinc-600">
-                              ({sp.apparatuses.length} / {sp.seriesCount}{" "}
-                              seçildi)
+                              {t("checkout.apparatus.selected", { count: sp.apparatuses.length, total: sp.seriesCount })}
                             </span>
                           </label>
                           <div className="flex flex-wrap gap-2">
@@ -750,7 +742,7 @@ const ReservationPage = () => {
                                       : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
                                   }`}
                                 >
-                                  {a.label}
+                                  {t(`common.apparatus.${a.slug}`)}
                                 </button>
                               );
                             })}
@@ -770,11 +762,11 @@ const ReservationPage = () => {
           <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
             <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
             <h2 className="text-xl font-semibold text-white mb-4">
-              Sporcu Bilgileri
+              {t("checkout.reservation.athleteInfo")}
             </h2>
             {isAuthenticated && !editingId && (
               <p className="-mt-2 mb-4 text-xs text-zinc-500">
-                Kardeşi için rezervasyon yapıyorsanız sporcu bilgilerini değiştirin.
+                {t("checkout.reservation.siblingFormHint")}
               </p>
             )}
 
@@ -788,14 +780,14 @@ const ReservationPage = () => {
               <div>
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <User className="w-4 h-4" />
-                  Sporcu Adı Soyadı <span className="text-red-400">*</span>
+                  {t("checkout.form.athleteName")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   name="athleteName"
                   value={form.athleteName}
                   onChange={handleChange}
-                  placeholder="Sporcu adı soyadı"
+                  placeholder={t("checkout.form.athleteNamePlaceholder")}
                   className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
@@ -803,14 +795,14 @@ const ReservationPage = () => {
               <div>
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <Building className="w-4 h-4" />
-                  Kulüp / Şube <span className="text-red-400">*</span>
+                  {t("checkout.form.clubName")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   name="clubName"
                   value={form.clubName}
                   onChange={handleChange}
-                  placeholder="Kulüp veya şube adı"
+                  placeholder={t("checkout.form.clubNamePlaceholder")}
                   className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
@@ -818,14 +810,14 @@ const ReservationPage = () => {
               <div>
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <CalendarDays className="w-4 h-4" />
-                  Sporcu Doğum Yılı <span className="text-red-400">*</span>
+                  {t("checkout.form.birthYear")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   name="birthYear"
                   value={form.birthYear}
                   onChange={handleChange}
-                  placeholder="Örn: 2015"
+                  placeholder={t("checkout.form.birthYearPlaceholder")}
                   className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
@@ -833,7 +825,7 @@ const ReservationPage = () => {
               <div>
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <Phone className="w-4 h-4" />
-                  İletişim için Telefon <span className="text-red-400">*</span>
+                  {t("checkout.form.phone")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="tel"
@@ -848,7 +840,7 @@ const ReservationPage = () => {
               <div className="md:col-span-2">
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <Mail className="w-4 h-4" />
-                  E-posta Adresi <span className="text-red-400">*</span>
+                  {t("checkout.form.email")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="email"
@@ -861,7 +853,7 @@ const ReservationPage = () => {
                 />
                 {editingId && (
                   <p className="text-xs text-zinc-500 mt-1">
-                    E-posta hesabınıza bağlı olduğu için değiştirilemez.
+                    {t("checkout.form.emailLocked")}
                   </p>
                 )}
               </div>
@@ -869,13 +861,13 @@ const ReservationPage = () => {
               <div className="md:col-span-2">
                 <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <MessageSquare className="w-4 h-4" />
-                  Ek Not <span className="text-zinc-600">(opsiyonel)</span>
+                  {t("checkout.form.notes")} <span className="text-zinc-600">{t("checkout.form.optional")}</span>
                 </label>
                 <textarea
                   name="notes"
                   value={form.notes}
                   onChange={handleChange}
-                  placeholder="Eklemek istediğiniz bir not varsa buraya yazabilirsiniz."
+                  placeholder={t("checkout.form.notesPlaceholder")}
                   rows={3}
                   className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
                 />
@@ -891,10 +883,10 @@ const ReservationPage = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">
-                  Toplam Tutar
+                  {t("checkout.form.totalAmount")}
                 </h3>
                 <p className="text-sm text-zinc-500">
-                  {selectedPackages.length} paket seçildi
+                  {t("checkout.reservation.packagesSelected", { count: selectedPackages.length })}
                 </p>
               </div>
               <div className="text-3xl font-bold text-gradient-brand">
@@ -914,8 +906,7 @@ const ReservationPage = () => {
 
             <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
               <p className="text-xs text-amber-400 text-center">
-                💡 Rezervasyonunuzu şimdi tamamlayın; ödeme işlemini yarışma
-                günü alandaki standımızda gerçekleştirin."
+                {t("checkout.reservation.payAtVenue")}
               </p>
             </div>
 
@@ -923,15 +914,13 @@ const ReservationPage = () => {
             {isAuthenticated ? (
               <div className="mb-4 flex items-start gap-2 text-sm text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
                 <Check className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>Fotoğraflarınız çekim sonrası hesabınıza tanımlanacaktır.</span>
+                <span>{t("checkout.form.accountLinked")}</span>
               </div>
             ) : (
               <div className="mb-4 flex items-start gap-2 text-sm text-zinc-400 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
                 <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
                 <span>
-                  Fotoğraflarınız, girdiğiniz e-posta adresiyle açılacak hesabınıza
-                  yüklenecek. Rezervasyon sonrası şifrenizi belirleyip hemen
-                  girebilirsiniz.
+                  {t("checkout.form.accountNewReservation")}
                 </span>
               </div>
             )}
@@ -946,16 +935,15 @@ const ReservationPage = () => {
                   className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
                 />
                 <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                  <Link
+                  <LocalizedLink
                     to="/kvkk-aydinlatma-metni"
                     target="_blank"
                     className="text-emerald-400 hover:text-emerald-300 underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)
-                    kapsamında hazırlanan [Aydınlatma Metni]
-                  </Link>
-                  'ni okudum ve kabul ediyorum.{" "}
+                    {t("checkout.form.kvkkLink")}
+                  </LocalizedLink>
+                  {t("checkout.form.kvkkSuffix")}{" "}
                   <span className="text-red-400">*</span>
                 </span>
               </label>
@@ -976,12 +964,12 @@ const ReservationPage = () => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  İşleniyor...
+                  {t("checkout.form.processing")}
                 </>
               ) : (
                 <>
                   <Calendar className="w-5 h-5" />
-                  {editingId ? "Rezervasyonu Güncelle" : "Rezervasyonu Onayla"}
+                  {editingId ? t("checkout.reservation.submitUpdate") : t("checkout.reservation.submitCreate")}
                 </>
               )}
             </button>

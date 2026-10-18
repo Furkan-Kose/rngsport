@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { downloadAllAsZip } from "../lib/zipDownload";
+import i18n from "../i18n";
 
 // "Tümünü İndir" butonunun durumu: ilerleme (12/80) + hata bildirimi
 export const useZipDownload = () => {
@@ -15,11 +16,11 @@ export const useZipDownload = () => {
         fallbackPath,
         onProgress: (done, total) => setProgress({ done, total }),
       });
-      if (result === "done") toast.success("Zip dosyası indirildi");
-      if (result === "server") toast.info("Galeri büyük olduğu için zip sunucudan hazırlanıyor, indirme birazdan başlayacak");
+      if (result === "done") toast.success(i18n.t("pages.media.zipDone"));
+      if (result === "server") toast.info(i18n.t("pages.media.zipServer"));
     } catch (error) {
       console.error("Zip indirme hatası:", error);
-      toast.error("Toplu indirme yarıda kaldı. Lütfen tekrar deneyin veya dosyaları tek tek indirin.");
+      toast.error(i18n.t("pages.media.zipFailed"));
     } finally {
       setProgress(null);
     }

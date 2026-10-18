@@ -1,0 +1,164 @@
+{
+  "media": {
+    "download": "Download",
+    "files_one": "{{count}} file",
+    "files_other": "{{count}} files",
+    "loadMore": "Load More",
+    "preparing": "Preparing...",
+    "preparingProgress": "Preparing {{done}}/{{total}}",
+    "downloadAll": "Download All (.zip)",
+    "downloadAlbum": "Download This Album (.zip)",
+    "mobileHint": "📱 On a phone, downloading photos and videos one by one saves them straight to your gallery. A zip file goes to the \"Files\" app.",
+    "loadError": "An error occurred while loading the photos",
+    "downloadError": "The photo could not be downloaded",
+    "zipDone": "Zip file downloaded",
+    "zipServer": "The gallery is large, so the zip is being prepared on the server; the download will start shortly",
+    "zipFailed": "The download was interrupted. Please try again or download the files one by one."
+  },
+  "myGallery": {
+    "seoTitle": "My Photos",
+    "seoDescription": "View and download your photos.",
+    "title": "My Gallery",
+    "subtitle": "Your photos and videos",
+    "allCompetitions": "All Competitions",
+    "all": "All",
+    "photos": "Photos",
+    "videos": "Videos",
+    "emptyTitle": "No photos uploaded yet",
+    "emptyText": "Your photos will appear here after your shoot is complete. Delivery time depends on your package."
+  },
+  "awards": {
+    "seoTitle": "Award Ceremonies",
+    "seoDescription": "Baby Games award ceremony photos. Access the photos of our little stars on the podium and download them one by one or all at once.",
+    "seoKeywords": "award ceremony photos, baby games, rhythmic gymnastics award ceremony, podium photos",
+    "imageAlt": "Baby Games award ceremony",
+    "badge": "Award Ceremonies",
+    "titleBefore": "Baby Games ",
+    "titleHighlight": "Award Ceremony",
+    "titleAfter": " Photos",
+    "intro": "Share the excitement of our little stars on the podium! Baby Games award ceremony photos will be uploaded to this page during competition day. You can access the photos of your child's special moments here.",
+    "eyebrow": "Galleries",
+    "listTitle": "Award Ceremonies",
+    "listDescription": "Choose a ceremony; you can download the photos one by one or all at once.",
+    "empty": "Photos will be published here during competition day.",
+    "soon": "Coming soon",
+    "open": "Open Gallery",
+    "detailFallbackTitle": "Award Ceremony",
+    "detailDescription": "View award ceremony photos and download them one by one or all at once.",
+    "back": "All Award Ceremonies",
+    "notFoundTitle": "Award ceremony not found",
+    "notFoundText": "The link may be wrong or the ceremony may have been removed.",
+    "noPhotosTitle": "No photos uploaded yet",
+    "noPhotosText": "Award ceremony photos will be uploaded to this page during competition day."
+  },
+  "gallery": {
+    "seoTitle": "Gallery",
+    "seoDescription": "Samples of RNG Sport's professional photo and video coverage at competitions and tournaments. The best moments of rhythmic gymnastics and sports performances.",
+    "seoKeywords": "rng sport gallery, rhythmic gymnastics photos, rhythmic gymnastics videos, sports photography, competition photography samples",
+    "imageAlt": "International Ritmika Cup Gallery",
+    "title": "Gallery",
+    "intro": "Selected shots and videos of the performances we captured at last year's event.",
+    "photo": "Photo",
+    "video": "Video",
+    "empty": "There is no content in this category yet."
+  },
+  "orderSuccess": {
+    "title": "Payment Successful!",
+    "text": "Your order has been received. We will contact you as soon as possible.",
+    "details": "Order Details",
+    "orderNo": "Order No",
+    "athlete": "Athlete",
+    "club": "Club",
+    "packages": "Packages",
+    "total": "Total",
+    "backHome": "Back to Home"
+  },
+  "orderFailed": {
+    "defaultError": "The payment could not be completed",
+    "title": "Payment Failed",
+    "text": "Your payment could not be completed. No amount has been charged to your card. Please try again or use a different payment method.",
+    "reference": "Order Reference:",
+    "retry": "Try Again",
+    "home": "Home",
+    "stillProblem": "If the problem persists",
+    "reasonsTitle": "Possible Reasons",
+    "reasons": [
+      "Insufficient card limit",
+      "Online purchases may be disabled on your card",
+      "3D Secure verification may have failed",
+      "Card details may have been entered incorrectly"
+    ]
+  },
+  "packagesPage": {
+    "seoTitle": "Packages",
+    "seoDescription": "RNG Sport photo and video packages. Per-routine pricing for rhythmic gymnastics competitions; pre-book online and pay at our stand on competition day.",
+    "seoKeywords": "rhythmic gymnastics photo packages, competition photo prices, sports video package, rng sport packages",
+    "imageAlt": "RNG Sport packages",
+    "title": "Packages",
+    "intro": "Choose based on how many of your athlete's routines you want captured. Book now and pay at our stand on competition day."
+  },
+  "cartToast": {
+    "removed": "Item removed from cart!"
+  },
+  "about": {
+    "seoTitle": "About Us",
+    "seoDescription": "RNG Sport is a sports media agency providing photo and video coverage at sports events, with a focus on rhythmic gymnastics. Read how we work on competition day.",
+    "seoKeywords": "about rng sport, sports media agency, rhythmic gymnastics film crew, competition photographer, tournament video",
+    "heroAlt": "International Ritmika Cup",
+    "heroBefore": "We follow the right moment ",
+    "heroHighlight": "from the right place",
+    "heroAfter": ".",
+    "heroText": "We know when, where and what to follow to get the right shot. We build our shooting plan around the structure of the event and the discipline.",
+    "orgAlt": "Ritmika Cup event",
+    "eyebrow": "Who We Are",
+    "title": "About Us",
+    "p1": "<1>RNG Sport</1> is a team providing photo and video production services for sports events.",
+    "p2": "We shoot at competitions, tournaments and events in various disciplines, with a focus on rhythmic gymnastics. Depending on the event, we prepare photos, videos, reels and athlete-specific content.",
+    "partner": "Official solution partner of <1>Range Media</1>",
+    "howTitle": "How Do We Work?",
+    "how1": "Every sport is filmed differently. That's why, before the event begins, we build our shooting plan around the discipline, the venue layout and the competition flow.",
+    "how2": "Throughout the event, we follow the athletes' performances, capture photos and videos, and after the shoot we edit and deliver the content.",
+    "audiences": [
+      {
+        "title": "For Athletes",
+        "paragraphs": [
+          "Athletes and parents can make a booking through RNG Sport before the event.",
+          "When the shots are ready, we notify you by email. After signing in, photos and videos are available in your personal gallery."
+        ]
+      },
+      {
+        "title": "For Organisers",
+        "paragraphs": [
+          "Together we decide on the crew, number of cameras and content plan according to the size and needs of the event.",
+          "Our goal is a smooth shooting process during the event and easy delivery of the content to the athletes afterwards."
+        ]
+      }
+    ],
+    "stats": {
+      "athletes": "Athletes",
+      "competitions": "International competitions",
+      "years": "Field experience",
+      "yearsSuffix": " yrs",
+      "satisfaction": "Satisfaction"
+    },
+    "ctaTitle": "Book Your Spot at International Baby Games 2026",
+    "ctaText": "Booked athletes have priority on the shooting list. Book your spot now.",
+    "ctaReserve": "Book Now",
+    "ctaPackages": "View Packages"
+  },
+  "products": {
+    "seoTitle": "Special Products",
+    "seoDescription": "RNG Sport personalised athlete figure and illuminated gymnastics letter. Custom-designed products created from the athlete's pose, name and sport.",
+    "seoKeywords": "personalised athlete figure, 3d gymnast figure, illuminated gymnastics letter, rhythmic gymnastics gift",
+    "heroAlt": "RNG Sport special products",
+    "title": "Special Products",
+    "intro": "Not mass-produced decorations — designs personalised around the athlete herself.",
+    "notYet": "The products are not yet available to order. To be notified when they go on sale, message us from the product page.",
+    "notFoundTitle": "Product not found",
+    "notFoundText": "The product you are looking for may have been removed or its address may have changed.",
+    "backAll": "Back to all products",
+    "allProducts": "All products",
+    "comingSoon": "Coming Soon",
+    "notifyMe": "Notify Me When Available"
+  }
+}

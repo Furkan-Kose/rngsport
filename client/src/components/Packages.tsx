@@ -11,15 +11,17 @@ import {
 } from "lucide-react";
 import { useCart, type Package } from "../context/CartContext";
 import api from "../lib/api";
+import { useTranslation } from "react-i18next";
+
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
 
 export type PackageCategory = "photo" | "video" | "full";
 export type { Package };
 
-const categoryMeta: Record<string, { label: string; Icon: typeof Camera }> = {
-  photo: { label: "Fotoğraf", Icon: Camera },
-  video: { label: "Video", Icon: Video },
+const categoryMeta: Record<string, { Icon: typeof Camera }> = {
+  photo: { Icon: Camera },
+  video: { Icon: Video },
 };
 
 interface PackageCardProps {
@@ -31,6 +33,7 @@ const seriesOptions = [1, 2, 3] as const;
 
 const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
   const { addToCart, isInCart } = useCart();
+  const { t } = useTranslation();
   const inCart = isInCart(pkg.id);
   const meta = categoryMeta[pkg.category];
   const [series, setSeries] = useState<1 | 2 | 3>(1);
@@ -61,13 +64,13 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
         {featured ? (
           <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-linear-to-r from-emerald-500 to-emerald-600 px-2.5 py-1 rounded-full shadow-lg shadow-emerald-500/40">
             <Star className="w-3 h-3 text-white fill-white" />
-            <span className="text-xs font-semibold text-white">Popüler</span>
+            <span className="text-xs font-semibold text-white">{t("home.packages.popular")}</span>
           </div>
         ) : (
           meta && (
             <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-zinc-950/70 backdrop-blur-sm text-emerald-300 px-2.5 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
               <meta.Icon className="w-3 h-3" />
-              {meta.label}
+              {t(`common.category.${pkg.category}`)}
             </div>
           )
         )}
@@ -75,7 +78,7 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
         {inCart && (
           <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm">
             <CheckCircle className="w-3 h-3" />
-            Sepette
+            {t("home.packages.inCart")}
           </div>
         )}
       </div>
@@ -106,7 +109,7 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
                 }`}
               >
                 <span className="text-[11px] font-medium opacity-80">
-                  {n} Seri
+                  {t("common.series", { count: n })}
                 </span>
                 <span className="text-xs font-bold whitespace-nowrap">
                   ₺{priceFor(n).toLocaleString("tr-TR")}
@@ -126,11 +129,11 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
             >
               ₺{selectedPrice.toLocaleString("tr-TR")}
             </span>
-            <span className="text-xs text-zinc-500">{series} seri</span>
+            <span className="text-xs text-zinc-500">{t("common.seriesLower", { count: series })}</span>
           </div>
           {selectedDiscount > 0 && (
             <span className="text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap">
-              %{selectedDiscount} indirim
+              {t("home.packages.discount", { percent: selectedDiscount })}
             </span>
           )}
         </div>
@@ -160,8 +163,8 @@ const PackageCard = ({ pkg, featured = false }: PackageCardProps) => {
           }`}
         >
           <ShoppingCart className="w-4 h-4" />
-          {inCart ? "Tekrar Ekle" : "Sepete Ekle"}
-          <span className="opacity-80">· {series} seri</span>
+          {inCart ? t("home.packages.addAgain") : t("home.packages.addToCart")}
+          <span className="opacity-80">· {t("common.seriesLower", { count: series })}</span>
         </button>
       </div>
     </>
@@ -206,6 +209,7 @@ const CategoryDivider = () => (
 );
 
 const Packages = () => {
+  const { t, i18n } = useTranslation();
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -216,7 +220,7 @@ const Packages = () => {
         const { data } = await api.get("/api/packages");
         setPackages(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Bir hata oluştu");
+        setError(t("home.packages.loadError"));
         console.error("Paketler yüklenirken hata:", err);
       } finally {
         setLoading(false);
@@ -224,7 +228,9 @@ const Packages = () => {
     };
 
     fetchPackages();
-  }, []);
+    // Paket adları/özellikleri sunucudan dile göre gelir
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
   const getPackagesByCategory = (category: PackageCategory) =>
     packages.filter((pkg) => pkg.category === category);
@@ -257,10 +263,10 @@ const Packages = () => {
     <section id="paketler" className="relative py-20 bg-zinc-950">
       <div className="container mx-auto px-4 relative z-10">
         <SectionHeader
-          eyebrow="Fiyatlandırma"
+          eyebrow={t("home.packages.eyebrow")}
           icon={Sparkles}
-          title="Paketlerimiz"
-          description="Her bütçeye uygun profesyonel fotoğraf ve video paketleri"
+          title={t("home.packages.title")}
+          description={t("home.packages.description")}
           className="mb-16"
         />
 

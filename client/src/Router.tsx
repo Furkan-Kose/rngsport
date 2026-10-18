@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 
 import MainLayout from "./layouts/MainLayout";
+import LocaleRoot from "./layouts/LocaleRoot";
+import { DEFAULT_LANG, LANGUAGES, type Lang } from "./i18n";
 
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
@@ -50,112 +52,63 @@ const LoyaltyPage = lazy(() => import("./pages/admin/LoyaltyPage"));
 // Admin parçası yüklenirken (lazy) gösterilen boş koyu ekran
 const adminFallback = <div className="min-h-screen bg-gray-900" />;
 
-export const router = createBrowserRouter([
-  {
-    element: <MainLayout />,
+// Müşteri sayfaları: her dil için aynı ağaç. Türkçe öneksiz (/sepet), diğerleri /en/sepet,
+// /ru/sepet. Yollar göreli; korumalı sayfaların giriş yönlendirmesi de dilin önekini alır.
+const publicRoutes = (lang: Lang) => {
+  const prefix = lang === DEFAULT_LANG ? "" : `/${lang}`;
+  const loginRedirect = (path: string) => `${prefix}/giris?redirect=${prefix}${path}`;
+  return {
+    path: prefix || "/",
+    element: <LocaleRoot lang={lang} />,
     children: [
       {
-        path: "/",
-        element: <HomePage />,
-      },
-      {
-        path: "/hakkimizda",
-        element: <AboutPage />,
-      },
-      {
-        path: "/galeri",
-        element: <GalleryPage />,
-      },
-      {
-        path: "/odul-torenleri",
-        element: <AwardCeremoniesPage />,
-      },
-      {
-        path: "/odul-torenleri/:slug",
-        element: <AwardCeremonyDetailPage />,
-      },
-      {
-        path: "/paketler",
-        element: <PackagesPage />,
-      },
-      {
-        path: "/urunler",
-        element: <ProductsPage />,
-      },
-      {
-        path: "/urunler/:slug",
-        element: <ProductDetailPage />,
-      },
-      {
-        path: "/sepet",
-        element: <CartPage />,
-      },
-      {
-        path: "/rezervasyon",
-        element: <ReservationPage />,
-      },
-      {
-        path: "/siparis-basarili",
-        element: <OrderSuccessPage />,
-      },
-      {
-        path: "/siparis-basarisiz",
-        element: <OrderFailedPage />,
-      },
-      {
-        path: "/giris",
-        element: <UserLoginPage />,
-      },
-      {
-        path: "/kayit",
-        element: <RegisterPage />,
-      },
-      {
-        path: "/sifremi-unuttum",
-        element: <ForgotPasswordPage />,
-      },
-      {
-        path: "/sifre-sifirla",
-        element: <ResetPasswordPage />,
-      },
-      {
-        path: "/eposta-dogrula",
-        element: <VerifyEmailPage />,
-      },
-      {
-        path: "/profil",
-        element: (
-          <ProtectedRoute redirectTo="/giris?redirect=/profil">
-            <ProfilePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "/galerim",
-        element: (
-          <ProtectedRoute redirectTo="/giris?redirect=/galerim">
-            <MyGalleryPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "/kvkk-aydinlatma-metni",
-        element: <KvkkMetni />,
-      },
-      {
-        path: "/mesafeli-satis-sozlesmesi",
-        element: <MesafeliSatis />,
-      },
-      {
-        path: "/iptal-ve-iade-kosullari",
-        element: <IadeKosullari />,
-      },
-      {
-        path: "/gizlilik-ve-guvenlik-politikasi",
-        element: <GizlilikPolitikasi />,
+        element: <MainLayout />,
+        children: [
+          { index: true, element: <HomePage /> },
+          { path: "hakkimizda", element: <AboutPage /> },
+          { path: "galeri", element: <GalleryPage /> },
+          { path: "odul-torenleri", element: <AwardCeremoniesPage /> },
+          { path: "odul-torenleri/:slug", element: <AwardCeremonyDetailPage /> },
+          { path: "paketler", element: <PackagesPage /> },
+          { path: "urunler", element: <ProductsPage /> },
+          { path: "urunler/:slug", element: <ProductDetailPage /> },
+          { path: "sepet", element: <CartPage /> },
+          { path: "rezervasyon", element: <ReservationPage /> },
+          { path: "siparis-basarili", element: <OrderSuccessPage /> },
+          { path: "siparis-basarisiz", element: <OrderFailedPage /> },
+          { path: "giris", element: <UserLoginPage /> },
+          { path: "kayit", element: <RegisterPage /> },
+          { path: "sifremi-unuttum", element: <ForgotPasswordPage /> },
+          { path: "sifre-sifirla", element: <ResetPasswordPage /> },
+          { path: "eposta-dogrula", element: <VerifyEmailPage /> },
+          {
+            path: "profil",
+            element: (
+              <ProtectedRoute redirectTo={loginRedirect("/profil")}>
+                <ProfilePage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "galerim",
+            element: (
+              <ProtectedRoute redirectTo={loginRedirect("/galerim")}>
+                <MyGalleryPage />
+              </ProtectedRoute>
+            ),
+          },
+          { path: "kvkk-aydinlatma-metni", element: <KvkkMetni /> },
+          { path: "mesafeli-satis-sozlesmesi", element: <MesafeliSatis /> },
+          { path: "iptal-ve-iade-kosullari", element: <IadeKosullari /> },
+          { path: "gizlilik-ve-guvenlik-politikasi", element: <GizlilikPolitikasi /> },
+        ],
       },
     ],
-  },
+  };
+};
+
+export const router = createBrowserRouter([
+  ...LANGUAGES.map(publicRoutes),
   // Admin Login (Unprotected)
   {
     path: "/admin/login",

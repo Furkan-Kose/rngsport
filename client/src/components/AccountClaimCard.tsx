@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Trans, useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
+import { useLocalizedNavigate } from "../lib/localePath";
 import { motion } from "framer-motion";
 import { Lock, Mail, Image as ImageIcon, Loader2, ArrowRight } from "lucide-react";
 import api from "../lib/api";
@@ -28,8 +30,10 @@ interface Props {
  * Kart şifreyi burada belirletip anında giriş yapar — mail yedek yol olarak kalır.
  */
 const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
   const { refresh } = useAuth();
+  const { t } = useTranslation();
+  const emailTag = { 1: <span className="text-emerald-400" /> };
 
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -53,16 +57,15 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
       <div className={wrapper}>
         <div className={topLine} />
         <p className="text-sm text-zinc-400">
-          Bu kayıt <span className="text-emerald-400">{account.email}</span> hesabınıza
-          tanımlandı. Fotoğraflarınız hazır olduğunda galerinizde görünecek.
+          <Trans i18nKey="account.claim.linked" values={{ email: account.email }} components={emailTag} />
         </p>
-        <Link
+        <LocalizedLink
           to="/giris?redirect=/galerim"
           className="mt-4 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
         >
-          Giriş yap ve galerine git
+          {t("account.claim.linkedCta")}
           <ArrowRight className="w-4 h-4" />
-        </Link>
+        </LocalizedLink>
       </div>
     );
   }
@@ -73,16 +76,15 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
       <div className={wrapper}>
         <div className={topLine} />
         <p className="text-sm text-zinc-400">
-          <span className="text-emerald-400">{account.email}</span> için hesabınız hazır.
-          Şifrenizi belirlemek için şifremi unuttum adımını kullanın.
+          <Trans i18nKey="account.claim.expired" values={{ email: account.email }} components={emailTag} />
         </p>
-        <Link
+        <LocalizedLink
           to="/sifremi-unuttum"
           className="mt-4 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
         >
-          Şifremi belirle
+          {t("account.claim.expiredCta")}
           <ArrowRight className="w-4 h-4" />
-        </Link>
+        </LocalizedLink>
       </div>
     );
   }
@@ -92,9 +94,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
       <div className={wrapper}>
         <div className={topLine} />
         <p className="text-sm text-zinc-400">
-          Sorun değil — <span className="text-emerald-400">{account.email}</span> adresine
-          gönderdiğimiz e-postadaki bağlantıdan şifrenizi istediğiniz zaman
-          belirleyebilirsiniz.
+          <Trans i18nKey="account.claim.dismissed" values={{ email: account.email }} components={emailTag} />
         </p>
       </div>
     );
@@ -105,7 +105,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
     setError("");
 
     if (password.length < 8) {
-      setError("Şifre en az 8 karakter olmalı");
+      setError(t("auth.errors.passwordLength"));
       return;
     }
 
@@ -121,7 +121,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
         setAlreadyExists(true);
         return;
       }
-      setError(res?.data?.message || "Bir hata oluştu, lütfen tekrar deneyin");
+      setError(res?.data?.message || t("auth.errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -141,9 +141,9 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
           <ImageIcon className="w-5 h-5 text-emerald-400" />
         </div>
         <div>
-          <h3 className="text-white font-semibold">Hesabını tamamla</h3>
+          <h3 className="text-white font-semibold">{t("account.claim.title")}</h3>
           <p className="text-sm text-zinc-400 mt-1">
-            Fotoğraflarınız bu hesaba yüklenecek. Bir şifre belirleyin, hemen girelim.
+            {t("account.claim.text")}
           </p>
         </div>
       </div>
@@ -158,7 +158,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
         <div>
           <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
             <Mail className="w-4 h-4" />
-            E-posta
+            {t("auth.email")}
           </label>
           <input
             type="email"
@@ -175,7 +175,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
             className="flex items-center gap-2 text-sm text-zinc-400 mb-2"
           >
             <Lock className="w-4 h-4" />
-            Şifre <span className="text-red-400">*</span>
+            {t("auth.password")} <span className="text-red-400">*</span>
           </label>
           <input
             type="password"
@@ -183,7 +183,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-            placeholder="En az 8 karakter"
+            placeholder={t("auth.passwordPlaceholder")}
             autoComplete="new-password"
             required
             minLength={8}
@@ -199,10 +199,10 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Oluşturuluyor...
+                {t("account.claim.creating")}
               </>
             ) : (
-              "Hesabımı Oluştur"
+              t("account.claim.create")
             )}
           </button>
           <button
@@ -210,7 +210,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
             onClick={() => setDismissed(true)}
             className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
           >
-            Şimdi değil
+            {t("account.claim.later")}
           </button>
         </div>
       </form>

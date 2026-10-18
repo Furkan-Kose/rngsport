@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, Calendar, CalendarCheck } from "lucide-react";
-import { Link } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
 import Reveal from "./ui/Reveal";
 
 const PROMO_VIDEO = "/baby_games.mp4";
@@ -87,6 +88,7 @@ const TimeBlock = ({ value, label }: { value: number; label: string }) => {
 };
 
 const DiscountBanner = () => {
+  const { t } = useTranslation();
   const targetDate = new Date("2026-10-22T00:00:00").getTime();
 
   const calculateTimeLeft = () => {
@@ -186,43 +188,41 @@ const DiscountBanner = () => {
           >
             <div className="inline-flex items-center gap-2 text-emerald-400 text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-4">
               <CalendarCheck className="w-4 h-4" />
-              Yaklaşan Yarışma
+              {t("home.discount.eyebrow")}
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4 leading-tight">
-              Yarışma Gününe Özel %15 İndirim
+              {t("home.discount.title")}
             </h2>
 
             <p className="text-sm sm:text-base md:text-lg text-zinc-300 md:text-zinc-400 mb-8 max-w-xl mx-auto md:mx-0">
-              Ön rezervasyonunuzu oluşturun, çekim planımıza önceden dahil olun.
-              Yarışma günü standımızda ödemenizi tamamlayın; nakit ödemelerde
-              %15 indirimden yararlanın.
+              {t("home.discount.description")}
             </p>
 
             <div className="mb-8">
               <div className="flex items-center justify-center md:justify-start gap-1.5 text-zinc-500 text-xs mb-3">
                 <Clock className="w-3.5 h-3.5" />
-                <span className="uppercase tracking-wider">Yarışma Tarihi</span>
+                <span className="uppercase tracking-wider">{t("home.discount.date")}</span>
               </div>
 
               <div className="flex items-center justify-center md:justify-start gap-1.5 sm:gap-2">
-                <TimeBlock value={timeLeft.days} label="Gün" />
+                <TimeBlock value={timeLeft.days} label={t("home.discount.days")} />
                 <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
-                <TimeBlock value={timeLeft.hours} label="Saat" />
+                <TimeBlock value={timeLeft.hours} label={t("home.discount.hours")} />
                 <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
-                <TimeBlock value={timeLeft.minutes} label="Dk" />
+                <TimeBlock value={timeLeft.minutes} label={t("home.discount.minutes")} />
                 <span className="text-zinc-700 font-bold text-lg pb-4">:</span>
-                <TimeBlock value={timeLeft.seconds} label="Sn" />
+                <TimeBlock value={timeLeft.seconds} label={t("home.discount.seconds")} />
               </div>
             </div>
 
-            <Link
+            <LocalizedLink
               to="/rezervasyon"
               className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5"
             >
               <Calendar className="w-4 h-4" />
-              Hemen Rezervasyon Yap
-            </Link>
+              {t("home.discount.cta")}
+            </LocalizedLink>
           </Reveal>
         </div>
       </div>

@@ -2,6 +2,10 @@ import crypto from "node:crypto";
 import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { presignUpload, getObject, deleteObject } from "../lib/r2.js";
+import { localize, sanitizeTranslations } from "../utils/i18n.js";
+
+// Paneldeki EN/RU sekmelerinde çevrilebilen alanlar
+const TRANSLATION_FIELDS = { stringFields: ["name"], arrayFields: ["features"] };
 
 const PACKAGE_NOT_FOUND = { notFound: "Paket bulunamadı" };
 const PACKAGE_DUPLICATE = { duplicate: "Bu slug zaten kullanılıyor" };
@@ -36,8 +40,10 @@ const sanitizeFee = (value) => {
   return Number.isFinite(n) && n > 0 ? Math.min(n, 1000000) : null;
 };
 
-// Public response: frontend'in beklediği format
-const formatPackagePublic = (pkg) => ({
+// Public response: frontend'in beklediği format (ad/özellikler istek dilinde)
+const formatPackagePublic = (raw, locale) => {
+  const pkg = localize(raw, locale, ["name", "features"]);
+  return {
   id: pkg.slug,
   category: pkg.category,
   name: pkg.name,
@@ -58,7 +64,8 @@ const formatPackagePublic = (pkg) => ({
   loyaltyPoints: pkg.loyaltyPoints,
   // Öncelikli ek ücreti (seri başına); null = bu pakette öncelik seçilemez
   priorityFee: pkg.priorityFee,
-});
+  };
+};
 
 // Admin response: tüm alanlar (pasifler dahil)
 // image ham değerdir (form state için); imageUrl önizleme/liste için çözülmüş URL
@@ -78,6 +85,7 @@ const formatPackageAdmin = (pkg) => ({
   reservationDiscount3: pkg.reservationDiscount3,
   loyaltyPoints: pkg.loyaltyPoints,
   priorityFee: pkg.priorityFee,
+  translations: pkg.translations ?? {},
   isActive: pkg.isActive,
   sortOrder: pkg.sortOrder,
   createdAt: pkg.createdAt,
@@ -91,7 +99,7 @@ export const getAllPackages = async (req, res) => {
     orderBy: { sortOrder: "asc" },
   });
 
-  res.json(packages.map(formatPackagePublic));
+  res.json(packages.map((pkg) => formatPackagePublic(pkg, req.locale)));
 };
 
 // Admin için tüm paketleri getir (pasif dahil)
@@ -118,7 +126,7 @@ export const getPackage = async (req, res) => {
     throw new AppError("Paket bulunamadı", 404);
   }
 
-  res.json(formatPackagePublic(pkg));
+  res.json(formatPackagePublic(pkg, req.locale));
 };
 
 // Yeni paket oluştur (admin)
@@ -137,6 +145,7 @@ export const createPackage = async (req, res) => {
     reservationDiscount3,
     loyaltyPoints,
     priorityFee,
+    translations,
     sortOrder,
   } = req.body;
 
@@ -161,6 +170,7 @@ export const createPackage = async (req, res) => {
         reservationDiscount3: reservationDiscount3 || null,
         loyaltyPoints: sanitizePoints(loyaltyPoints) ?? 0,
         priorityFee: sanitizeFee(priorityFee) ?? null,
+        translations: sanitizeTranslations(translations, TRANSLATION_FIELDS) ?? {},
         sortOrder: sortOrder || 0,
       },
     })
@@ -185,6 +195,7 @@ export const updatePackage = async (req, res) => {
     reservationDiscount3,
     loyaltyPoints,
     priorityFee,
+    translations,
     isActive,
     sortOrder,
   } = req.body;
@@ -218,6 +229,9 @@ export const updatePackage = async (req, res) => {
         }),
         // null/boş → öncelik kapatılır
         ...(priorityFee !== undefined && { priorityFee: sanitizeFee(priorityFee) ?? null }),
+        ...(translations !== undefined && {
+          translations: sanitizeTranslations(translations, TRANSLATION_FIELDS),
+        }),
         ...(typeof isActive === "boolean" && { isActive }),
         ...(sortOrder !== undefined && { sortOrder }),
       },

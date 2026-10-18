@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, Calendar, ChevronDown } from "lucide-react";
-import { Link } from "react-router";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
 
 // Dikey (1080x1920) ve yatay (1920x1080) iki ayri kurgu var; esik overlay'lerin
 // kullandigi md kirilimiyla ayni tutuluyor.
@@ -64,6 +65,7 @@ const itemVariants = {
 
 const Hero = () => {
   const videoSrc = useHeroVideoSrc();
+  const { t } = useTranslation();
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -85,7 +87,7 @@ const Hero = () => {
         ) : (
           <img
             src="/hero.webp"
-            alt="Ritmik Cimnastik"
+            alt={t("home.hero.imageAlt")}
             className="w-full h-full object-cover"
           />
         )}
@@ -133,8 +135,8 @@ const Hero = () => {
             variants={itemVariants}
             className="text-[2rem] leading-[1.2] md:text-5xl lg:text-6xl font-display font-bold text-white md:text-gray-100 md:leading-tight mb-5 md:mb-6"
           >
-            Sahnedeki O An,
-            <span className="block text-gradient-brand">Hep Seninle.</span>
+            {t("home.hero.titleLine1")}
+            <span className="block text-gradient-brand">{t("home.hero.titleLine2")}</span>
           </motion.h1>
 
           {/* Description */}
@@ -142,9 +144,7 @@ const Hero = () => {
             variants={itemVariants}
             className="text-gray-300 md:text-gray-400 text-base md:text-xl max-w-md md:max-w-xl mx-auto md:mx-0 mb-8 md:mb-10"
           >
-            Aylarca süren emeği, birkaç dakikalık performansı ve bir daha
-            tekrarlanmayacak anları profesyonel fotoğraf ve videolarla kayıt
-            altına alıyoruz.
+            {t("home.hero.description")}
           </motion.p>
 
           {/* Buttons */}
@@ -158,19 +158,19 @@ const Hero = () => {
             >
               <span className="absolute inset-0 bg-linear-to-r from-emerald-400 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity" />
               <Sparkles className="w-4 h-4 md:w-5 md:h-5 relative z-10" />
-              <span className="hidden sm:inline relative z-10">Paketleri </span>
-              <span className="relative z-10">İncele</span>
+              <span className="hidden sm:inline relative z-10">{t("home.hero.packagesPrefix")}</span>
+              <span className="relative z-10">{t("home.hero.packagesWord")}</span>
               <ArrowRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1 relative z-10" />
             </a>
-            <Link
+            <LocalizedLink
               to="/rezervasyon"
               className="bg-white/10 md:bg-black/30 hover:bg-emerald-600/15 border border-white/20 md:border-white/10 hover:border-emerald-500/60 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-all text-sm md:text-base backdrop-blur-sm"
             >
               <Calendar className="w-4 h-4 md:w-5 md:h-5 group-hover:text-emerald-400 transition-colors" />
               <span className="group-hover:text-emerald-400 transition-colors">
-                Rezervasyon
+                {t("home.hero.reservation")}
               </span>
-            </Link>
+            </LocalizedLink>
           </motion.div>
         </div>
       </motion.div>
@@ -189,7 +189,7 @@ const Hero = () => {
         className="absolute bottom-32 left-1/2 -translate-x-1/2 z-10 hidden md:flex flex-col items-center gap-2"
       >
         <span className="text-xs uppercase tracking-[0.3em] text-gray-500">
-          Keşfet
+          {t("home.hero.scroll")}
         </span>
         <div className="w-6 h-10 rounded-full border-2 border-gray-500/50 flex items-start justify-center p-1.5">
           <ChevronDown className="w-3 h-3 text-emerald-400 animate-scroll-cue" />

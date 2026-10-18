@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight, Camera, Play } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { galleryItems, type GalleryItem } from "../data/gallery";
@@ -16,7 +17,16 @@ const getItemThumbnail = (item: GalleryItem) => {
   return item.thumbnail;
 };
 
+// Veride kategori Türkçe değer olarak duruyor; sadece etiket çevrilir
+const CATEGORY_KEY: Record<string, string> = {
+  all: "home.gallery.all",
+  Fotoğraf: "pages.gallery.photo",
+  Video: "pages.gallery.video",
+};
+
 const GalleryPage = () => {
+  const { t } = useTranslation();
+  const categoryLabel = (c: string) => (CATEGORY_KEY[c] ? t(CATEGORY_KEY[c]) : c);
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
@@ -56,10 +66,9 @@ const GalleryPage = () => {
   return (
     <div className="min-h-screen">
       <SEO
-        title="Galeri"
-        description="RNG Sport'un yarışma ve turnuvalardaki profesyonel fotoğraf ve video çekimlerinden örnekler. Ritmik cimnastik ve spor performanslarının en güzel anları."
-        keywords="rng sport galeri, ritmik cimnastik fotoğrafları, ritmik cimnastik videoları, spor fotoğrafçılığı, yarışma çekim örnekleri"
-        url="https://rngsport.com/galeri"
+        title={t("pages.gallery.seoTitle")}
+        description={t("pages.gallery.seoDescription")}
+        keywords={t("pages.gallery.seoKeywords")}
       />
 
       {/* Hero Section */}
@@ -67,7 +76,7 @@ const GalleryPage = () => {
         <div className="absolute inset-0">
           <img
             src="/gallery/7.webp"
-            alt="International Ritmika Cup Galeri"
+            alt={t("pages.gallery.imageAlt")}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/65 to-black/55" />
@@ -85,13 +94,12 @@ const GalleryPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Reveal delay={0.1}>
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                <span className="text-gradient-brand">Galeri</span>
+                <span className="text-gradient-brand">{t("pages.gallery.title")}</span>
               </h1>
             </Reveal>
             <Reveal delay={0.2}>
               <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
-                Geçtiğimiz yılın organizasyonunda yakaladığımız performanslardan
-                seçilmiş kareler ve videolar.
+                {t("pages.gallery.intro")}
               </p>
             </Reveal>
           </div>
@@ -120,7 +128,7 @@ const GalleryPage = () => {
                       : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-800"
                   }`}
                 >
-                  {category === "all" ? "Tümü" : category}
+                  {categoryLabel(category)}
                 </button>
               ))}
             </div>
@@ -133,13 +141,13 @@ const GalleryPage = () => {
                 <div className="text-2xl font-bold text-emerald-400">
                   {galleryItems.filter((i) => i.type === "photo").length}
                 </div>
-                <div className="text-sm text-gray-400">Fotoğraf</div>
+                <div className="text-sm text-gray-400">{t("pages.gallery.photo")}</div>
               </div>
               <div className="text-center px-6 py-3 bg-zinc-900/60 border border-zinc-800 rounded-2xl">
                 <div className="text-2xl font-bold text-emerald-400">
                   {galleryItems.filter((i) => i.type === "video").length}
                 </div>
-                <div className="text-sm text-gray-400">Video</div>
+                <div className="text-sm text-gray-400">{t("pages.gallery.video")}</div>
               </div>
             </div>
           </Reveal>
@@ -172,7 +180,7 @@ const GalleryPage = () => {
 
                   <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                     <p className="text-xs text-emerald-400 font-semibold uppercase tracking-wider mb-1">
-                      {item.category}
+                      {categoryLabel(item.category)}
                     </p>
                     <h3 className="text-white font-semibold">{item.title}</h3>
                   </div>
@@ -185,7 +193,7 @@ const GalleryPage = () => {
             <div className="text-center py-20">
               <Camera className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
               <p className="text-gray-400">
-                Bu kategoride henüz içerik bulunmuyor.
+                {t("pages.gallery.empty")}
               </p>
             </div>
           )}
@@ -259,7 +267,7 @@ const GalleryPage = () => {
                 )}
                 <div className="text-center mt-4">
                   <p className="text-emerald-400 text-sm">
-                    {filteredItems[selectedImage].category}
+                    {categoryLabel(filteredItems[selectedImage].category)}
                   </p>
                   <h3 className="text-white text-xl font-semibold mt-1">
                     {filteredItems[selectedImage].title}

@@ -1,20 +1,27 @@
-import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
 import { ArrowRight, Clock, Sparkles } from "lucide-react";
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
-import { products, type Product } from "../data/products";
+import { localizeProduct, products, type Product } from "../data/products";
 
 /** "Çok Yakında" rozeti — Tournaments.tsx'teki amber rozet kalıbı */
-export const ComingSoonBadge = () => (
+export const ComingSoonBadge = () => {
+  const { t } = useTranslation();
+  return (
   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-semibold uppercase tracking-wider">
     <Clock className="w-3 h-3" />
-    Çok Yakında
+    {t("home.products.comingSoon")}
   </span>
-);
+  );
+};
 
 /** Ana sayfa bölümü ve /urunler listeleme sayfası aynı kartı kullanır */
-export const ProductCard = ({ product }: { product: Product }) => (
-  <Link
+export const ProductCard = ({ product: source }: { product: Product }) => {
+  const { t, i18n } = useTranslation();
+  const product = localizeProduct(source, i18n.language);
+  return (
+  <LocalizedLink
     to={`/urunler/${product.slug}`}
     className="group relative h-full bg-zinc-900/60 backdrop-blur-sm rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 hover:-translate-y-1 flex flex-col border border-zinc-800 hover:border-emerald-500/40"
   >
@@ -43,12 +50,13 @@ export const ProductCard = ({ product }: { product: Product }) => (
         {product.cardSummary}
       </p>
       <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-        İncele
+        {t("home.products.view")}
         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
       </span>
     </div>
-  </Link>
-);
+  </LocalizedLink>
+  );
+};
 
 /**
  * Ana sayfa "Özel Ürünler" bölümü.
@@ -57,28 +65,29 @@ export const ProductCard = ({ product }: { product: Product }) => (
  * çapraz geçiş vardır.
  */
 const Products = () => {
+  const { t } = useTranslation();
   return (
     <section id="urunler" className="relative py-24 bg-zinc-950">
       <div className="container mx-auto px-4">
         <SectionHeader
-          eyebrow="Özel Ürünler"
+          eyebrow={t("home.products.eyebrow")}
           icon={Sparkles}
-          title="Senin için tasarlanıyor."
-          description="RNG SPORT ürünleri seri üretim bir dekorasyon ürünü olmak yerine, sporcunun kendisinden yola çıkılarak kişiselleştirilmek üzere tasarlanıyor."
+          title={t("home.products.title")}
+          description={t("home.products.description")}
           className="mb-10"
         />
 
         <Reveal delay={0.1}>
           <div className="max-w-2xl mx-auto text-center mb-12">
             <p className="text-gray-400 mb-2">
-              İsmi, sporu, hatırlamak istediği an ve ona ait detaylar…
+              {t("home.products.line1")}
             </p>
             <p className="text-gray-400 mb-6">
-              Ortaya çıkan ürün de yalnızca ona ait oluyor.
+              {t("home.products.line2")}
             </p>
             <p className="inline-flex items-center gap-2 text-emerald-400 font-semibold tracking-wide">
               <Sparkles className="w-4 h-4" />
-              RNG SPORT Özel Ürünler — Çok Yakında
+              {t("home.products.comingSoonLine")}
             </p>
           </div>
         </Reveal>
@@ -93,13 +102,13 @@ const Products = () => {
 
         <Reveal delay={0.2}>
           <div className="text-center mt-10">
-            <Link
+            <LocalizedLink
               to="/urunler"
               className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors group"
             >
-              Tüm ürünleri gör
+              {t("home.products.all")}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            </LocalizedLink>
           </div>
         </Reveal>
       </div>

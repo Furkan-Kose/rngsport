@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+import { formatNumber } from "../lib/format";
+
 interface PriorityCheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -6,7 +9,9 @@ interface PriorityCheckboxProps {
 }
 
 // Rezervasyon formu ve sepetteki "Öncelikli" seçeneği + ne işe yaradığına dair kısa açıklama
-const PriorityCheckbox = ({ checked, onChange, fee, className = "" }: PriorityCheckboxProps) => (
+const PriorityCheckbox = ({ checked, onChange, fee, className = "" }: PriorityCheckboxProps) => {
+  const { t } = useTranslation();
+  return (
   <label
     className={`flex items-start gap-2.5 cursor-pointer select-none rounded-xl border px-3 py-2.5 transition-colors ${
       checked
@@ -22,14 +27,15 @@ const PriorityCheckbox = ({ checked, onChange, fee, className = "" }: PriorityCh
     />
     <span className="text-sm">
       <span className="text-zinc-200">
-        ⚡ <strong className="text-amber-300">Öncelikli teslim</strong>{" "}
-        <span className="text-zinc-500">(+₺{fee.toLocaleString("tr-TR")} / seri)</span>
+        ⚡ <strong className="text-amber-300">{t("checkout.priority.title")}</strong>{" "}
+        <span className="text-zinc-500">{t("checkout.priority.perSeries", { fee: formatNumber(fee) })}</span>
       </span>
       <span className="block text-xs text-zinc-500 mt-0.5">
-        Çekimleriniz öncelikli olarak düzenlenir ve 7 gün içinde teslim edilir.
+        {t("checkout.priority.description")}
       </span>
     </span>
   </label>
-);
+  );
+};
 
 export default PriorityCheckbox;

@@ -32,7 +32,7 @@ const publicUser = (user) => ({
 });
 
 // Yeni doğrulama token'ı üretir, kullanıcıya yazar ve maili gönderir (fire-and-forget)
-const issueVerificationEmail = async (user) => {
+const issueVerificationEmail = async (user, locale) => {
   const { raw, hash } = createEmailToken();
   await prisma.user.update({
     where: { id: user.id },
@@ -41,7 +41,7 @@ const issueVerificationEmail = async (user) => {
       verifyTokenExpiresAt: new Date(Date.now() + VERIFY_TOKEN_TTL_MS),
     },
   });
-  sendVerificationEmail(user.email, user.name, raw);
+  sendVerificationEmail(user.email, user.name, raw, locale);
 };
 
 export const login = async (req, res) => {
@@ -124,7 +124,7 @@ export const register = async (req, res) => {
     generateToken(res, user);
 
     // Doğrulama maili — başarısız olsa bile kayıt tamamlanmış sayılır
-    await issueVerificationEmail(user).catch((err) =>
+    await issueVerificationEmail(user, req.locale).catch((err) =>
       console.error("Verification email error:", err)
     );
 
@@ -273,7 +273,7 @@ export const resendVerification = async (req, res) => {
       return res.status(400).json({ success: false, message: 'E-posta adresiniz zaten doğrulanmış' });
     }
 
-    await issueVerificationEmail(user);
+    await issueVerificationEmail(user, req.locale);
 
     res.status(200).json({ success: true, message: 'Doğrulama maili gönderildi' });
   } catch (error) {
@@ -308,7 +308,7 @@ export const forgotPassword = async (req, res) => {
           resetTokenExpiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
         },
       });
-      sendPasswordResetEmail(user.email, user.name, raw, { isFirstTime: !user.password });
+      sendPasswordResetEmail(user.email, user.name, raw, { isFirstTime: !user.password, locale: req.locale });
     }
 
     res.status(200).json(genericResponse);
@@ -465,7 +465,7 @@ export const claimAccount = async (req, res) => {
     generateToken(res, updated);
 
     // E-posta sahipliği kanıtlanmadı (link tıklanmadı) — register'daki gibi doğrulama maili
-    await issueVerificationEmail(updated).catch((err) =>
+    await issueVerificationEmail(updated, req.locale).catch((err) =>
       console.error('Verification email error:', err)
     );
 

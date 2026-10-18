@@ -1,63 +1,304 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://rngsport.com/</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/en</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/"/>
   </url>
   <url>
     <loc>https://rngsport.com/hakkimizda</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/hakkimizda"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/en/hakkimizda</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/hakkimizda"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/hakkimizda</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/hakkimizda"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/hakkimizda"/>
   </url>
   <url>
     <loc>https://rngsport.com/odul-torenleri</loc>
     <lastmod>2026-10-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/odul-torenleri"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/en/odul-torenleri</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/odul-torenleri"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/odul-torenleri</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/odul-torenleri"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/odul-torenleri"/>
   </url>
   <url>
     <loc>https://rngsport.com/galeri</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/galeri"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/galeri"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/galeri"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/galeri"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/en/galeri</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/galeri"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/galeri"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/galeri"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/galeri"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/galeri</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/galeri"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/galeri"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/galeri"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/galeri"/>
   </url>
   <url>
     <loc>https://rngsport.com/rezervasyon</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/rezervasyon"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/en/rezervasyon</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/rezervasyon"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/rezervasyon</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/rezervasyon"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/rezervasyon"/>
   </url>
   <url>
     <loc>https://rngsport.com/sepet</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/sepet"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/sepet"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/sepet"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/sepet"/>
   </url>
   <url>
-    <loc>https://rngsport.com/gizlilik-politikasi</loc>
+    <loc>https://rngsport.com/en/sepet</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/sepet"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/sepet"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/sepet"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/sepet"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/sepet</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/sepet"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/sepet"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/sepet"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/sepet"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/gizlilik-ve-guvenlik-politikasi</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/gizlilik-ve-guvenlik-politikasi"/>
   </url>
   <url>
-    <loc>https://rngsport.com/kvkk</loc>
+    <loc>https://rngsport.com/en/gizlilik-ve-guvenlik-politikasi</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/gizlilik-ve-guvenlik-politikasi"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/gizlilik-ve-guvenlik-politikasi</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/gizlilik-ve-guvenlik-politikasi"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/gizlilik-ve-guvenlik-politikasi"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/kvkk-aydinlatma-metni</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/kvkk-aydinlatma-metni"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/en/kvkk-aydinlatma-metni</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/kvkk-aydinlatma-metni"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/kvkk-aydinlatma-metni</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/kvkk-aydinlatma-metni"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/kvkk-aydinlatma-metni"/>
   </url>
   <url>
     <loc>https://rngsport.com/mesafeli-satis-sozlesmesi</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/mesafeli-satis-sozlesmesi"/>
   </url>
   <url>
-    <loc>https://rngsport.com/iade-kosullari</loc>
+    <loc>https://rngsport.com/en/mesafeli-satis-sozlesmesi</loc>
     <lastmod>2026-05-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/mesafeli-satis-sozlesmesi"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/mesafeli-satis-sozlesmesi</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/mesafeli-satis-sozlesmesi"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/mesafeli-satis-sozlesmesi"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/iptal-ve-iade-kosullari</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/iptal-ve-iade-kosullari"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/en/iptal-ve-iade-kosullari</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/iptal-ve-iade-kosullari"/>
+  </url>
+  <url>
+    <loc>https://rngsport.com/ru/iptal-ve-iade-kosullari</loc>
+    <lastmod>2026-05-26</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://rngsport.com/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://rngsport.com/en/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://rngsport.com/ru/iptal-ve-iade-kosullari"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://rngsport.com/iptal-ve-iade-kosullari"/>
   </url>
 </urlset>

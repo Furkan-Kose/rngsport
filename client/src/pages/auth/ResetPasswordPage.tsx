@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../../components/LocalizedLink";
 import { motion } from "framer-motion";
 import { Lock, KeyRound, CheckCircle2 } from "lucide-react";
 import api from "../../lib/api";
@@ -16,17 +18,21 @@ const ResetPasswordPage = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  // Sunucu hatası (geçersiz/süresi dolmuş bağlantı) → "yeni bağlantı iste" gösterilir
+  const [isServerError, setIsServerError] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsServerError(false);
 
     if (password.length < 8) {
-      setError("Şifre en az 8 karakter olmalı");
+      setError(t("auth.errors.passwordLength"));
       return;
     }
     if (password !== passwordConfirm) {
-      setError("Şifreler eşleşmiyor");
+      setError(t("auth.errors.passwordMismatch"));
       return;
     }
 
@@ -36,7 +42,8 @@ const ResetPasswordPage = () => {
       setIsDone(true);
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { message?: string } } };
-      setError(errorObj.response?.data?.message || "Bir hata oluştu, lütfen tekrar deneyin");
+      setError(errorObj.response?.data?.message || t("auth.errors.generic"));
+      setIsServerError(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -48,8 +55,8 @@ const ResetPasswordPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
-        title={isFirstTime ? "Şifre Belirle" : "Şifre Sıfırla"}
-        description="RNG Sport hesabınız için yeni şifre belirleyin."
+        title={isFirstTime ? t("auth.reset.seoTitleFirst") : t("auth.reset.seoTitle")}
+        description={t("auth.reset.seoDescription")}
       />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -66,12 +73,11 @@ const ResetPasswordPage = () => {
               <KeyRound className="w-7 h-7 text-emerald-400" />
             </div>
             <h1 className="text-3xl font-bold text-gradient-brand">
-              {isFirstTime ? "Şifrenizi Belirleyin" : "Yeni Şifre Belirle"}
+              {isFirstTime ? t("auth.reset.titleFirst") : t("auth.reset.title")}
             </h1>
             {isFirstTime && (
               <p className="text-sm text-zinc-400 mt-3">
-                Rezervasyonunuzla birlikte hesabınız oluşturuldu. Şifrenizi belirleyin,
-                fotoğraflarınız buraya yüklenecek.
+                {t("auth.reset.firstHint")}
               </p>
             )}
           </div>
@@ -85,42 +91,39 @@ const ResetPasswordPage = () => {
                   <CheckCircle2 className="w-7 h-7 text-emerald-400" />
                 </div>
                 <h2 className="text-lg font-semibold text-white mb-2">
-                  {isFirstTime ? "Hesabınız Hazır" : "Şifreniz Güncellendi"}
+                  {isFirstTime ? t("auth.reset.doneTitleFirst") : t("auth.reset.doneTitle")}
                 </h2>
                 <p className="text-sm text-zinc-400 mb-6">
-                  {isFirstTime
-                    ? "Belirlediğiniz şifreyle giriş yapıp galerinize ulaşabilirsiniz."
-                    : "Yeni şifrenizle giriş yapabilirsiniz."}
+                  {isFirstTime ? t("auth.reset.doneTextFirst") : t("auth.reset.doneText")}
                 </p>
-                <Link
+                <LocalizedLink
                   to={isFirstTime ? "/giris?redirect=/galerim" : "/giris"}
                   className="inline-block py-3 px-8 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold transition-all duration-300"
                 >
-                  Giriş Yap
-                </Link>
+                  {t("auth.reset.login")}
+                </LocalizedLink>
               </div>
             ) : !token ? (
               <div className="text-center py-4">
                 <p className="text-sm text-zinc-400 mb-6">
-                  Sıfırlama bağlantısı geçersiz. Lütfen e-postanızdaki bağlantıyı kullanın
-                  veya yeni bir bağlantı isteyin.
+                  {t("auth.reset.invalidLink")}
                 </p>
-                <Link
+                <LocalizedLink
                   to="/sifremi-unuttum"
                   className="text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
                 >
-                  Yeni bağlantı iste
-                </Link>
+                  {t("auth.reset.requestNew")}
+                </LocalizedLink>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 {error && (
                   <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
                     {error}{" "}
-                    {error.includes("geçersiz") && (
-                      <Link to="/sifremi-unuttum" className="underline text-red-300">
-                        Yeni bağlantı iste
-                      </Link>
+                    {isServerError && (
+                      <LocalizedLink to="/sifremi-unuttum" className="underline text-red-300">
+                        {t("auth.reset.requestNew")}
+                      </LocalizedLink>
                     )}
                   </div>
                 )}
@@ -128,7 +131,7 @@ const ResetPasswordPage = () => {
                 <div>
                   <label htmlFor="password" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                     <Lock className="w-4 h-4" />
-                    {isFirstTime ? "Şifre" : "Yeni Şifre"} <span className="text-red-400">*</span>
+                    {isFirstTime ? t("auth.password") : t("auth.newPassword")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="password"
@@ -136,7 +139,7 @@ const ResetPasswordPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={inputClass}
-                    placeholder="En az 8 karakter"
+                    placeholder={t("auth.passwordPlaceholder")}
                     required
                     minLength={8}
                   />
@@ -145,7 +148,7 @@ const ResetPasswordPage = () => {
                 <div>
                   <label htmlFor="passwordConfirm" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                     <Lock className="w-4 h-4" />
-                    {isFirstTime ? "Şifre Tekrar" : "Yeni Şifre Tekrar"} <span className="text-red-400">*</span>
+                    {isFirstTime ? t("auth.passwordConfirm") : t("auth.newPasswordConfirm")} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="password"
@@ -163,7 +166,7 @@ const ResetPasswordPage = () => {
                   disabled={isSubmitting}
                   className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25 transition-all duration-300"
                 >
-                  {isSubmitting ? "Güncelleniyor..." : "Şifreyi Güncelle"}
+                  {isSubmitting ? t("auth.reset.submitting") : t("auth.reset.submit")}
                 </button>
               </form>
             )}

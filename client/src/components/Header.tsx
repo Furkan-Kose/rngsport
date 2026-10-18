@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Menu, X, ShoppingCart, Calendar, User, LogIn } from "lucide-react";
-import { Link } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { useLocalizedPath } from "../lib/localePath";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -10,12 +13,14 @@ const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const { getTotalItems } = useCart();
   const { user, isAuthenticated, isAdmin } = useAuth();
+  const { t } = useTranslation();
+  const localize = useLocalizedPath();
 
   // Girişli kullanıcı: admin → panel, müşteri → profil
   const accountPath = isAdmin ? "/admin" : "/profil";
   const accountLabel = isAdmin
-    ? "Yönetim Paneli"
-    : user?.name?.split(" ")[0] || "Hesabım";
+    ? t("common.nav.adminPanel")
+    : user?.name?.split(" ")[0] || t("common.nav.account");
 
   const cartItemCount = getTotalItems();
   const showBackground = scrolled || isOpen;
@@ -28,12 +33,12 @@ const Header = () => {
   }, []);
 
   const navLinks = [
-    { name: "Ana Sayfa", href: "/#" },
-    { name: "Hakkımızda", href: "/hakkimizda" },
-    { name: "Galeri", href: "/galeri" },
-    { name: "Ödül Törenleri", href: "/odul-torenleri" },
-    { name: "Ürünler", href: "/urunler" },
-    { name: "Paketler", href: "/paketler" },
+    { name: t("common.nav.home"), href: localize("/#") },
+    { name: t("common.nav.about"), href: localize("/hakkimizda") },
+    { name: t("common.nav.gallery"), href: localize("/galeri") },
+    { name: t("common.nav.awards"), href: localize("/odul-torenleri") },
+    { name: t("common.nav.products"), href: localize("/urunler") },
+    { name: t("common.nav.packages"), href: localize("/paketler") },
   ];
 
   return (
@@ -54,13 +59,13 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
+          <LocalizedLink to="/" className="flex items-center gap-3 group">
             <img
               src="/logo-web.png"
               alt="RNG Sport"
               className="h-11 md:h-12 w-auto transition-all duration-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_20px_rgba(16,185,129,0.35)]"
             />
-          </Link>
+          </LocalizedLink>
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-8">
@@ -78,27 +83,28 @@ const Header = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
+            <LanguageSwitcher className="hidden md:block" />
+            <LocalizedLink
               to="/rezervasyon"
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
             >
               <Calendar className="w-4 h-4 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
               <span className="text-sm font-medium text-zinc-300 group-hover:text-emerald-400 transition-colors">
-                Rezervasyon Yap
+                {t("common.nav.reserve")}
               </span>
-            </Link>
+            </LocalizedLink>
 
-            <Link
+            <LocalizedLink
               to="/rezervasyon"
               className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
-              title="Rezervasyon Yap"
+              title={t("common.nav.reserve")}
             >
               <Calendar className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
-            </Link>
+            </LocalizedLink>
 
             {isAuthenticated ? (
               <>
-                <Link
+                <LocalizedLink
                   to={accountPath}
                   className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
                 >
@@ -106,38 +112,39 @@ const Header = () => {
                   <span className="text-sm font-medium text-zinc-300 group-hover:text-emerald-400 transition-colors max-w-24 truncate">
                     {accountLabel}
                   </span>
-                </Link>
-                <Link
+                </LocalizedLink>
+                <LocalizedLink
                   to={accountPath}
                   className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
                   title={accountLabel}
                 >
                   <User className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
-                </Link>
+                </LocalizedLink>
               </>
             ) : (
               <>
-                <Link
+                <LocalizedLink
                   to="/giris"
                   className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
                 >
                   <LogIn className="w-4 h-4 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
                   <span className="text-sm font-medium text-zinc-300 group-hover:text-emerald-400 transition-colors">
-                    Giriş Yap
+                    {t("common.nav.login")}
                   </span>
-                </Link>
-                <Link
+                </LocalizedLink>
+                <LocalizedLink
                   to="/giris"
                   className="sm:hidden p-2 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
-                  title="Giriş Yap"
+                  title={t("common.nav.login")}
                 >
                   <LogIn className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
-                </Link>
+                </LocalizedLink>
               </>
             )}
 
-            <Link
+            <LocalizedLink
               to="/sepet"
+              aria-label={t("common.nav.cart")}
               className="relative p-2 sm:p-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 transition-all duration-300 group"
             >
               <ShoppingCart className="w-5 h-5 text-zinc-300 group-hover:text-emerald-400 transition-colors" />
@@ -155,9 +162,10 @@ const Header = () => {
                   </motion.span>
                 )}
               </AnimatePresence>
-            </Link>
+            </LocalizedLink>
 
             <button
+              aria-label={t("common.nav.menu")}
               className="lg:hidden text-gray-300 hover:text-emerald-400 p-2 transition-colors duration-300"
               onClick={() => setIsOpen(!isOpen)}
             >
@@ -177,6 +185,7 @@ const Header = () => {
               className="lg:hidden overflow-hidden border-t border-white/10"
             >
               <div className="flex flex-col gap-1 py-4">
+                <LanguageSwitcher variant="list" className="md:hidden mx-3 mb-2" />
                 {navLinks.map((link, i) => (
                   <motion.a
                     key={link.name}
@@ -192,29 +201,29 @@ const Header = () => {
                 ))}
                 {isAuthenticated && !isAdmin ? (
                   <>
-                    <Link
+                    <LocalizedLink
                       to="/profil"
                       className="text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors duration-300 font-medium py-2.5 px-3 rounded-lg"
                       onClick={() => setIsOpen(false)}
                     >
-                      Hesabım
-                    </Link>
-                    <Link
+                      {t("common.nav.account")}
+                    </LocalizedLink>
+                    <LocalizedLink
                       to="/galerim"
                       className="text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors duration-300 font-medium py-2.5 px-3 rounded-lg"
                       onClick={() => setIsOpen(false)}
                     >
-                      Fotoğraflarım
-                    </Link>
+                      {t("common.nav.myPhotos")}
+                    </LocalizedLink>
                   </>
                 ) : !isAuthenticated ? (
-                  <Link
+                  <LocalizedLink
                     to="/giris"
                     className="text-gray-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-colors duration-300 font-medium py-2.5 px-3 rounded-lg"
                     onClick={() => setIsOpen(false)}
                   >
-                    Giriş Yap
-                  </Link>
+                    {t("common.nav.login")}
+                  </LocalizedLink>
                 ) : null}
               </div>
             </motion.nav>

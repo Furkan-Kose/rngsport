@@ -49,7 +49,7 @@ export const downloadAllAsZip = async ({
     try {
       const handle = await picker({
         suggestedName: "rngsport-galeri.zip",
-        types: [{ description: "ZIP arşivi", accept: { "application/zip": [".zip"] } }],
+        types: [{ description: "ZIP", accept: { "application/zip": [".zip"] } }],
       });
       writable = await handle.createWritable();
     } catch (error) {

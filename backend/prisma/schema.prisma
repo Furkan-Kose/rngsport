@@ -28,6 +28,7 @@ model Order {
   shootStartedAt  DateTime? // Çekimin gerçek başlangıç saati
   shootEndedAt    DateTime? // Çekimin gerçek bitiş saati
   userId          String? // Girişli kullanıcı sipariş verdiyse bağlanır
+  locale          String      @default("tr") // Siparişin verildiği dil — mailler bu dilde gider
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -125,6 +126,7 @@ model Package {
   reservationDiscount3 Float? // 3 seri rezervasyon fiyatı
   loyaltyPoints        Int      @default(0) // Sadakat puanı (seri başına; × seri × adet)
   priorityFee          Float? // Öncelikli ek ücreti (seri başına); null = bu pakette öncelik seçilemez
+  translations         Json? // Çeviriler: { en: { name, features }, ru: {...} } — boş alan Türkçeye düşer
   isActive             Boolean  @default(true)
   sortOrder            Int      @default(0)
   createdAt            DateTime @default(now())
@@ -152,6 +154,7 @@ model Reservation {
   shootStartedAt  DateTime?
   shootEndedAt    DateTime?
   userId          String? // Girişli kullanıcı rezervasyon yaptıysa bağlanır
+  locale          String            @default("tr") // Rezervasyonun yapıldığı dil — mailler bu dilde gider
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -190,16 +193,17 @@ enum ReservationStatus {
 }
 
 model Tournament {
-  id        String   @id @default(cuid())
-  name      String
-  date      String // Serbest metin: "18-21 Haziran 2026" (aralıklar için tarih tipi uygun değil)
-  location  String
-  flag      String? // /flags/tr.svg gibi public yolu (null = bayrak gösterilmez)
-  flagAlt   String?
-  status    String   @default("upcoming") // finished | ongoing | upcoming
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  date         String // Serbest metin: "18-21 Haziran 2026" (aralıklar için tarih tipi uygun değil)
+  location     String
+  flag         String? // /flags/tr.svg gibi public yolu (null = bayrak gösterilmez)
+  flagAlt      String?
+  status       String   @default("upcoming") // finished | ongoing | upcoming
+  translations Json? // { en: { name, date, location, flagAlt }, ru: {...} }
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("tournaments")
 }
@@ -253,15 +257,16 @@ model ShootingListEntry {
 // Herkese açık ödül töreni galerileri (/odul-torenleri). Müşteri galerisinden
 // bağımsız: fotoğraflar kişiye değil törene bağlı, giriş gerekmeden görüntülenir.
 model AwardCeremony {
-  id          String   @id @default(cuid())
-  slug        String   @unique // URL: /odul-torenleri/{slug}
-  title       String
-  description String?
-  date        String? // Serbest metin: "12 Ekim 2026"
-  location    String?
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  slug         String   @unique // URL: /odul-torenleri/{slug}
+  title        String
+  description  String?
+  date         String? // Serbest metin: "12 Ekim 2026"
+  location     String?
+  translations Json? // { en: { title, description, date, location }, ru: {...} }
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   photos AwardPhoto[]
 
@@ -309,6 +314,7 @@ model LoyaltyTier {
   name            String
   minPoints       Int      @unique
   discountPercent Int
+  translations    Json? // { en: { name }, ru: { name } }
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import bus from "../lib/events.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
+import { localizeRecordItems } from "../utils/i18n.js";
 import {
   validateRequiredCustomerInfo,
   sanitizeNotes,
@@ -84,6 +85,7 @@ export const createOrder = async (req, res) => {
     data: {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
+      locale: req.locale, // mailler bu dilde gider
       ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
@@ -145,7 +147,9 @@ export const getMyOrders = async (req, res) => {
     orderBy: { createdAt: "desc" },
   });
 
-  res.json({ data: orders.map(formatOrderForResponse) });
+  // Paket adları istek dilinde
+  const localized = await localizeRecordItems(orders, req.locale);
+  res.json({ data: localized.map(formatOrderForResponse) });
 };
 
 export const getOrder = async (req, res) => {
@@ -161,8 +165,10 @@ export const getOrder = async (req, res) => {
 
   // account: "hesabını tamamla" kartı için. formatOrderForResponse alanları tek tek
   // yazdığı için user ilişkisi (şifre hash'i dahil) yanıta asla sızmaz.
+  // Paket adları istek dilinde (sipariş başarı sayfası)
+  const [shown] = await localizeRecordItems([order], req.locale);
   res.json({
-    ...formatOrderForResponse(order),
+    ...formatOrderForResponse(shown),
     account: { status: claimStatusFor(order), email: order.customerEmail },
   });
 };
@@ -207,7 +213,7 @@ export const updateOrder = async (req, res) => {
   // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.
   if (status === "DELIVERED" && existing.status !== "DELIVERED" && order.customerEmail) {
     issueSetPasswordTokenIfUnclaimed(order.userId)
-      .then((token) => sendDeliveryEmail(order.customerEmail, order.athleteName, token))
+      .then((token) => sendDeliveryEmail(order.customerEmail, order.athleteName, token, order.locale))
       .catch((err) => console.error("[mail] Teslimat maili hatası:", err));
   }
 

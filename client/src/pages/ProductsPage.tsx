@@ -1,16 +1,17 @@
+import { useTranslation } from "react-i18next";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { ProductCard } from "../components/Products";
 import { products } from "../data/products";
 
 const ProductsPage = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen">
       <SEO
-        title="Özel Ürünler"
-        description="RNG Sport kişiye özel sporcu figürü ve ışıklı cimnastik harfi. Sporcunun pozundan, isminden ve sporundan yola çıkılarak hazırlanan özel tasarım ürünler."
-        keywords="kişiye özel sporcu figürü, 3d cimnastikçi figür, ışıklı cimnastik harfi, ritmik cimnastik hediye"
-        url="https://rngsport.com/urunler"
+        title={t("pages.products.seoTitle")}
+        description={t("pages.products.seoDescription")}
+        keywords={t("pages.products.seoKeywords")}
       />
 
       {/* Hero */}
@@ -18,7 +19,7 @@ const ProductsPage = () => {
         <div className="absolute inset-0">
           <img
             src="/products/figur.jpeg"
-            alt="RNG Sport özel ürünler"
+            alt={t("pages.products.heroAlt")}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-linear-to-b from-black/85 via-black/75 to-black/65" />
@@ -36,13 +37,12 @@ const ProductsPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             <Reveal delay={0.1}>
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                <span className="text-gradient-brand">Özel Ürünler</span>
+                <span className="text-gradient-brand">{t("pages.products.title")}</span>
               </h1>
             </Reveal>
             <Reveal delay={0.2}>
               <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
-                Seri üretim bir dekorasyon ürünü değil; sporcunun kendisinden
-                yola çıkılarak kişiselleştirilen tasarımlar.
+                {t("pages.products.intro")}
               </p>
             </Reveal>
           </div>
@@ -67,8 +67,7 @@ const ProductsPage = () => {
 
           <Reveal delay={0.2}>
             <p className="text-center text-sm text-zinc-500 mt-10 max-w-xl mx-auto">
-              Ürünler henüz siparişe açılmadı. Satışa çıktığında haberdar olmak
-              için ürün sayfasından bize yazabilirsiniz.
+              {t("pages.products.notYet")}
             </p>
           </Reveal>
         </div>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import i18n from "../i18n";
 import { toast } from "react-toastify";
 
 export type PackageCategory = "photo" | "video" | "full";
@@ -87,7 +88,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       )
     );
 
-    toast.info("Ürün sepetten çıkarıldı!");
+    toast.info(i18n.t("pages.cartToast.removed"));
   };
 
   const updateQuantity = (packageId: string, seriesCount: 1 | 2 | 3, quantity: number) => {

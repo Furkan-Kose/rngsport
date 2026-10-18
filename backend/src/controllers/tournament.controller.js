@@ -1,21 +1,30 @@
 import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
+import { localize, sanitizeTranslations } from "../utils/i18n.js";
 
 const TOURNAMENT_NOT_FOUND = { notFound: "Turnuva bulunamadı" };
 const VALID_STATUSES = ["finished", "ongoing", "upcoming"];
+const TEXT_FIELDS = ["name", "date", "location", "flagAlt"];
+const TRANSLATION_FIELDS = { stringFields: TEXT_FIELDS };
 
-// Public: ana sayfa turnuva takvimi
+// Public: ana sayfa turnuva takvimi (admin listesi de bunu kullanır — Türkçe
+// istekte alanlar olduğu gibi döner, `translations` form için yanında gelir)
 export const getAllTournaments = async (req, res) => {
   const tournaments = await prisma.tournament.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
 
-  res.json(tournaments);
+  res.json(
+    tournaments.map((t) => ({
+      ...localize(t, req.locale, TEXT_FIELDS),
+      translations: t.translations ?? {},
+    }))
+  );
 };
 
 // Admin: yeni turnuva
 export const createTournament = async (req, res) => {
-  const { name, date, location, flag, flagAlt, status, sortOrder } = req.body;
+  const { name, date, location, flag, flagAlt, status, sortOrder, translations } = req.body;
 
   if (!name || !date || !location) {
     throw new AppError("Zorunlu alanlar eksik", 400);
@@ -33,6 +42,7 @@ export const createTournament = async (req, res) => {
       flagAlt: flagAlt || null,
       status: status || "upcoming",
       sortOrder: sortOrder || 0,
+      translations: sanitizeTranslations(translations, TRANSLATION_FIELDS) ?? {},
     },
   });
 
@@ -41,7 +51,7 @@ export const createTournament = async (req, res) => {
 
 // Admin: turnuva güncelle (kısmi)
 export const updateTournament = async (req, res) => {
-  const { name, date, location, flag, flagAlt, status, sortOrder } = req.body;
+  const { name, date, location, flag, flagAlt, status, sortOrder, translations } = req.body;
 
   if (status && !VALID_STATUSES.includes(status)) {
     throw new AppError("Geçersiz turnuva durumu", 400);
@@ -59,6 +69,9 @@ export const updateTournament = async (req, res) => {
         ...(flagAlt !== undefined && { flagAlt: flagAlt || null }),
         ...(status && { status }),
         ...(sortOrder !== undefined && { sortOrder }),
+        ...(translations !== undefined && {
+          translations: sanitizeTranslations(translations, TRANSLATION_FIELDS),
+        }),
       },
     })
     .catch(rethrowPrismaError(TOURNAMENT_NOT_FOUND));

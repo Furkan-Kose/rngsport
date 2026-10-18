@@ -8,9 +8,12 @@ interface TierForm {
   name: string;
   minPoints: number;
   discountPercent: number;
+  // Seviye adının çevirileri; boşsa sitede Türkçe ad görünür
+  nameEn: string;
+  nameRu: string;
 }
 
-const emptyForm: TierForm = { name: '', minPoints: 100, discountPercent: 5 };
+const emptyForm: TierForm = { name: '', minPoints: 100, discountPercent: 5, nameEn: '', nameRu: '' };
 
 const inputClass =
   'w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
@@ -42,17 +45,29 @@ const LoyaltyPage = () => {
 
   const startEdit = (tier: LoyaltyTier | null) => {
     setEditingId(tier ? tier.id : 'new');
-    setForm(tier ? { name: tier.name, minPoints: tier.minPoints, discountPercent: tier.discountPercent } : emptyForm);
+    setForm(
+      tier
+        ? {
+            name: tier.name,
+            minPoints: tier.minPoints,
+            discountPercent: tier.discountPercent,
+            nameEn: tier.translations?.en?.name ?? '',
+            nameRu: tier.translations?.ru?.name ?? '',
+          }
+        : emptyForm,
+    );
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    const { nameEn, nameRu, ...rest } = form;
+    const payload = { ...rest, translations: { en: { name: nameEn }, ru: { name: nameRu } } };
     try {
       if (editingId === 'new') {
-        await api.post('/api/loyalty/tiers', form);
+        await api.post('/api/loyalty/tiers', payload);
       } else {
-        await api.put(`/api/loyalty/tiers/${editingId}`, form);
+        await api.put(`/api/loyalty/tiers/${editingId}`, payload);
       }
       toast.success('Seviye kaydedildi');
       setEditingId(null);
@@ -127,6 +142,29 @@ const LoyaltyPage = () => {
                   onSubmit={handleSave}
                   className="bg-gray-800/70 border border-amber-500/40 rounded-2xl p-4 grid sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-end"
                 >
+                  {/* EN/RU ad — boşsa sitede Türkçe ad görünür */}
+                  <div className="sm:col-span-4 grid grid-cols-2 gap-3 order-last">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Seviye adı (İngilizce)</label>
+                      <input
+                        value={form.nameEn}
+                        onChange={(e) => setForm((f) => ({ ...f, nameEn: e.target.value }))}
+                        maxLength={50}
+                        placeholder={form.name || 'Platinum'}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Seviye adı (Rusça)</label>
+                      <input
+                        value={form.nameRu}
+                        onChange={(e) => setForm((f) => ({ ...f, nameRu: e.target.value }))}
+                        maxLength={50}
+                        placeholder={form.name || 'Платина'}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1">Seviye adı</label>
                     <input

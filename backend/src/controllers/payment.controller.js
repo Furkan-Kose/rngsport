@@ -5,8 +5,23 @@ import bus from "../lib/events.js";
 import { sendOrderPaidEmail } from "../lib/mail.js";
 import { issueSetPasswordTokenIfUnclaimed } from "../utils/customerAccount.js";
 import { distributeTotal, hasPointsForOrder, syncPointsForRecord } from "../utils/loyalty.js";
+import { normalizeLocale, translateMessage } from "../utils/i18n.js";
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
+
+// iyzico formu yalnızca TR/EN destekliyor; Rusça siparişte İngilizce form açılır
+const iyzicoLocale = (locale) =>
+  normalizeLocale(locale) === "tr" ? Iyzipay.LOCALE.TR : Iyzipay.LOCALE.EN;
+
+// Sonuç sayfası siparişin dilinde açılır (/en/siparis-basarili ...), hata metni de o dilde
+const resultUrl = (locale, path, { error, id } = {}) => {
+  const lang = normalizeLocale(locale);
+  const params = new URLSearchParams();
+  if (error) params.set("error", translateMessage(error, lang));
+  if (id) params.set("id", id);
+  const query = params.toString();
+  return `${FRONTEND_URL}${lang === "tr" ? "" : `/${lang}`}${path}${query ? `?${query}` : ""}`;
+};
 
 export const createCheckoutForm = async (req, res, next) => {
   try {
@@ -107,7 +122,7 @@ export const createCheckoutForm = async (req, res, next) => {
 
     // iyzico checkout form request
     const request = {
-      locale: Iyzipay.LOCALE.TR,
+      locale: iyzicoLocale(order.locale),
       conversationId: conversationId,
       price: order.totalPrice.toFixed(2),
       paidPrice: order.totalPrice.toFixed(2),
@@ -195,7 +210,7 @@ export const paymentCallback = async (req, res) => {
     if (!token || typeof token !== "string") {
       console.error("Token bulunamadı");
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent("Token bulunamadı")}`,
+        resultUrl("tr", "/siparis-basarisiz", { error: "Token bulunamadı" }),
       );
     }
 
@@ -204,7 +219,7 @@ export const paymentCallback = async (req, res) => {
     if (trimmedToken.length < 10 || trimmedToken.length > 200) {
       console.error("Geçersiz token formatı");
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent("Geçersiz token")}`,
+        resultUrl("tr", "/siparis-basarisiz", { error: "Geçersiz token" }),
       );
     }
 
@@ -226,7 +241,7 @@ export const paymentCallback = async (req, res) => {
     if (!orderId) {
       console.error("basketId bulunamadı");
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent("Sipariş bilgisi bulunamadı")}`,
+        resultUrl("tr", "/siparis-basarisiz", { error: "Sipariş bilgisi bulunamadı" }),
       );
     }
 
@@ -238,14 +253,14 @@ export const paymentCallback = async (req, res) => {
     if (!order) {
       console.error("Sipariş bulunamadı:", orderId);
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent("Sipariş bulunamadı")}&id=${encodeURIComponent(orderId)}`,
+        resultUrl("tr", "/siparis-basarisiz", { error: "Sipariş bulunamadı", id: orderId }),
       );
     }
 
     // Zaten ödendiyse tekrar güncelleme (idempotency)
     if (order.status === "PAID") {
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarili?id=${encodeURIComponent(order.id)}`,
+        resultUrl(order.locale, "/siparis-basarili", { id: order.id }),
       );
     }
 
@@ -259,7 +274,7 @@ export const paymentCallback = async (req, res) => {
         `ConversationId mismatch! Order: ${order.conversationId}, Result: ${result.conversationId}`,
       );
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent("Ödeme doğrulama hatası")}&id=${encodeURIComponent(order.id)}`,
+        resultUrl(order.locale, "/siparis-basarisiz", { error: "Ödeme doğrulama hatası", id: order.id }),
       );
     }
 
@@ -280,7 +295,7 @@ export const paymentCallback = async (req, res) => {
           },
         });
         return res.redirect(
-          `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent("Ödeme tutarı doğrulanamadı")}&id=${encodeURIComponent(order.id)}`,
+          resultUrl(order.locale, "/siparis-basarisiz", { error: "Ödeme tutarı doğrulanamadı", id: order.id }),
         );
       }
 
@@ -310,7 +325,7 @@ export const paymentCallback = async (req, res) => {
 
       console.log("Ödeme başarılı, yönlendiriliyor:", order.id);
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarili?id=${encodeURIComponent(order.id)}`,
+        resultUrl(order.locale, "/siparis-basarili", { id: order.id }),
       );
     } else {
       await prisma.order.update({
@@ -320,15 +335,16 @@ export const paymentCallback = async (req, res) => {
 
       console.error("Ödeme başarısız:", result.errorMessage);
       return res.redirect(
-        `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent(
-          result.errorMessage || "Ödeme işlemi başarısız oldu",
-        )}&id=${encodeURIComponent(order.id)}`,
+        resultUrl(order.locale, "/siparis-basarisiz", {
+          error: result.errorMessage || "Ödeme işlemi başarısız oldu",
+          id: order.id,
+        }),
       );
     }
   } catch (error) {
     console.error("Payment callback error:", error);
     return res.redirect(
-      `${FRONTEND_URL}/siparis-basarisiz?error=${encodeURIComponent("Bir hata oluştu")}`,
+      resultUrl("tr", "/siparis-basarisiz", { error: "Bir hata oluştu" }),
     );
   }
 };

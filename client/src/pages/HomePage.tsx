@@ -9,6 +9,8 @@ import HowItWorks from "../components/Process";
 import FAQ from "../components/FAQ";
 import SEO from "../components/SEO";
 import SectionDivider from "../components/ui/SectionDivider";
+import { useTranslation } from "react-i18next";
+
 
 // Sectionlar alternate: siyah (#000) ↔ zinc-950 (#09090b)
 // Tüm divider'lar aynı yön (no flip) — tutarlı çapraz akış
@@ -16,12 +18,12 @@ const BLACK = "#000000";
 const ZINC = "#09090b";
 
 const HomePage = () => {
+  const { t } = useTranslation();
   return (
     <div>
       <SEO
-        title="Ana Sayfa"
-        description="RNG Sport - Ritmik cimnastik başta olmak üzere spor yarışma ve turnuvaları için profesyonel fotoğraf, video ve dijital içerik üretimi sunan spor medya ajansı."
-        url="https://rngsport.com"
+        title={t("home.seo.title")}
+        description={t("home.seo.description")}
       />
       <Hero />
       <DiscountBanner />

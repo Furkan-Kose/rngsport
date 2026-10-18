@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../components/LocalizedLink";
 import { motion } from "framer-motion";
 import { ArrowLeft, Award, Calendar, FolderDown, Images, Loader2, MapPin } from "lucide-react";
 import { toast } from "react-toastify";
@@ -23,6 +25,7 @@ const AwardCeremonyDetailPage = () => {
   const [notFound, setNotFound] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const fetchPage = useCallback(
     async (page: number, append: boolean) => {
@@ -38,14 +41,14 @@ const AwardCeremonyDetailPage = () => {
           setNotFound(true);
         } else {
           console.error("Ödül töreni yüklenemedi:", error);
-          toast.error("Fotoğraflar yüklenirken bir hata oluştu");
+          toast.error(t("pages.media.loadError"));
         }
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
       }
     },
-    [slug]
+    [slug, t]
   );
 
   useEffect(() => {
@@ -74,7 +77,7 @@ const AwardCeremonyDetailPage = () => {
       triggerDownload(data.url, item.fileName);
     } catch (error) {
       console.error("İndirme hatası:", error);
-      toast.error("Fotoğraf indirilemedi");
+      toast.error(t("pages.media.downloadError"));
     } finally {
       setDownloadingId(null);
     }
@@ -85,24 +88,20 @@ const AwardCeremonyDetailPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
-        title={ceremony?.title || "Ödül Töreni"}
-        description={
-          ceremony?.description ||
-          "Ödül töreni fotoğraflarını görüntüleyin, tek tek veya toplu olarak indirin."
-        }
-        url={`https://rngsport.com/odul-torenleri/${slug}`}
+        title={ceremony?.title || t("pages.awards.detailFallbackTitle")}
+        description={ceremony?.description || t("pages.awards.detailDescription")}
       />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="container mx-auto px-4 relative z-10">
-        <Link
+        <LocalizedLink
           to="/odul-torenleri"
           className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-emerald-400 transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Tüm Ödül Törenleri
-        </Link>
+          {t("pages.awards.back")}
+        </LocalizedLink>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
@@ -111,8 +110,8 @@ const AwardCeremonyDetailPage = () => {
         ) : notFound || !ceremony ? (
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-12 text-center">
             <Award className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-            <h1 className="text-lg font-semibold text-white mb-2">Ödül töreni bulunamadı</h1>
-            <p className="text-sm text-zinc-500">Bağlantı hatalı olabilir veya tören kaldırılmış olabilir.</p>
+            <h1 className="text-lg font-semibold text-white mb-2">{t("pages.awards.notFoundTitle")}</h1>
+            <p className="text-sm text-zinc-500">{t("pages.awards.notFoundText")}</p>
           </div>
         ) : (
           <motion.div
@@ -141,7 +140,7 @@ const AwardCeremonyDetailPage = () => {
                         {ceremony.location}
                       </span>
                     )}
-                    {pagination && <span>{pagination.total} dosya</span>}
+                    {pagination && <span>{t("pages.media.files", { count: pagination.total })}</span>}
                   </div>
                   {ceremony.description && (
                     <p className="text-zinc-400 mt-3 max-w-2xl whitespace-pre-line">{ceremony.description}</p>
@@ -157,25 +156,25 @@ const AwardCeremonyDetailPage = () => {
                   {zip.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
                   {zip.progress
                   ? zip.progress.total
-                    ? `Hazırlanıyor ${zip.progress.done}/${zip.progress.total}`
-                    : "Hazırlanıyor..."
-                  : "Tümünü İndir (.zip)"}
+                    ? t("pages.media.preparingProgress", { done: zip.progress.done, total: zip.progress.total })
+                    : t("pages.media.preparing")
+                  : t("pages.media.downloadAll")}
                 </button>
               )}
             </div>
 
             {photos.length > 0 && isMobileDevice() && (
               <p className="text-xs text-zinc-500 mb-4">
-                📱 Telefonda fotoğraf ve videoları tek tek indirirseniz doğrudan galerinize kaydedilir. Zip dosyası telefonda &quot;Dosyalar&quot; uygulamasına iner.
+                {t("pages.media.mobileHint")}
               </p>
             )}
 
             {photos.length === 0 ? (
               <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-12 text-center">
                 <Images className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                <h2 className="text-lg font-semibold text-white mb-2">Fotoğraflar henüz yüklenmedi</h2>
+                <h2 className="text-lg font-semibold text-white mb-2">{t("pages.awards.noPhotosTitle")}</h2>
                 <p className="text-sm text-zinc-500 max-w-md mx-auto">
-                  Ödül töreni fotoğrafları yarışma günü içerisinde bu sayfaya yüklenecektir.
+                  {t("pages.awards.noPhotosText")}
                 </p>
               </div>
             ) : (
@@ -194,7 +193,7 @@ const AwardCeremonyDetailPage = () => {
                       className="px-6 py-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 font-medium transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
                     >
                       {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Daha Fazla Yükle
+                      {t("pages.media.loadMore")}
                     </button>
                   </div>
                 )}

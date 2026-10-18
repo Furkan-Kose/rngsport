@@ -258,8 +258,26 @@ export const sendSetPasswordLink = async (req, res) => {
     throw new AppError("Bağlantı oluşturulamadı, tekrar deneyin", 500);
   }
 
+  // Admin paneli Türkçe; mail müşterinin son rezervasyonunun/siparişinin dilinde gider
+  const [lastReservation, lastOrder] = await Promise.all([
+    prisma.reservation.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: { locale: true, createdAt: true },
+    }),
+    prisma.order.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: { locale: true, createdAt: true },
+    }),
+  ]);
+  const latest = [lastReservation, lastOrder]
+    .filter(Boolean)
+    .sort((a, b) => b.createdAt - a.createdAt)[0];
+
   sendPasswordResetEmail(user.email, user.name, token, {
     isFirstTime: !user.password,
+    locale: latest?.locale,
   });
 
   res.json({

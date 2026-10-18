@@ -1,5 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../../components/LocalizedLink";
+import { useLocalizedNavigate } from "../../lib/localePath";
 import { motion } from "framer-motion";
 import { LogIn, Mail, Lock } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -12,7 +15,8 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login, isAuthenticated, isAdmin, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "/profil";
 
@@ -33,7 +37,7 @@ const LoginPage = () => {
     if (result.success) {
       navigate(redirect, { replace: true });
     } else {
-      setError(result.message || "Giriş başarısız");
+      setError(result.message || t("auth.errors.loginFailed"));
       setIsSubmitting(false);
     }
   };
@@ -41,9 +45,9 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
-        title="Giriş Yap"
-        description="RNG Sport hesabınıza giriş yapın, fotoğraflarınıza ve rezervasyonlarınıza ulaşın."
-        keywords="rng sport giriş, hesap girişi"
+        title={t("auth.login.seoTitle")}
+        description={t("auth.login.seoDescription")}
+        keywords={t("auth.login.seoKeywords")}
       />
 
       {/* Dekoratif arka plan */}
@@ -60,9 +64,9 @@ const LoginPage = () => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-4">
               <LogIn className="w-7 h-7 text-emerald-400" />
             </div>
-            <h1 className="text-3xl font-bold text-gradient-brand">Giriş Yap</h1>
+            <h1 className="text-3xl font-bold text-gradient-brand">{t("auth.login.title")}</h1>
             <p className="text-zinc-500 text-sm mt-2">
-              Fotoğraflarınıza ve rezervasyonlarınıza ulaşın
+              {t("auth.login.subtitle")}
             </p>
           </div>
 
@@ -79,7 +83,7 @@ const LoginPage = () => {
               <div>
                 <label htmlFor="email" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <Mail className="w-4 h-4" />
-                  E-posta <span className="text-red-400">*</span>
+                  {t("auth.email")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="email"
@@ -87,7 +91,7 @@ const LoginPage = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                  placeholder="ornek@eposta.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   required
                 />
               </div>
@@ -95,7 +99,7 @@ const LoginPage = () => {
               <div>
                 <label htmlFor="password" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                   <Lock className="w-4 h-4" />
-                  Şifre <span className="text-red-400">*</span>
+                  {t("auth.password")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="password"
@@ -107,12 +111,12 @@ const LoginPage = () => {
                   required
                 />
                 <div className="text-right mt-2">
-                  <Link
+                  <LocalizedLink
                     to="/sifremi-unuttum"
                     className="text-sm text-zinc-500 hover:text-emerald-400 transition-colors"
                   >
-                    Şifremi unuttum
-                  </Link>
+                    {t("auth.login.forgot")}
+                  </LocalizedLink>
                 </div>
               </div>
 
@@ -121,18 +125,18 @@ const LoginPage = () => {
                 disabled={isSubmitting}
                 className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                {isSubmitting ? "Giriş yapılıyor..." : "Giriş Yap"}
+                {isSubmitting ? t("auth.login.submitting") : t("auth.login.submit")}
               </button>
             </form>
 
             <p className="text-center text-sm text-zinc-500 mt-6">
-              Hesabınız yok mu?{" "}
-              <Link
+              {t("auth.login.noAccount")}{" "}
+              <LocalizedLink
                 to={`/kayit${redirect !== "/profil" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
                 className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
               >
-                Kayıt Olun
-              </Link>
+                {t("auth.login.register")}
+              </LocalizedLink>
             </p>
           </div>
         </motion.div>

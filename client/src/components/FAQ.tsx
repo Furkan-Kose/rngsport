@@ -1,61 +1,22 @@
 import { useState } from "react";
 import { ChevronDown, HelpCircle, MessageCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
 
-const faqs = [
-  {
-    question: "Rezervasyonumu ne zaman yapmalıyım?",
-    answer:
-      "Çekim planlamamızın eksiksiz yapılabilmesi için web sitemiz üzerinden ön rezervasyon yapmanızı öneriyoruz. Yarışma günü alandaki standımızdan da kayıt kabul edilmektedir; ancak öncelik rezervasyonlu sporcularımızdadır.",
-  },
-  {
-    question: "Ödeme işlemini nasıl gerçekleştireceğim?",
-    answer:
-      "Web sitemiz üzerinden paketinizi seçip ön kaydınızı oluşturduktan sonra, ödemenizi yarışma günü alandaki standımızda (Nakit veya Kredi Kartı ile) tamamlayabilirsiniz. Ödemesi tamamlanan kayıtlar çekim listesine alınır.",
-  },
-  {
-    question: "Sadece fotoğraf mı, yoksa video çekimi de yapıyor musunuz?",
-    answer:
-      "Evet, hem fotoğraf hem de video hizmetimiz mevcuttur. Dilerseniz sadece fotoğraf, sadece video veya her ikisini kapsayan avantajlı paketlerimizi tercih edebilirsiniz.",
-  },
-  {
-    question: "Çocuğumun çekildiğinden nasıl emin olabilirim?",
-    answer:
-      "Rezervasyon yaptıran sporcularımız, yarışma esame (başlangıç) listesi üzerinden takip edilir. Profesyonel ekibimiz, rezervasyonlu sporcunun sırası geldiğinde hazır bulunur ve performansı baştan sona kayıt altına alır.",
-  },
-  {
-    question:
-      "Teknik bir sorun olursa veya fotoğrafları beğenmezsem iade yapıyor musunuz?",
-    answer:
-      "Müşteri memnuniyeti esastır. Eğer bizden kaynaklı teknik bir hata (odak kaybı, veri bozulması vb.) nedeniyle performansınız görüntülenemezse, %100 ücret iadesi garantisi veriyoruz.",
-  },
-  {
-    question:
-      "Sadece dijital teslim mi yapıyorsunuz, albüm veya çerçeve seçeneği var mı?",
-    answer:
-      "Standart teslimatımız en hızlı ulaşım için dijitaldir. Ancak talep edilmesi durumunda; özel tasarım poster, kanvas tablo veya anı albümü gibi baskılı ürünler için yarışma sonrası ekibimizle iletişime geçebilirsiniz.",
-  },
-  {
-    question: "Hesap oluşturmam gerekiyor mu?",
-    answer:
-      "Evet. Rezervasyon sırasında oluşturduğun hesap sayesinde siparişlerini takip edebilir, içeriklerin hazır olduğunda kişisel galerine ulaşabilir ve sonraki yarışmalarda hesabına giriş yaparak bilgilerini tekrar girmeden daha hızlı rezervasyon oluşturabilirsin.",
-  },
-  {
-    question: "Rezervasyonu yarışmadan önce yapmak zorunda mıyım?",
-    answer:
-      "Önceden rezervasyon yapmanı öneriyoruz. Böylece sporcunun bilgileri çekim ekibimize önceden ulaşır ve süreç yarışma günü daha hızlı ilerler.",
-  },
-  {
-    question: "Rezervasyonumu güncelleyebilir miyim?",
-    answer:
-      "Evet. Kullanıcı paneline giriş yaparak mevcut rezervasyon bilgilerini görüntüleyebilir ve gerekli güncellemeleri kolayca yapabilirsin.",
-  },
-];
+interface FaqItem {
+  q: string;
+  a: string;
+}
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const { t } = useTranslation();
+  const faqs = (t("home.faq.items", { returnObjects: true }) as FaqItem[]).map((item) => ({
+    question: item.q,
+    answer: item.a,
+  }));
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -65,10 +26,10 @@ const FAQ = () => {
     <section id="sss" className="relative py-24 bg-black">
       <div className="container mx-auto px-4 relative z-10">
         <SectionHeader
-          eyebrow="Yardım"
+          eyebrow={t("home.faq.eyebrow")}
           icon={HelpCircle}
-          title="Sık Sorulan Sorular"
-          description="Merak ettiğiniz soruların cevapları"
+          title={t("home.faq.title")}
+          description={t("home.faq.description")}
           className="mb-16"
         />
 
@@ -145,13 +106,11 @@ const FAQ = () => {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-4">
               <MessageCircle className="w-4 h-4 text-emerald-400" />
               <span className="text-sm text-emerald-300 font-medium">
-                Hâlâ sorunuz var mı?
+                {t("home.faq.stillQuestions")}
               </span>
             </div>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              "Aradığınız cevabı bulamadınız mı?" "WhatsApp destek hattımızdan
-              veya yarışma günü danışma masamızdan bize anında ulaşabilirsiniz.
-              Size yardımcı olmaktan mutluluk duyarız."
+              {t("home.faq.contactText")}
             </p>
           </div>
         </Reveal>

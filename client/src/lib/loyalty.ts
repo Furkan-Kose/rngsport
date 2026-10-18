@@ -1,3 +1,5 @@
+import { currentLocaleTag } from "./format";
+
 // Sadakat sistemi — /api/loyalty yanıt tipleri ve istemci tarafı gösterim hesapları.
 // Fiyat ve puanın asıl kaynağı her zaman backend'dir (utils/loyalty.js); buradaki
 // hesap yalnızca formda kullanıcıya önizleme göstermek için.
@@ -7,6 +9,8 @@ export interface LoyaltyTier {
   name: string;
   minPoints: number;
   discountPercent: number;
+  /** EN/RU ad (admin formu için; public yanıtta name zaten çevrili) */
+  translations?: Partial<Record<"en" | "ru", { name?: string }>>;
 }
 
 export interface PointTransaction {
@@ -48,4 +52,4 @@ export const POINT_TYPE_LABELS: Record<PointTransaction["type"], string> = {
 };
 
 export const formatTL = (value: number) =>
-  `₺${value.toLocaleString("tr-TR", { maximumFractionDigits: 2 })}`;
+  `₺${value.toLocaleString(currentLocaleTag(), { maximumFractionDigits: 2 })}`;

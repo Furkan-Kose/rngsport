@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, X, Loader2, Trophy, Save, MapPin, Calendar } from 'lucide-react';
 import api from '../../lib/api';
+import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
+
 
 interface Tournament {
   id: string;
@@ -11,6 +13,7 @@ interface Tournament {
   flagAlt: string | null;
   status: string;
   sortOrder: number;
+  translations?: Translations;
 }
 
 interface TournamentFormData {
@@ -20,6 +23,7 @@ interface TournamentFormData {
   flag: string; // '' = bayrak yok
   status: string;
   sortOrder: number;
+  translations: Translations;
 }
 
 const initialFormData: TournamentFormData = {
@@ -29,6 +33,7 @@ const initialFormData: TournamentFormData = {
   flag: '/flags/tr.svg',
   status: 'upcoming',
   sortOrder: 0,
+  translations: {},
 };
 
 // Bayrak seçenekleri: value → flagAlt eşlemesi
@@ -102,6 +107,7 @@ const TournamentsPage = () => {
       flag: tournament.flag || '',
       status: tournament.status,
       sortOrder: tournament.sortOrder,
+      translations: tournament.translations ?? {},
     });
     setEditingId(tournament.id);
     setError('');
@@ -129,6 +135,7 @@ const TournamentsPage = () => {
       flagAlt: flagOption?.alt || null,
       status: formData.status,
       sortOrder: formData.sortOrder,
+      translations: formData.translations,
     };
 
     try {
@@ -354,6 +361,17 @@ const TournamentsPage = () => {
                   />
                 </div>
               </div>
+
+              {/* EN/RU çevirileri — boş alan sitede Türkçe görünür */}
+              <TranslationFields
+                fields={[
+                  { key: 'name', label: 'Turnuva Adı', source: formData.name },
+                  { key: 'date', label: 'Tarih', source: formData.date },
+                  { key: 'location', label: 'Konum', source: formData.location },
+                ]}
+                value={formData.translations}
+                onChange={(translations) => setFormData((prev) => ({ ...prev, translations }))}
+              />
 
               <div className="flex gap-3 pt-2">
                 <button

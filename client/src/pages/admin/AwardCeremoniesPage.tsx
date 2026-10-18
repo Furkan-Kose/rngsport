@@ -5,6 +5,8 @@ import {
   Plus, Pencil, Trash2, X, Loader2, Award, Save, MapPin, Calendar, Images, ExternalLink,
 } from 'lucide-react';
 import api from '../../lib/api';
+import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
+
 import { AWARD_FALLBACK_IMAGE, type AwardCeremonySummary } from '../../lib/awardCeremonies';
 
 interface CeremonyFormData {
@@ -13,6 +15,7 @@ interface CeremonyFormData {
   date: string;
   location: string;
   sortOrder: number;
+  translations: Translations;
 }
 
 const initialFormData: CeremonyFormData = {
@@ -21,6 +24,7 @@ const initialFormData: CeremonyFormData = {
   date: '',
   location: '',
   sortOrder: 0,
+  translations: {},
 };
 
 const inputClass =
@@ -65,6 +69,7 @@ const AwardCeremoniesPage = () => {
       date: ceremony.date || '',
       location: ceremony.location || '',
       sortOrder: ceremony.sortOrder,
+      translations: ceremony.translations ?? {},
     });
     setEditingId(ceremony.id);
     setError('');
@@ -328,6 +333,18 @@ const AwardCeremoniesPage = () => {
                   />
                 </div>
               </div>
+
+              {/* EN/RU çevirileri — boş alan sitede Türkçe görünür */}
+              <TranslationFields
+                fields={[
+                  { key: 'title', label: 'Tören Adı', source: formData.title },
+                  { key: 'description', label: 'Açıklama', multiline: true, source: formData.description },
+                  { key: 'date', label: 'Tarih', source: formData.date },
+                  { key: 'location', label: 'Konum', source: formData.location },
+                ]}
+                value={formData.translations}
+                onChange={(translations) => setFormData((p) => ({ ...p, translations }))}
+              />
 
               <div className="flex gap-3 pt-2">
                 <button

@@ -1,5 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../../components/LocalizedLink";
+import { useLocalizedNavigate } from "../../lib/localePath";
 import { motion } from "framer-motion";
 import { UserPlus, Mail, Lock, Phone, User, Building2, CalendarDays } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -22,7 +25,8 @@ const RegisterPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register, isAuthenticated, isAdmin, isLoading } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get("redirect") || "/profil";
 
@@ -41,11 +45,11 @@ const RegisterPage = () => {
     setError("");
 
     if (form.password.length < 8) {
-      setError("Şifre en az 8 karakter olmalı");
+      setError(t("auth.errors.passwordLength"));
       return;
     }
     if (form.password !== form.passwordConfirm) {
-      setError("Şifreler eşleşmiyor");
+      setError(t("auth.errors.passwordMismatch"));
       return;
     }
 
@@ -63,7 +67,7 @@ const RegisterPage = () => {
     if (result.success) {
       navigate(redirect, { replace: true });
     } else {
-      setError(result.message || "Kayıt başarısız");
+      setError(result.message || t("auth.errors.registerFailed"));
       setIsSubmitting(false);
     }
   };
@@ -75,9 +79,9 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
-        title="Kayıt Ol"
-        description="RNG Sport hesabı oluşturun; çekim fotoğraflarınız hesabınıza tanımlansın."
-        keywords="rng sport kayıt, hesap oluştur"
+        title={t("auth.register.seoTitle")}
+        description={t("auth.register.seoDescription")}
+        keywords={t("auth.register.seoKeywords")}
       />
 
       {/* Dekoratif arka plan */}
@@ -94,9 +98,9 @@ const RegisterPage = () => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-4">
               <UserPlus className="w-7 h-7 text-emerald-400" />
             </div>
-            <h1 className="text-3xl font-bold text-gradient-brand">Kayıt Ol</h1>
+            <h1 className="text-3xl font-bold text-gradient-brand">{t("auth.register.title")}</h1>
             <p className="text-zinc-500 text-sm mt-2">
-              Sporcu bilgilerinizi bir kez girin, rezervasyonda hazır gelsin
+              {t("auth.register.subtitle")}
             </p>
           </div>
 
@@ -113,7 +117,7 @@ const RegisterPage = () => {
               <div>
                 <label htmlFor="name" className={labelClass}>
                   <User className="w-4 h-4" />
-                  Sporcu Adı Soyadı <span className="text-red-400">*</span>
+                  {t("auth.register.athleteName")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -121,20 +125,19 @@ const RegisterPage = () => {
                   value={form.name}
                   onChange={(e) => updateForm("name", e.target.value)}
                   className={inputClass}
-                  placeholder="Sporcunun adı soyadı"
+                  placeholder={t("auth.register.athleteNamePlaceholder")}
                   required
                   minLength={2}
                 />
                 <p className="text-xs text-zinc-600 mt-1.5">
-                  Çekim listesi eşleşmesi bu isimle yapılır; yarışma kaydındaki yazımla
-                  aynı olmasına dikkat edin.
+                  {t("auth.register.athleteNameHint")}
                 </p>
               </div>
 
               <div>
                 <label htmlFor="clubName" className={labelClass}>
                   <Building2 className="w-4 h-4" />
-                  Kulüp <span className="text-red-400">*</span>
+                  {t("auth.register.club")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -142,7 +145,7 @@ const RegisterPage = () => {
                   value={form.clubName}
                   onChange={(e) => updateForm("clubName", e.target.value)}
                   className={inputClass}
-                  placeholder="Kulüp adı"
+                  placeholder={t("auth.register.clubPlaceholder")}
                   required
                   minLength={2}
                 />
@@ -151,7 +154,7 @@ const RegisterPage = () => {
               <div>
                 <label htmlFor="birthYear" className={labelClass}>
                   <CalendarDays className="w-4 h-4" />
-                  Doğum Yılı <span className="text-red-400">*</span>
+                  {t("auth.register.birthYear")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -167,7 +170,7 @@ const RegisterPage = () => {
               <div>
                 <label htmlFor="phone" className={labelClass}>
                   <Phone className="w-4 h-4" />
-                  Telefon <span className="text-red-400">*</span>
+                  {t("auth.register.phone")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="tel"
@@ -175,7 +178,7 @@ const RegisterPage = () => {
                   value={form.phone}
                   onChange={(e) => updateForm("phone", e.target.value)}
                   className={inputClass}
-                  placeholder="05xx xxx xx xx"
+                  placeholder={t("auth.register.phonePlaceholder")}
                   required
                 />
               </div>
@@ -183,7 +186,7 @@ const RegisterPage = () => {
               <div>
                 <label htmlFor="email" className={labelClass}>
                   <Mail className="w-4 h-4" />
-                  E-posta <span className="text-red-400">*</span>
+                  {t("auth.email")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="email"
@@ -191,7 +194,7 @@ const RegisterPage = () => {
                   value={form.email}
                   onChange={(e) => updateForm("email", e.target.value)}
                   className={inputClass}
-                  placeholder="ornek@eposta.com"
+                  placeholder={t("auth.emailPlaceholder")}
                   required
                 />
               </div>
@@ -199,7 +202,7 @@ const RegisterPage = () => {
               <div>
                 <label htmlFor="password" className={labelClass}>
                   <Lock className="w-4 h-4" />
-                  Şifre <span className="text-red-400">*</span>
+                  {t("auth.password")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="password"
@@ -207,7 +210,7 @@ const RegisterPage = () => {
                   value={form.password}
                   onChange={(e) => updateForm("password", e.target.value)}
                   className={inputClass}
-                  placeholder="En az 8 karakter"
+                  placeholder={t("auth.passwordPlaceholder")}
                   required
                   minLength={8}
                 />
@@ -216,7 +219,7 @@ const RegisterPage = () => {
               <div>
                 <label htmlFor="passwordConfirm" className={labelClass}>
                   <Lock className="w-4 h-4" />
-                  Şifre Tekrar <span className="text-red-400">*</span>
+                  {t("auth.passwordConfirm")} <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="password"
@@ -238,16 +241,15 @@ const RegisterPage = () => {
                   className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
                 />
                 <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                  <Link
+                  <LocalizedLink
                     to="/kvkk-aydinlatma-metni"
                     target="_blank"
                     className="text-emerald-400 hover:text-emerald-300 underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)
-                    kapsamında hazırlanan [Aydınlatma Metni]
-                  </Link>
-                  'ni okudum ve kabul ediyorum.{" "}
+                    {t("checkout.form.kvkkLink")}
+                  </LocalizedLink>
+                  {t("checkout.form.kvkkSuffix")}{" "}
                   <span className="text-red-400">*</span>
                 </span>
               </label>
@@ -257,18 +259,18 @@ const RegisterPage = () => {
                 disabled={isSubmitting || !kvkkAccepted}
                 className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25 transition-all duration-300 flex items-center justify-center gap-2"
               >
-                {isSubmitting ? "Kayıt yapılıyor..." : "Kayıt Ol"}
+                {isSubmitting ? t("auth.register.submitting") : t("auth.register.submit")}
               </button>
             </form>
 
             <p className="text-center text-sm text-zinc-500 mt-6">
-              Zaten hesabınız var mı?{" "}
-              <Link
+              {t("auth.register.hasAccount")}{" "}
+              <LocalizedLink
                 to={`/giris${redirect !== "/profil" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
                 className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
               >
-                Giriş Yapın
-              </Link>
+                {t("auth.register.login")}
+              </LocalizedLink>
             </p>
           </div>
         </motion.div>

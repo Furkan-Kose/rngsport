@@ -2,14 +2,22 @@ import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { ROLES } from "../utils/roles.js";
 import { POINT_TYPES, getBalance, getTierInfo } from "../utils/loyalty.js";
+import { localize, sanitizeTranslations } from "../utils/i18n.js";
 
 const TIER_NOT_FOUND = { notFound: "Seviye bulunamadı" };
 
-const formatTier = (t) =>
-  t && { id: t.id, name: t.name, minPoints: t.minPoints, discountPercent: t.discountPercent };
+// locale verilirse ad o dile çevrilir; translations admin formu için hep gelir
+const formatTier = (t, locale) =>
+  t && {
+    id: t.id,
+    name: localize(t, locale, ["name"]).name,
+    minPoints: t.minPoints,
+    discountPercent: t.discountPercent,
+    translations: t.translations ?? {},
+  };
 
 // Bir kullanıcının puan özeti + son hareketleri (müşteri profili ve admin ortak)
-const loyaltySummary = async (userId) => {
+const loyaltySummary = async (userId, locale) => {
   const balance = await getBalance(userId);
   const [{ tier, nextTier, pointsToNext }, transactions] = await Promise.all([
     getTierInfo(balance),
@@ -22,14 +30,14 @@ const loyaltySummary = async (userId) => {
   ]);
   return {
     balance,
-    tier: formatTier(tier),
-    nextTier: formatTier(nextTier),
+    tier: formatTier(tier, locale),
+    nextTier: formatTier(nextTier, locale),
     pointsToNext,
     transactions,
   };
 };
 
-const validateTierInput = ({ name, minPoints, discountPercent }) => {
+const validateTierInput = ({ name, minPoints, discountPercent, translations }) => {
   const cleanName = name ? String(name).trim().slice(0, 50) : "";
   const min = Math.round(Number(minPoints));
   const percent = Math.round(Number(discountPercent));
@@ -38,18 +46,25 @@ const validateTierInput = ({ name, minPoints, discountPercent }) => {
   if (!Number.isFinite(percent) || percent < 1 || percent > 90) {
     throw new AppError("İndirim %1 ile %90 arasında olmalı", 400);
   }
-  return { name: cleanName, minPoints: min, discountPercent: percent };
+  return {
+    name: cleanName,
+    minPoints: min,
+    discountPercent: percent,
+    ...(translations !== undefined && {
+      translations: sanitizeTranslations(translations, { stringFields: ["name"] }),
+    }),
+  };
 };
 
 // Public: seviye tablosu
 export const getTiers = async (req, res) => {
   const tiers = await prisma.loyaltyTier.findMany({ orderBy: { minPoints: "asc" } });
-  res.json(tiers.map(formatTier));
+  res.json(tiers.map((t) => formatTier(t, req.locale)));
 };
 
 // Müşteri: kendi puanı
 export const getMyLoyalty = async (req, res) => {
-  res.json(await loyaltySummary(req.user.id));
+  res.json(await loyaltySummary(req.user.id, req.locale));
 };
 
 // Admin: seviye ekle / güncelle / sil

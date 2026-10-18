@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import bus from "../lib/events.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
+import { localizeRecordItems } from "../utils/i18n.js";
 import {
   validateRequiredCustomerInfo,
   buildPartialCustomerUpdate,
@@ -156,6 +157,9 @@ export const getReservation = async (req, res) => {
     throw new AppError("Rezervasyon bulunamadı", 404);
   }
 
+  // Paket adları istek dilinde
+  const [shown] = await localizeRecordItems([reservation], req.locale);
+
   res.json({
     id: reservation.id,
     athleteName: reservation.athleteName,
@@ -170,7 +174,7 @@ export const getReservation = async (req, res) => {
     totalPrice: reservation.totalPrice,
     status: reservation.status,
     createdAt: reservation.createdAt,
-    items: reservation.items.map((item) => ({
+    items: shown.items.map((item) => ({
       package: {
         id: item.packageId,
         name: item.packageName,
@@ -218,6 +222,7 @@ export const createReservation = async (req, res) => {
     data: {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
+      locale: req.locale, // mailler bu dilde gider
       ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
@@ -263,8 +268,11 @@ export const getMyReservations = async (req, res) => {
     orderBy: { createdAt: "desc" },
   });
 
+  // Paket adları istek dilinde
+  const localized = await localizeRecordItems(reservations, req.locale);
+
   res.json({
-    data: reservations.map((r) => ({
+    data: localized.map((r) => ({
       id: r.id,
       athleteName: r.athleteName,
       clubName: r.clubName,
@@ -379,7 +387,7 @@ export const updateReservation = async (req, res) => {
     if (status === "DELIVERED" && existing.status !== "DELIVERED" && reservation.customerEmail) {
       issueSetPasswordTokenIfUnclaimed(reservation.userId)
         .then((token) =>
-          sendDeliveryEmail(reservation.customerEmail, reservation.athleteName, token)
+          sendDeliveryEmail(reservation.customerEmail, reservation.athleteName, token, reservation.locale)
         )
         .catch((err) => console.error("[mail] Teslimat maili hatası:", err));
     }

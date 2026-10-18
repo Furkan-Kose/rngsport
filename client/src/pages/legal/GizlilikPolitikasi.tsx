@@ -8,14 +8,20 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import SEO from "../../components/SEO";
+import LegalDocument from "../../components/LegalDocument";
+import { LEGAL_DOCS } from "../../data/legal";
+import { useLang } from "../../lib/localePath";
 
 const GizlilikPolitikasi = () => {
+  // Türkçe metin asıl ve bağlayıcı; diğer dillerde bilgi amaçlı çeviri gösterilir
+  const lang = useLang();
+  if (lang !== "tr") return <LegalDocument doc={LEGAL_DOCS[lang].privacy} lang={lang} />;
+
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-950 via-gray-900 to-gray-950">
       <SEO
         title="Gizlilik Politikası"
         description="RNG Sport gizlilik politikası. Kişisel verilerinizin nasıl toplandığı, kullanıldığı ve korunduğu hakkında bilgi."
-        url="https://rngsport.com/gizlilik-politikasi"
       />
       {/* Header */}
       <div className="bg-black/30 backdrop-blur-xl border-b border-white/10">

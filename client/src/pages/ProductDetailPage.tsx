@@ -1,35 +1,39 @@
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../components/LocalizedLink";
 import { ArrowLeft, Check, MessageCircle, PackageX } from "lucide-react";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { ComingSoonBadge } from "../components/Products";
-import { getProduct, notifyMeUrl } from "../data/products";
+import { getProduct, localizeProduct, notifyMeUrlFor } from "../data/products";
 
 const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProduct(slug);
+  const { t, i18n } = useTranslation();
+  const found = getProduct(slug);
+  const product = found && localizeProduct(found, i18n.language);
 
   // Router'da 404 rotası yok; bilinmeyen slug'ı burada karşılıyoruz
   if (!product) {
     return (
       <div className="min-h-screen bg-zinc-950 pt-32 pb-20">
-        <SEO title="Ürün bulunamadı" url="https://rngsport.com/urunler" />
+        <SEO title={t("pages.products.notFoundTitle")} />
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto text-center bg-zinc-900/60 border border-zinc-800 rounded-2xl p-10">
             <PackageX className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
             <h1 className="text-xl font-semibold text-white mb-2">
-              Ürün bulunamadı
+              {t("pages.products.notFoundTitle")}
             </h1>
             <p className="text-zinc-400 mb-6">
-              Aradığınız ürün kaldırılmış ya da adresi değişmiş olabilir.
+              {t("pages.products.notFoundText")}
             </p>
-            <Link
+            <LocalizedLink
               to="/urunler"
               className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Tüm ürünlere dön
-            </Link>
+              {t("pages.products.backAll")}
+            </LocalizedLink>
           </div>
         </div>
       </div>
@@ -41,19 +45,18 @@ const ProductDetailPage = () => {
       <SEO
         title={product.name}
         description={`${product.tagline} ${product.cardSummary}`}
-        keywords="kişiye özel sporcu figürü, ışıklı cimnastik harfi, ritmik cimnastik hediye, rng sport"
+        keywords={t("pages.products.seoKeywords")}
         image={product.image}
-        url={`https://rngsport.com/urunler/${product.slug}`}
       />
 
       <div className="container mx-auto px-4">
-        <Link
+        <LocalizedLink
           to="/urunler"
           className="inline-flex items-center gap-2 text-zinc-400 hover:text-emerald-400 text-sm mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Tüm ürünler
-        </Link>
+          {t("pages.products.allProducts")}
+        </LocalizedLink>
 
         <div className="max-w-5xl mx-auto">
           {/* Üst blok: görsel + başlık */}
@@ -150,19 +153,19 @@ const ProductDetailPage = () => {
               <div className="absolute inset-0 border-glow-shimmer opacity-60" />
               <div className="relative bg-linear-to-r from-emerald-900/40 to-teal-900/40 backdrop-blur-xl rounded-3xl p-8 md:p-12 text-center">
                 <p className="text-emerald-300 text-sm font-semibold uppercase tracking-[0.18em] mb-3">
-                  Çok Yakında
+                  {t("pages.products.comingSoon")}
                 </p>
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
                   {product.comingSoonNote}
                 </h2>
                 <a
-                  href={notifyMeUrl(product.name)}
+                  href={notifyMeUrlFor(product.name, i18n.language)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  Satışa Çıkınca Haber Ver
+                  {t("pages.products.notifyMe")}
                 </a>
               </div>
             </div>

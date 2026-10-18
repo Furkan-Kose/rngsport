@@ -1,15 +1,21 @@
 import { XCircle, ArrowLeft, RefreshCw, Phone } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../components/LocalizedLink";
 import { motion } from "framer-motion";
 import Reveal from "../components/ui/Reveal";
+import SEO from "../components/SEO";
 
 const OrderFailedPage = () => {
   const [searchParams] = useSearchParams();
-  const error = searchParams.get("error") || "Ödeme işlemi tamamlanamadı";
+  const { t } = useTranslation();
+  // Sunucu hata metnini siparişin dilinde adrese koyar
+  const error = searchParams.get("error") || t("pages.orderFailed.defaultError");
   const orderId = searchParams.get("id");
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
+      <SEO title={t("pages.orderFailed.title")} />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[32rem] h-[32rem] bg-red-600/[0.07] rounded-full blur-3xl" />
       </div>
@@ -29,7 +35,7 @@ const OrderFailedPage = () => {
 
         <Reveal delay={0.15}>
           <h1 className="text-3xl font-bold text-white mb-3">
-            Ödeme Başarısız
+            {t("pages.orderFailed.title")}
           </h1>
         </Reveal>
 
@@ -41,41 +47,39 @@ const OrderFailedPage = () => {
 
         <Reveal delay={0.3}>
           <p className="text-zinc-400 mb-8">
-            Ödeme işleminiz tamamlanamadı. Kartınızdan herhangi bir tutar
-            çekilmemiştir. Lütfen tekrar deneyin veya farklı bir ödeme yöntemi
-            kullanın.
+            {t("pages.orderFailed.text")}
           </p>
         </Reveal>
 
         {orderId && (
           <p className="text-zinc-500 text-sm mb-6">
-            Sipariş Referans:{" "}
+            {t("pages.orderFailed.reference")}{" "}
             <span className="text-zinc-400 font-mono">{orderId}</span>
           </p>
         )}
 
         <Reveal delay={0.4}>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
+            <LocalizedLink
               to="/sepet"
               className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5"
             >
               <RefreshCw className="w-5 h-5" />
-              Tekrar Dene
-            </Link>
-            <Link
+              {t("pages.orderFailed.retry")}
+            </LocalizedLink>
+            <LocalizedLink
               to="/"
               className="flex items-center justify-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-emerald-500/40 text-white rounded-xl font-medium transition-all"
             >
               <ArrowLeft className="w-5 h-5" />
-              Ana Sayfa
-            </Link>
+              {t("pages.orderFailed.home")}
+            </LocalizedLink>
           </div>
         </Reveal>
 
         <Reveal delay={0.5}>
           <div className="mt-10 pt-6 border-t border-zinc-800">
-            <p className="text-zinc-500 text-sm mb-3">Sorun devam ederse</p>
+            <p className="text-zinc-500 text-sm mb-3">{t("pages.orderFailed.stillProblem")}</p>
             <a
               href="tel:+905398444521"
               className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
@@ -88,24 +92,14 @@ const OrderFailedPage = () => {
 
         <Reveal delay={0.55}>
           <div className="mt-8 text-left bg-zinc-900/60 rounded-xl p-5 border border-zinc-800">
-            <h3 className="text-white font-semibold mb-3">Olası Nedenler</h3>
+            <h3 className="text-white font-semibold mb-3">{t("pages.orderFailed.reasonsTitle")}</h3>
             <ul className="space-y-2 text-sm text-zinc-400">
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-500/70">•</span>
-                Kart limiti yetersiz olabilir
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-500/70">•</span>
-                Online alışveriş kapalı olabilir
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-500/70">•</span>
-                3D Secure doğrulaması başarısız olmuş olabilir
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-500/70">•</span>
-                Kart bilgileri hatalı girilmiş olabilir
-              </li>
+              {(t("pages.orderFailed.reasons", { returnObjects: true }) as string[]).map((reason) => (
+                <li key={reason} className="flex items-start gap-2">
+                  <span className="text-emerald-500/70">•</span>
+                  {reason}
+                </li>
+              ))}
             </ul>
           </div>
         </Reveal>

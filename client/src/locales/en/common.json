@@ -1,0 +1,84 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About Us",
+    "gallery": "Gallery",
+    "awards": "Award Ceremonies",
+    "products": "Products",
+    "packages": "Packages",
+    "reserve": "Book Now",
+    "login": "Sign In",
+    "account": "My Account",
+    "adminPanel": "Admin Panel",
+    "myPhotos": "My Photos",
+    "cart": "Cart",
+    "menu": "Menu",
+    "language": "Language"
+  },
+  "footer": {
+    "about": "RNG Sport provides photo and video production for sports events, with a focus on rhythmic gymnastics.",
+    "quickLinks": "Quick Links",
+    "contact": "Contact",
+    "location": "Istanbul, Türkiye",
+    "securePayment": "Secure Payment",
+    "paymentLogosAlt": "Payment methods - iyzico, Visa, Mastercard",
+    "copyright": "© 2026 Range Media. All rights reserved.",
+    "email": "Email",
+    "phone": "Phone"
+  },
+  "legalLinks": {
+    "privacy": "Privacy Policy",
+    "kvkk": "Personal Data Notice (KVKK)",
+    "distanceSales": "Distance Sales Agreement",
+    "refund": "Cancellation & Refund Policy"
+  },
+  "whatsapp": {
+    "message": "Hello, I would like to get some information.",
+    "label": "Contact Us",
+    "aria": "Contact us on WhatsApp"
+  },
+  "langBanner": {
+    "text": "This page is also available in English.",
+    "switch": "English",
+    "dismiss": "Close"
+  },
+  "apparatus": {
+    "top": "Ball",
+    "labut": "Clubs",
+    "ip": "Rope",
+    "kurdele": "Ribbon",
+    "cember": "Hoop",
+    "serbest": "Free (no apparatus)"
+  },
+  "category": {
+    "photo": "Photo",
+    "video": "Video",
+    "full": "Complete"
+  },
+  "status": {
+    "PENDING": "Pending",
+    "CONFIRMED": "Confirmed",
+    "PAID": "Paid",
+    "FAILED": "Failed",
+    "CANCELLED": "Cancelled",
+    "DELIVERED": "Delivered"
+  },
+  "series_one": "{{count}} Routine",
+  "series_other": "{{count}} Routines",
+  "seriesLower_one": "{{count}} routine",
+  "seriesLower_other": "{{count}} routines",
+  "loading": "Loading...",
+  "error": "Something went wrong",
+  "backHome": "Back to Home",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "save": "Save",
+  "close": "Close",
+  "download": "Download",
+  "loadMore": "Load More",
+  "retry": "Try again",
+  "required": "required",
+  "optional": "optional",
+  "total": "Total"
+}

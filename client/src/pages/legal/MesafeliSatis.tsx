@@ -10,14 +10,20 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import SEO from "../../components/SEO";
+import LegalDocument from "../../components/LegalDocument";
+import { LEGAL_DOCS } from "../../data/legal";
+import { useLang } from "../../lib/localePath";
 
 const MesafeliSatis = () => {
+  // Türkçe metin asıl ve bağlayıcı; diğer dillerde bilgi amaçlı çeviri gösterilir
+  const lang = useLang();
+  if (lang !== "tr") return <LegalDocument doc={LEGAL_DOCS[lang].distanceSales} lang={lang} />;
+
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-950 via-gray-900 to-gray-950">
       <SEO
         title="Mesafeli Satış Sözleşmesi"
         description="RNG Sport mesafeli satış sözleşmesi. Online sipariş ve satış koşulları hakkında bilgi."
-        url="https://rngsport.com/mesafeli-satis-sozlesmesi"
       />
       {/* Header */}
       <div className="bg-black/30 backdrop-blur-xl border-b border-white/10">

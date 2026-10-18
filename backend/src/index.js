@@ -19,6 +19,7 @@ import awardCeremonyRoutes from "./routes/awardCeremony.route.js";
 import loyaltyRoutes from "./routes/loyalty.route.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkEnv } from "./utils/env.js";
+import { translateResponses } from "./utils/i18n.js";
 
 // Eksik yapılandırmayı açılışta, isim isim bildir (bkz. utils/env.js)
 checkEnv();
@@ -31,6 +32,8 @@ app.set("trust proxy", 1);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+// İstek dili (Accept-Language) + yanıt mesajlarının çevirisi
+app.use(translateResponses);
 
 const corsOptions = {
   origin: ["https://rngsport.netlify.app", "https://rngsport.com", "http://localhost:5173"],

@@ -1,5 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../components/LocalizedLink";
+import { useLocalizedNavigate } from "../lib/localePath";
+import { formatDate, formatNumber } from "../lib/format";
 import { motion } from "framer-motion";
 import {
   Images,
@@ -42,23 +45,22 @@ interface MyRecord {
   items: MyItem[];
 }
 
-const RESERVATION_STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "Beklemede", className: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
-  CONFIRMED: { label: "Onaylandı", className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
-  PAID: { label: "Ödendi", className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
-  FAILED: { label: "Başarısız", className: "bg-red-500/10 text-red-400 border-red-500/30" },
-  CANCELLED: { label: "İptal", className: "bg-red-500/10 text-red-400 border-red-500/30" },
-  DELIVERED: { label: "Teslim Edildi", className: "bg-teal-500/10 text-teal-400 border-teal-500/30" },
+// Durum etiketleri common.status.* altında
+const STATUS_CLASSES: Record<string, string> = {
+  PENDING: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+  CONFIRMED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  PAID: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  FAILED: "bg-red-500/10 text-red-400 border-red-500/30",
+  CANCELLED: "bg-red-500/10 text-red-400 border-red-500/30",
+  DELIVERED: "bg-teal-500/10 text-teal-400 border-teal-500/30",
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const info = RESERVATION_STATUS_LABELS[status] || {
-    label: status,
-    className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/30",
-  };
+  const { t } = useTranslation();
+  const className = STATUS_CLASSES[status] || "bg-zinc-500/10 text-zinc-400 border-zinc-500/30";
   return (
-    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${info.className}`}>
-      {info.label}
+    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${className}`}>
+      {STATUS_CLASSES[status] ? t(`common.status.${status}`) : status}
     </span>
   );
 };
@@ -82,11 +84,12 @@ const ReservationActions = ({
 }) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { t } = useTranslation();
 
   if (!isCustomerEditable(record.status)) {
     return record.status === "CANCELLED" ? null : (
       <p className="text-xs text-zinc-500 mt-3">
-        Ödeme alındıktan sonra değişiklik için bizimle iletişime geçin.
+        {t("account.profile.lockedHint")}
       </p>
     );
   }
@@ -105,38 +108,38 @@ const ReservationActions = ({
     <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-zinc-700/50">
       {isConfirming ? (
         <>
-          <span className="text-sm text-red-400 mr-1">Rezervasyon silinsin mi?</span>
+          <span className="text-sm text-red-400 mr-1">{t("account.profile.confirmDelete")}</span>
           <button
             onClick={handleDelete}
             disabled={isDeleting}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Sil
+            {t("account.profile.delete")}
           </button>
           <button
             onClick={() => setIsConfirming(false)}
             disabled={isDeleting}
             className="px-3 py-1.5 rounded-lg bg-zinc-700/50 hover:bg-zinc-700 text-zinc-300 text-sm transition-colors"
           >
-            Vazgeç
+            {t("account.profile.cancel")}
           </button>
         </>
       ) : (
         <>
-          <Link
+          <LocalizedLink
             to={`/rezervasyon?duzenle=${record.id}`}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-sm font-medium transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
-            Düzenle
-          </Link>
+            {t("account.profile.edit")}
+          </LocalizedLink>
           <button
             onClick={() => setIsConfirming(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-700/40 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 text-sm transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            Sil
+            {t("account.profile.delete")}
           </button>
         </>
       )}
@@ -185,6 +188,7 @@ const useMyRecords = (url: string) => {
 };
 
 const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListProps) => {
+  const { t } = useTranslation();
   return (
     <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
       <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
@@ -198,17 +202,17 @@ const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListPro
         </div>
       ) : status === "error" ? (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-red-400">Kayıtlar yüklenemedi.</p>
+          <p className="text-sm text-red-400">{t("account.profile.loadFail")}</p>
           <button
             onClick={onRetry}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm transition-colors"
           >
             <RotateCw className="w-3.5 h-3.5" />
-            Tekrar dene
+            {t("account.profile.retry")}
           </button>
         </div>
       ) : records.length === 0 ? (
-        <p className="text-sm text-zinc-500">Henüz kaydınız yok.</p>
+        <p className="text-sm text-zinc-500">{t("account.profile.empty")}</p>
       ) : (
       <div className="space-y-3">
         {records.map((r) => (
@@ -224,7 +228,7 @@ const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListPro
               <div className="text-right">
                 <StatusBadge status={r.status} />
                 <p className="text-sm text-zinc-400 mt-1">
-                  ₺{r.totalPrice.toLocaleString("tr-TR")}
+                  ₺{formatNumber(r.totalPrice)}
                 </p>
               </div>
             </div>
@@ -235,17 +239,13 @@ const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListPro
                   className="flex items-center gap-1.5 text-xs text-zinc-400 bg-zinc-800/80 border border-zinc-700/50 px-2 py-1 rounded-lg"
                 >
                   <Package className="w-3 h-3 text-emerald-400/70" />
-                  {item.package.name} × {item.quantity} ({item.seriesCount} seri)
+                  {item.package.name} × {item.quantity} ({t("account.profile.series", { count: item.seriesCount })})
                   <PriorityBadge show={item.priority} />
                 </span>
               ))}
             </div>
             <p className="text-xs text-zinc-600 mt-2">
-              {new Date(r.createdAt).toLocaleDateString("tr-TR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {formatDate(r.createdAt, { day: "numeric", month: "long", year: "numeric" })}
             </p>
             {onDelete && <ReservationActions record={r} onDelete={onDelete} />}
           </div>
@@ -261,6 +261,7 @@ const ChangePasswordCard = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({ current: "", next: "", confirm: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useTranslation();
 
   const inputClass =
     "w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors";
@@ -268,11 +269,11 @@ const ChangePasswordCard = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (form.next.length < 8) {
-      toast.error("Yeni şifre en az 8 karakter olmalı");
+      toast.error(t("account.password.tooShort"));
       return;
     }
     if (form.next !== form.confirm) {
-      toast.error("Yeni şifreler eşleşmiyor");
+      toast.error(t("account.password.mismatch"));
       return;
     }
 
@@ -282,12 +283,12 @@ const ChangePasswordCard = () => {
         currentPassword: form.current,
         newPassword: form.next,
       });
-      toast.success("Şifreniz güncellendi");
+      toast.success(t("account.password.updated"));
       setForm({ current: "", next: "", confirm: "" });
       setIsOpen(false);
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { message?: string } } };
-      toast.error(errorObj.response?.data?.message || "Şifre güncellenemedi");
+      toast.error(errorObj.response?.data?.message || t("account.password.failed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -304,8 +305,8 @@ const ChangePasswordCard = () => {
             <Lock className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">Şifre Değiştir</h2>
-            <p className="text-sm text-zinc-500">Hesap şifrenizi güncelleyin</p>
+            <h2 className="text-lg font-semibold text-white">{t("account.password.title")}</h2>
+            <p className="text-sm text-zinc-500">{t("account.password.subtitle")}</p>
           </div>
         </div>
         <ChevronDown
@@ -320,7 +321,7 @@ const ChangePasswordCard = () => {
             value={form.current}
             onChange={(e) => setForm((p) => ({ ...p, current: e.target.value }))}
             className={inputClass}
-            placeholder="Mevcut şifreniz"
+            placeholder={t("account.password.current")}
             required
           />
           <input
@@ -328,7 +329,7 @@ const ChangePasswordCard = () => {
             value={form.next}
             onChange={(e) => setForm((p) => ({ ...p, next: e.target.value }))}
             className={inputClass}
-            placeholder="Yeni şifre (en az 8 karakter)"
+            placeholder={t("account.password.next")}
             required
             minLength={8}
           />
@@ -337,7 +338,7 @@ const ChangePasswordCard = () => {
             value={form.confirm}
             onChange={(e) => setForm((p) => ({ ...p, confirm: e.target.value }))}
             className={inputClass}
-            placeholder="Yeni şifre tekrar"
+            placeholder={t("account.password.confirm")}
             required
           />
           <button
@@ -345,7 +346,7 @@ const ChangePasswordCard = () => {
             disabled={isSubmitting}
             className="w-full py-3 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300"
           >
-            {isSubmitting ? "Güncelleniyor..." : "Şifreyi Güncelle"}
+            {isSubmitting ? t("account.password.submitting") : t("account.password.submit")}
           </button>
         </form>
       )}
@@ -355,7 +356,8 @@ const ChangePasswordCard = () => {
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useLocalizedNavigate();
+  const { t } = useTranslation();
   const reservations = useMyRecords("/api/reservations/my");
   const orders = useMyRecords("/api/orders/my");
   const loyalty = useMyLoyalty();
@@ -365,10 +367,10 @@ const ProfilePage = () => {
     setIsResending(true);
     try {
       await api.post("/api/auth/resend-verification");
-      toast.success("Doğrulama maili gönderildi, gelen kutunuzu kontrol edin");
+      toast.success(t("account.profile.resendOk"));
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { message?: string } } };
-      toast.error(errorObj.response?.data?.message || "Mail gönderilemedi");
+      toast.error(errorObj.response?.data?.message || t("account.profile.resendFail"));
     } finally {
       setIsResending(false);
     }
@@ -383,16 +385,16 @@ const ProfilePage = () => {
     try {
       await api.delete(`/api/reservations/my/${id}`);
       reservations.setRecords((prev) => prev.filter((r) => r.id !== id));
-      toast.success("Rezervasyon silindi");
+      toast.success(t("account.profile.deleted"));
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { message?: string } } };
-      toast.error(errorObj.response?.data?.message || "Rezervasyon silinemedi");
+      toast.error(errorObj.response?.data?.message || t("account.profile.deleteFail"));
     }
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO title="Hesabım" description="RNG Sport hesap bilgileriniz ve kayıtlarınız." />
+      <SEO title={t("account.profile.seoTitle")} description={t("account.profile.seoDescription")} />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -409,7 +411,7 @@ const ProfilePage = () => {
               <div className="flex items-center gap-3">
                 <MailWarning className="w-5 h-5 text-amber-400 shrink-0" />
                 <p className="text-sm text-amber-300/90">
-                  E-posta adresiniz henüz doğrulanmadı.
+                  {t("account.profile.unverified")}
                 </p>
               </div>
               <button
@@ -417,7 +419,7 @@ const ProfilePage = () => {
                 disabled={isResending}
                 className="text-sm font-medium text-amber-400 hover:text-amber-300 underline underline-offset-2 disabled:opacity-50 transition-colors"
               >
-                {isResending ? "Gönderiliyor..." : "Doğrulama mailini tekrar gönder"}
+                {isResending ? t("account.profile.sending") : t("account.profile.resend")}
               </button>
             </div>
           )}
@@ -430,7 +432,7 @@ const ProfilePage = () => {
           <ChangePasswordCard />
 
           {/* Galeri CTA */}
-          <Link
+          <LocalizedLink
             to="/galerim"
             className="relative flex items-center justify-between gap-4 bg-linear-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 border border-emerald-500/30 hover:border-emerald-500/50 rounded-2xl p-6 transition-all duration-300 group"
           >
@@ -439,32 +441,32 @@ const ProfilePage = () => {
                 <Images className="w-6 h-6 text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">Fotoğraflarım</h2>
+                <h2 className="text-lg font-semibold text-white">{t("account.profile.myPhotos")}</h2>
                 <p className="text-sm text-zinc-400">
-                  Çekim fotoğraflarınızı görüntüleyin ve indirin
+                  {t("account.profile.myPhotosText")}
                 </p>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          </LocalizedLink>
 
           <div>
           <RecordList
-            title="Rezervasyonlarım"
+            title={t("account.profile.reservations")}
             records={reservations.records}
             status={reservations.status}
             onRetry={reservations.reload}
             onDelete={handleDeleteReservation}
           />
-            <Link
+            <LocalizedLink
               to="/rezervasyon"
               className="mt-2 inline-flex items-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
             >
-              + Başka bir sporcu için rezervasyon yap
-            </Link>
+              {t("account.profile.newForOther")}
+            </LocalizedLink>
           </div>
           <RecordList
-            title="Siparişlerim"
+            title={t("account.profile.orders")}
             records={orders.records}
             status={orders.status}
             onRetry={orders.reload}

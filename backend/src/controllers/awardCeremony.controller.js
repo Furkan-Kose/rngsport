@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { slugify } from "../utils/slugify.js";
+import { localize, sanitizeTranslations } from "../utils/i18n.js";
 import {
   assertUploadBatch,
   validateUploadFile,
@@ -21,6 +22,8 @@ import {
 // dosyalar müşteri galerisindeki gibi presigned URL'lerle sunulur.
 
 const CEREMONY_NOT_FOUND = { notFound: "Ödül töreni bulunamadı" };
+const TEXT_FIELDS = ["title", "description", "date", "location"];
+const TRANSLATION_FIELDS = { stringFields: TEXT_FIELDS };
 
 const optionalText = (value, max) => {
   const trimmed = value ? String(value).trim().slice(0, max) : "";
@@ -52,7 +55,10 @@ const findCeremony = async (where) => {
   return ceremony;
 };
 
-const formatCeremony = (c) => ({
+// locale verilirse metinler o dile çevrilir (admin: çevrilmemiş + translations)
+const formatCeremony = (raw, locale) => {
+  const c = localize(raw, locale, TEXT_FIELDS);
+  return {
   id: c.id,
   slug: c.slug,
   title: c.title,
@@ -61,7 +67,9 @@ const formatCeremony = (c) => ({
   location: c.location,
   sortOrder: c.sortOrder,
   createdAt: c.createdAt,
-});
+  translations: raw.translations ?? {},
+  };
+};
 
 // Bir törenin dosyaları, presigned URL'lerle ve sayfalı
 const listCeremonyPhotos = async (ceremonyId, query) => {
@@ -119,7 +127,7 @@ export const getAllCeremonies = async (req, res) => {
 
   const data = await Promise.all(
     ceremonies.map(async (c) => ({
-      ...formatCeremony(c),
+      ...formatCeremony(c, req.locale),
       photoCount: c._count.photos,
       coverUrl: c.photos[0] ? await presignView(c.photos[0].r2Key) : null,
     }))
@@ -132,7 +140,7 @@ export const getAllCeremonies = async (req, res) => {
 export const getCeremonyBySlug = async (req, res) => {
   const ceremony = await findCeremony({ slug: req.params.slug });
   res.json({
-    ceremony: formatCeremony(ceremony),
+    ceremony: formatCeremony(ceremony, req.locale),
     ...(await listCeremonyPhotos(ceremony.id, req.query)),
   });
 };
@@ -185,7 +193,7 @@ export const getCeremonyAdmin = async (req, res) => {
 
 // Admin: yeni tören
 export const createCeremony = async (req, res) => {
-  const { title, description, date, location, sortOrder } = req.body;
+  const { title, description, date, location, sortOrder, translations } = req.body;
   const cleanTitle = optionalText(title, 150);
   if (!cleanTitle) {
     throw new AppError("Tören adı gerekli", 400);
@@ -199,6 +207,7 @@ export const createCeremony = async (req, res) => {
       date: optionalText(date, 100),
       location: optionalText(location, 150),
       sortOrder: Number.isInteger(sortOrder) ? sortOrder : 0,
+      translations: sanitizeTranslations(translations, TRANSLATION_FIELDS) ?? {},
     },
   });
 
@@ -207,7 +216,7 @@ export const createCeremony = async (req, res) => {
 
 // Admin: tören güncelle (kısmi). Slug bilerek değişmez — paylaşılmış linkler kırılmasın.
 export const updateCeremony = async (req, res) => {
-  const { title, description, date, location, sortOrder } = req.body;
+  const { title, description, date, location, sortOrder, translations } = req.body;
 
   if (title !== undefined && !optionalText(title, 150)) {
     throw new AppError("Tören adı boş olamaz", 400);
@@ -222,6 +231,9 @@ export const updateCeremony = async (req, res) => {
         ...(date !== undefined && { date: optionalText(date, 100) }),
         ...(location !== undefined && { location: optionalText(location, 150) }),
         ...(Number.isInteger(sortOrder) && { sortOrder }),
+        ...(translations !== undefined && {
+          translations: sanitizeTranslations(translations, TRANSLATION_FIELDS),
+        }),
       },
     })
     .catch(rethrowPrismaError(CEREMONY_NOT_FOUND));

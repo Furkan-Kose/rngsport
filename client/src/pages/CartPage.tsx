@@ -17,7 +17,10 @@ import {
   Mail,
   Check,
 } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../components/LocalizedLink";
+import { formatNumber } from "../lib/format";
 import { useMyLoyalty } from "../hooks/useMyLoyalty";
 import LoyaltyPriceLines from "../components/LoyaltyPriceLines";
 import PriorityCheckbox from "../components/PriorityCheckbox";
@@ -98,6 +101,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
   const { removeFromCart, updateQuantity, updateSeriesCount, setPriority, getItemPrice } =
     useCart();
   const { package: pkg, seriesCount, quantity, priority = false } = item;
+  const { t } = useTranslation();
 
   const handleSeriesChange = (newSeries: 1 | 2 | 3) => {
     if (newSeries !== seriesCount) {
@@ -124,12 +128,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
                 {pkg.name}
               </h3>
               <p className="text-sm text-zinc-500">
-                {pkg.category === "photo"
-                  ? "Fotoğraf"
-                  : pkg.category === "video"
-                    ? "Video"
-                    : "Komple"}{" "}
-                Paketi
+                {t(`checkout.cart.categoryPackage.${pkg.category === "photo" || pkg.category === "video" ? pkg.category : "full"}`)}
               </p>
             </div>
             <button
@@ -142,7 +141,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 
           <div className="mb-4">
             <span className="text-xs text-zinc-500 uppercase tracking-wider mb-2 block">
-              Seri Sayısı
+              {t("checkout.reservation.seriesCount")}
             </span>
             <div className="flex gap-2">
               {([1, 2, 3] as const).map((s) => {
@@ -158,9 +157,9 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
                         : "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:border-zinc-600"
                     }`}
                   >
-                    <span className="block">{s} Seri</span>
+                    <span className="block">{t("common.series", { count: s })}</span>
                     <span className="block text-xs mt-0.5 opacity-75">
-                      ₺{price.toLocaleString("tr-TR")}
+                      ₺{formatNumber(price)}
                     </span>
                   </button>
                 );
@@ -180,7 +179,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-xs text-zinc-500 uppercase tracking-wider">
-                Adet
+                {t("checkout.reservation.quantity")}
               </span>
               <div className="flex items-center gap-1 bg-zinc-800 rounded-lg">
                 <button
@@ -205,9 +204,9 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
               </div>
             </div>
             <div className="text-right">
-              <span className="text-xs text-zinc-500 block">Toplam</span>
+              <span className="text-xs text-zinc-500 block">{t("checkout.form.total")}</span>
               <span className="text-xl font-bold text-white">
-                ₺{getItemPrice(item).toLocaleString("tr-TR")}
+                ₺{formatNumber(getItemPrice(item))}
               </span>
             </div>
           </div>
@@ -220,6 +219,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 const CartPage = () => {
   const { items, getTotalPrice, getItemPrice, clearCart } = useCart();
   const { user, isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   // Sadakat önizlemesi (asıl indirim ve puan backend'de hesaplanır)
   const loyalty = useMyLoyalty();
@@ -300,7 +300,7 @@ const CartPage = () => {
       !form.customerPhone.trim() ||
       !form.customerEmail.trim()
     ) {
-      setError("Lütfen tüm zorunlu alanları doldurun");
+      setError(t("checkout.form.errors.required"));
       return;
     }
 
@@ -308,7 +308,7 @@ const CartPage = () => {
       (it) => (itemApparatuses[itemKey(it)] ?? []).length !== it.seriesCount,
     );
     if (incompleteItem) {
-      setError("Her paket için seri sayısı kadar alet seçmelisiniz");
+      setError(t("checkout.form.errors.apparatus"));
       return;
     }
 
@@ -353,7 +353,9 @@ const CartPage = () => {
       setPaymentHtml(paymentData.checkoutFormContent);
       setStep("payment");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bir hata oluştu");
+      // Sunucu mesajı istek dilinde gelir
+      const serverMessage = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setError(serverMessage || t("checkout.form.errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -373,9 +375,8 @@ const CartPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
-        title="Sepet"
-        description="Sepetinizi görüntüleyin ve siparişinizi tamamlayın. RNG Sport profesyonel spor fotoğraf ve video çekim hizmetleri."
-        url="https://rngsport.com/sepet"
+        title={t("checkout.cart.seoTitle")}
+        description={t("checkout.cart.seoDescription")}
       />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
@@ -384,13 +385,13 @@ const CartPage = () => {
       <div className="container mx-auto px-4 relative z-10">
         <Reveal>
           <div className="flex items-center gap-4 mb-8">
-            <Link
+            <LocalizedLink
               to="/"
               className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">Ana Sayfa</span>
-            </Link>
+              <span className="text-sm font-medium">{t("checkout.reservation.home")}</span>
+            </LocalizedLink>
           </div>
         </Reveal>
 
@@ -405,10 +406,10 @@ const CartPage = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gradient-brand">
-                  Sepetim
+                  {t("checkout.cart.title")}
                 </h1>
                 <p className="text-zinc-500 text-sm">
-                  {isEmpty ? "Sepetiniz boş" : `${items.length} paket`}
+                  {isEmpty ? t("checkout.cart.empty") : t("checkout.cart.itemCount", { count: items.length })}
                 </p>
               </div>
             </div>
@@ -419,7 +420,7 @@ const CartPage = () => {
                 className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded-lg transition-all"
               >
                 <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Sepeti Temizle</span>
+                <span className="hidden sm:inline">{t("checkout.cart.clear")}</span>
               </button>
             )}
           </div>
@@ -434,19 +435,18 @@ const CartPage = () => {
               </div>
             </div>
             <h2 className="text-2xl font-semibold text-zinc-300 mb-3">
-              Sepetiniz Boş
+              {t("checkout.cart.emptyTitle")}
             </h2>
             <p className="text-zinc-500 text-center max-w-md mb-8">
-              Henüz sepetinize bir paket eklemediniz. Paketlerimizi inceleyerek
-              size uygun olanı seçebilirsiniz.
+              {t("checkout.cart.emptyText")}
             </p>
-            <Link
+            <LocalizedLink
               to="/paketler"
               className="inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
             >
               <ShoppingCart className="w-5 h-5" />
-              Paketleri İncele
-            </Link>
+              {t("checkout.cart.browse")}
+            </LocalizedLink>
           </div>
         ) : (
           <div className="grid lg:grid-cols-3 gap-8">
@@ -463,10 +463,10 @@ const CartPage = () => {
                     <CartItemCard item={item} />
                     <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4">
                       <p className="text-xs text-zinc-400 mb-2">
-                        Bu paket için aletleri seçin{" "}
+                        {t("checkout.apparatus.pickForPackage")}{" "}
                         <span className="text-red-400">*</span>
                         <span className="text-zinc-600 ml-1">
-                          ({selected.length} / {item.seriesCount} seçildi)
+                          {t("checkout.apparatus.selected", { count: selected.length, total: item.seriesCount })}
                         </span>
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -492,7 +492,7 @@ const CartPage = () => {
                                   : "bg-zinc-800/50 border-zinc-700 text-zinc-300 hover:border-zinc-500"
                               }`}
                             >
-                              {a.label}
+                              {t(`common.apparatus.${a.slug}`)}
                             </button>
                           );
                         })}
@@ -509,7 +509,7 @@ const CartPage = () => {
                 <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/60 to-transparent" />
                 <div className="relative bg-zinc-900/70 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
                   <h3 className="text-lg font-semibold text-white mb-6">
-                    Sipariş Özeti
+                    {t("checkout.cart.summary")}
                   </h3>
 
                   <div className="space-y-3 mb-6">
@@ -520,18 +520,18 @@ const CartPage = () => {
                       >
                         <span className="text-zinc-400">
                           {item.package.name}
-                          {item.priority && <span className="text-amber-300"> ⚡ Öncelikli</span>} (
-                          {item.seriesCount} Seri) x{item.quantity}
+                          {item.priority && <span className="text-amber-300"> ⚡ {t("checkout.priority.badge")}</span>} (
+                          {t("common.series", { count: item.seriesCount })}) x{item.quantity}
                         </span>
                         <span className="text-zinc-200">
-                          ₺{getItemPrice(item).toLocaleString("tr-TR")}
+                          ₺{formatNumber(getItemPrice(item))}
                         </span>
                       </div>
                     ))}
 
                     <div className="border-t border-zinc-800 pt-4 mt-4">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-white">Toplam</span>
+                        <span className="font-medium text-white">{t("checkout.form.total")}</span>
                         <span className="text-2xl font-bold text-gradient-brand">
                           {formatTL(discountedTotal)}
                         </span>
@@ -546,7 +546,7 @@ const CartPage = () => {
                   ) && (
                     <p className="text-xs text-amber-400 mb-2 text-center">
                       {/* Devam etmeden önce her paket için aletleri seçin. */}
-                      Bu yarışma için web sitemiz üzerinden ödeme kapalıdır. Rezervasyon yapabilirsiniz.
+                      {t("checkout.cart.paymentClosed")}
                     </p>
                   )}
                   {/* <button
@@ -566,22 +566,22 @@ const CartPage = () => {
                 </button> */}
 
                   {/* ödeme geçici olarak kapalı */}
-                  <Link to="/rezervasyon">
+                  <LocalizedLink to="/rezervasyon">
                     <button className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2" >
-                      Rezervasyon Yap
+                      {t("checkout.cart.reserve")}
                     </button>
-                  </Link>
+                  </LocalizedLink>
 
                   <div className="flex justify-center mt-4">
                     <img
                       src="/iyzico.png"
-                      alt="iyzico ile güvenli ödeme"
+                      alt={t("checkout.cart.iyzicoAlt")}
                       className="h-8 opacity-70"
                     />
                   </div>
 
                   <p className="text-xs text-zinc-500 text-center mt-2">
-                    Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.
+                    {t("checkout.cart.secure")}
                   </p>
                 </div>
               </div>
@@ -613,7 +613,7 @@ const CartPage = () => {
                 <>
                   <div className="flex items-center justify-between p-5 border-b border-zinc-800">
                     <h3 className="text-lg font-semibold text-white">
-                      Sipariş Bilgileri
+                      {t("checkout.cart.orderInfo")}
                     </h3>
                     <button
                       onClick={closeModal}
@@ -633,7 +633,7 @@ const CartPage = () => {
                     <div>
                       <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                         <User className="w-4 h-4" />
-                        Sporcu Adı Soyadı{" "}
+                        {t("checkout.form.athleteName")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -641,7 +641,7 @@ const CartPage = () => {
                         name="athleteName"
                         value={form.athleteName}
                         onChange={handleChange}
-                        placeholder="Sporcu adı soyadı"
+                        placeholder={t("checkout.form.athleteNamePlaceholder")}
                         className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                       />
                     </div>
@@ -649,14 +649,14 @@ const CartPage = () => {
                     <div>
                       <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                         <Building className="w-4 h-4" />
-                        Kulüp / Şube <span className="text-red-400">*</span>
+                        {t("checkout.form.clubName")} <span className="text-red-400">*</span>
                       </label>
                       <input
                         type="text"
                         name="clubName"
                         value={form.clubName}
                         onChange={handleChange}
-                        placeholder="Kulüp veya şube adı"
+                        placeholder={t("checkout.form.clubNamePlaceholder")}
                         className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                       />
                     </div>
@@ -664,7 +664,7 @@ const CartPage = () => {
                     <div>
                       <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                         <CalendarDays className="w-4 h-4" />
-                        Sporcu Doğum Yılı{" "}
+                        {t("checkout.form.birthYear")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -672,7 +672,7 @@ const CartPage = () => {
                         name="birthYear"
                         value={form.birthYear}
                         onChange={handleChange}
-                        placeholder="Örn: 2015"
+                        placeholder={t("checkout.form.birthYearPlaceholder")}
                         className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
                       />
                     </div>
@@ -680,7 +680,7 @@ const CartPage = () => {
                     <div>
                       <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                         <Phone className="w-4 h-4" />
-                        İletişim için Telefon{" "}
+                        {t("checkout.form.phone")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -696,7 +696,7 @@ const CartPage = () => {
                     <div>
                       <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                         <Mail className="w-4 h-4" />
-                        İletişim için E-posta{" "}
+                        {t("checkout.form.contactEmail")}{" "}
                         <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -712,14 +712,14 @@ const CartPage = () => {
                     <div>
                       <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                         <MessageSquare className="w-4 h-4" />
-                        Ek Not{" "}
-                        <span className="text-zinc-600">(opsiyonel)</span>
+                        {t("checkout.form.notes")}{" "}
+                        <span className="text-zinc-600">{t("checkout.form.optional")}</span>
                       </label>
                       <textarea
                         name="notes"
                         value={form.notes}
                         onChange={handleChange}
-                        placeholder="Eklemek istediğiniz bir not varsa buraya yazabilirsiniz."
+                        placeholder={t("checkout.form.notesPlaceholder")}
                         rows={3}
                         className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
                       />
@@ -727,7 +727,7 @@ const CartPage = () => {
 
                     <div className="pt-4 border-t border-zinc-800">
                       <div className="flex justify-between items-center mb-4">
-                        <span className="text-zinc-400">Toplam Tutar</span>
+                        <span className="text-zinc-400">{t("checkout.form.totalAmount")}</span>
                         <span className="text-xl font-bold text-emerald-400">
                           {formatTL(discountedTotal)}
                         </span>
@@ -748,16 +748,14 @@ const CartPage = () => {
                         <div className="mb-4 flex items-start gap-2 text-sm text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
                           <Check className="w-4 h-4 mt-0.5 shrink-0" />
                           <span>
-                            Fotoğraflarınız çekim sonrası hesabınıza tanımlanacaktır.
+                            {t("checkout.form.accountLinked")}
                           </span>
                         </div>
                       ) : (
                         <div className="mb-4 flex items-start gap-2 text-sm text-zinc-400 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
                           <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
                           <span>
-                            Fotoğraflarınız, girdiğiniz e-posta adresiyle açılacak
-                            hesabınıza yüklenecek. Ödeme sonrası şifrenizi belirleyip
-                            hemen girebilirsiniz.
+                            {t("checkout.form.accountNewOrder")}
                           </span>
                         </div>
                       )}
@@ -772,15 +770,15 @@ const CartPage = () => {
                             className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
                           />
                           <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                            <Link
+                            <LocalizedLink
                               to="/kvkk-aydinlatma-metni"
                               target="_blank"
                               className="text-emerald-400 hover:text-emerald-300 underline"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              KVKK Aydınlatma Metni
-                            </Link>
-                            'ni okudum ve kabul ediyorum.{" "}
+                              {t("checkout.form.kvkkLinkShort")}
+                            </LocalizedLink>
+                            {t("checkout.form.kvkkSuffix")}{" "}
                             <span className="text-red-400">*</span>
                           </span>
                         </label>
@@ -794,12 +792,12 @@ const CartPage = () => {
                         {isSubmitting ? (
                           <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            İşleniyor...
+                            {t("checkout.form.processing")}
                           </>
                         ) : (
                           <>
                             <CreditCard className="w-5 h-5" />
-                            Ödemeye Geç
+                            {t("checkout.cart.toPayment")}
                           </>
                         )}
                       </button>
@@ -811,7 +809,7 @@ const CartPage = () => {
                   <div className="flex items-center justify-between p-5 border-b border-zinc-800">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                       <CreditCard className="w-5 h-5 text-emerald-400" />
-                      Ödeme
+                      {t("checkout.cart.payment")}
                     </h3>
                     <button
                       onClick={closeModal}
@@ -825,7 +823,7 @@ const CartPage = () => {
                     {/* iyzico checkout form */}
                     <IyzicoCheckoutForm html={paymentHtml} />
                     <p className="text-xs text-zinc-500 text-center mt-4">
-                      🔒 Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.
+                      🔒 {t("checkout.cart.secure")}
                     </p>
                   </div>
                 </>

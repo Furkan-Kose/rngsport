@@ -1,47 +1,27 @@
+import { useTranslation } from "react-i18next";
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
 
-const steps = [
-  {
-    number: "01",
-    title: "Rezervasyon ve Hesap",
-    description:
-      "Paketini seçip rezervasyonunu oluştur. E-posta adresin ve belirlediğin şifreyle hesabını aynı adımda kolayca aç.",
-  },
-  {
-    number: "02",
-    title: "Ödeme",
-    description:
-      "Ödemeni online olarak tamamlayabilir veya yarışma alanındaki ödeme seçeneklerinden yararlanabilirsin.",
-  },
-  {
-    number: "03",
-    title: "Performans ve Çekim",
-    description:
-      "Sıra sana geldiğinde ekibimiz hazır olur. Performansının en özel anlarını fotoğraf ve videolarla kaydederiz.",
-  },
-  {
-    number: "04",
-    title: "Düzenleme ve Hazırlık",
-    description:
-      "Çekimlerin ekibimiz tarafından seçilir, düzenlenir ve satın aldığın pakete göre hazırlanır.",
-  },
-  {
-    number: "05",
-    title: "Kişisel Galerin Hazır",
-    description:
-      "İçeriklerin hazır olduğunda sana e-posta ile haber veririz. Hesabına giriş yaparak kişisel galerindeki fotoğraf ve videolarına ulaşabilirsin.",
-  },
-];
+interface Step {
+  title: string;
+  description: string;
+}
 
 const Process = () => {
+  const { t } = useTranslation();
+  // Adım numarası sıradan türetilir (01, 02, ...)
+  const steps = (t("home.process.steps", { returnObjects: true }) as Step[]).map((step, i) => ({
+    ...step,
+    number: String(i + 1).padStart(2, "0"),
+  }));
+
   return (
     <section id="surec" className="relative py-24 bg-zinc-950 overflow-hidden">
       <div className="container mx-auto px-4 relative z-10">
         <SectionHeader
-          eyebrow="Süreç"
-          title="Sipariş ve Teslimat Süreci"
-          description="Online kayıttan dijital teslimata uzanan kesintisiz akış."
+          eyebrow={t("home.process.eyebrow")}
+          title={t("home.process.title")}
+          description={t("home.process.description")}
           className="mb-16"
         />
 

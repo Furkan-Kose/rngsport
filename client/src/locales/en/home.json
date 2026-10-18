@@ -1,0 +1,108 @@
+{
+  "seo": {
+    "title": "Home",
+    "description": "RNG Sport - a sports media agency providing professional photo, video and digital content for sports competitions and tournaments, with a focus on rhythmic gymnastics.",
+    "defaultDescription": "RNG Sport - a sports media agency providing professional photo, video and digital content for sports events, with a focus on rhythmic gymnastics. Capture your performance at competitions and tournaments.",
+    "defaultKeywords": "rng sport, sports photography, rhythmic gymnastics photos, rhythmic gymnastics video, sports video, competition photos, tournament photography, sports media agency"
+  },
+  "hero": {
+    "imageAlt": "Rhythmic Gymnastics",
+    "titleLine1": "That Moment on the Carpet,",
+    "titleLine2": "Always With You.",
+    "description": "Months of hard work, a performance of a few minutes and moments that never happen twice — we capture them with professional photos and videos.",
+    "packagesPrefix": "View ",
+    "packagesWord": "Packages",
+    "reservation": "Book Now",
+    "scroll": "Explore"
+  },
+  "discount": {
+    "eyebrow": "Upcoming Competition",
+    "title": "15% Off on Competition Day",
+    "description": "Make your pre-booking and get into our shooting plan in advance. Complete your payment at our stand on competition day and get 15% off for cash payments.",
+    "date": "Competition Date",
+    "days": "Days",
+    "hours": "Hours",
+    "minutes": "Min",
+    "seconds": "Sec",
+    "cta": "Book Now"
+  },
+  "tournaments": {
+    "eyebrow": "Upcoming Events",
+    "title": "Tournament Calendar",
+    "description": "Book your photo and video shoot now for the upcoming tournaments we will attend.",
+    "active": "Live",
+    "soon": "Soon",
+    "finished": "Finished",
+    "reserve": "Book Now"
+  },
+  "packages": {
+    "eyebrow": "Pricing",
+    "title": "Our Packages",
+    "description": "Professional photo and video packages for every budget",
+    "popular": "Popular",
+    "discount": "{{percent}}% off",
+    "addToCart": "Add to Cart",
+    "addAgain": "Add Again",
+    "inCart": "In Cart",
+    "loadError": "Packages could not be loaded"
+  },
+  "awards": {
+    "eyebrow": "Award Ceremonies",
+    "title": "Baby Games Award Ceremony Photos",
+    "imageAlt": "Baby Games award ceremony",
+    "description": "Share the excitement of our little stars on the podium! Baby Games award ceremony photos will be uploaded during competition day. You can access the photos of your child's special moments free of charge.",
+    "point1": "A separate gallery for each ceremony",
+    "point2": "Download one by one or all at once",
+    "cta": "Browse the Photos"
+  },
+  "products": {
+    "eyebrow": "Special Products",
+    "title": "Designed for you.",
+    "description": "Rather than mass-produced decorations, RNG SPORT products are designed to be personalised around the athlete.",
+    "line1": "Her name, her sport, the moment she wants to remember and the details that are hers…",
+    "line2": "The result is a piece that belongs only to her.",
+    "comingSoonLine": "RNG SPORT Special Products — Coming Soon",
+    "comingSoon": "Coming Soon",
+    "view": "View",
+    "all": "See all products"
+  },
+  "gallery": {
+    "eyebrow": "Portfolio",
+    "title": "Gallery",
+    "description": "Selected shots of the performances we captured at last year's event.",
+    "all": "All",
+    "photo": "Photo",
+    "video": "Video",
+    "viewAll": "View Full Gallery"
+  },
+  "process": {
+    "eyebrow": "Process",
+    "title": "Booking and Delivery Process",
+    "description": "A seamless flow from online booking to digital delivery.",
+    "steps": [
+      { "title": "Booking and Account", "description": "Choose your package and make your booking. Create your account in the same step with your email address and a password." },
+      { "title": "Payment", "description": "You can pay online or use the payment options at the competition venue." },
+      { "title": "Performance and Shooting", "description": "Our team is ready when it is your turn. We capture the most special moments of your performance in photos and videos." },
+      { "title": "Editing and Preparation", "description": "Your shots are selected, edited and prepared by our team according to the package you purchased." },
+      { "title": "Your Personal Gallery Is Ready", "description": "We let you know by email when your content is ready. Sign in to your account to access the photos and videos in your personal gallery." }
+    ]
+  },
+  "faq": {
+    "eyebrow": "Help",
+    "title": "Frequently Asked Questions",
+    "description": "Answers to your questions",
+    "stillQuestions": "Still have questions?",
+    "contactText": "Couldn't find the answer you were looking for? Reach us instantly via our WhatsApp support line or at our information desk on competition day. We are happy to help.",
+    "items": [
+      { "q": "When should I make my booking?", "a": "To help us plan the shoot properly, we recommend pre-booking on our website. Registrations are also accepted at our stand on competition day, but pre-booked athletes have priority." },
+      { "q": "How do I pay?", "a": "After choosing your package and making your pre-booking on our website, you can complete your payment at our stand on competition day (cash or credit card). Bookings with completed payment are added to the shooting list." },
+      { "q": "Do you only take photos, or do you also shoot video?", "a": "Yes, we offer both photo and video. You can choose photo only, video only, or our value packages that include both." },
+      { "q": "How can I be sure my child will be filmed?", "a": "Booked athletes are tracked using the competition start list. Our professional team is ready when a booked athlete's turn comes and records the performance from start to finish." },
+      { "q": "Do you offer a refund if there is a technical problem or I don't like the photos?", "a": "Customer satisfaction comes first. If your performance cannot be delivered due to a technical error on our side (loss of focus, data corruption, etc.), we guarantee a 100% refund." },
+      { "q": "Do you only deliver digitally, or are albums or frames available?", "a": "Our standard delivery is digital for the fastest access. On request, you can contact our team after the competition for printed products such as custom posters, canvas prints or memory albums." },
+      { "q": "Do I need to create an account?", "a": "Yes. With the account you create during booking, you can track your orders, access your personal gallery when your content is ready, and book faster at future competitions by signing in without re-entering your details." },
+      { "q": "Do I have to book before the competition?", "a": "We recommend booking in advance. This way the athlete's details reach our team beforehand and everything moves faster on competition day." },
+      { "q": "Can I update my booking?", "a": "Yes. Sign in to your account to view your booking details and easily make any changes you need." }
+    ]
+  }
+}

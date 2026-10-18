@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Plus, Pencil, Trash2, X, Loader2, Package, Save, Upload } from 'lucide-react';
 import api from '../../lib/api';
+import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
+
 
 interface Package {
   id: string;
@@ -19,6 +21,7 @@ interface Package {
   reservationDiscount3: number;
   loyaltyPoints: number;
   priorityFee: number | null;
+  translations?: Translations;
   isActive: boolean;
   sortOrder: number;
 }
@@ -37,6 +40,7 @@ interface PackageFormData {
   reservationDiscount3: number;
   loyaltyPoints: number;
   priorityFee: number | null;
+  translations: Translations;
   isActive: boolean;
   sortOrder: number;
 }
@@ -55,6 +59,7 @@ const initialFormData: PackageFormData = {
   reservationDiscount3: 0,
   loyaltyPoints: 0,
   priorityFee: 0,
+  translations: {},
   isActive: true,
   sortOrder: 0,
 };
@@ -118,6 +123,7 @@ const PackagesPage = () => {
       reservationDiscount3: pkg.reservationDiscount3 || pkg.discount3,
       loyaltyPoints: pkg.loyaltyPoints ?? 0,
       priorityFee: pkg.priorityFee ?? 0,
+      translations: pkg.translations ?? {},
       isActive: pkg.isActive,
       sortOrder: pkg.sortOrder,
     });
@@ -725,6 +731,21 @@ const PackagesPage = () => {
                   className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500 resize-none"
                 />
               </div>
+
+              {/* EN/RU çevirileri — boş alan sitede Türkçe görünür */}
+              <TranslationFields
+                fields={[
+                  { key: 'name', label: 'Paket Adı', source: formData.name },
+                  {
+                    key: 'features',
+                    label: 'Özellikler (her satıra bir özellik)',
+                    list: true,
+                    source: formData.features.split('\n').filter((f) => f.trim()),
+                  },
+                ]}
+                value={formData.translations}
+                onChange={(translations) => setFormData((prev) => ({ ...prev, translations }))}
+              />
 
               {/* Active Status */}
               <div className="flex items-center gap-3">

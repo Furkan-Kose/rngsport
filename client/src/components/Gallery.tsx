@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
 import {
   X,
   ChevronLeft,
@@ -122,7 +123,16 @@ const getItemThumbnail = (item: (typeof galleryItems)[0]) => {
   return item.thumbnail;
 };
 
+// Veri tarafında kategori Türkçe değer olarak duruyor; sadece etiket çevrilir
+const CATEGORY_KEY: Record<string, string> = {
+  all: "home.gallery.all",
+  Fotoğraf: "home.gallery.photo",
+  Video: "home.gallery.video",
+};
+
 const Gallery = () => {
+  const { t } = useTranslation();
+  const categoryLabel = (c: string) => (CATEGORY_KEY[c] ? t(CATEGORY_KEY[c]) : c);
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
@@ -165,10 +175,10 @@ const Gallery = () => {
     <section id="galeri" className="relative py-24 bg-black">
       <div className="container mx-auto px-4">
         <SectionHeader
-          eyebrow="Portföy"
+          eyebrow={t("home.gallery.eyebrow")}
           icon={Camera}
-          title="Galeri"
-          description="Geçtiğimiz yılın organizasyonunda yakaladığımız performanslardan seçilmiş örnek kareler."
+          title={t("home.gallery.title")}
+          description={t("home.gallery.description")}
           className="mb-12"
         />
 
@@ -185,7 +195,7 @@ const Gallery = () => {
                     : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-800"
                 }`}
               >
-                {category === "all" ? "Tümü" : category}
+                {categoryLabel(category)}
               </button>
             ))}
           </div>
@@ -219,7 +229,7 @@ const Gallery = () => {
 
                 <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                   <p className="text-xs text-emerald-400 font-semibold uppercase tracking-wider mb-1">
-                    {item.category}
+                    {categoryLabel(item.category)}
                   </p>
                   <h3 className="text-white font-semibold">{item.title}</h3>
                 </div>
@@ -231,13 +241,13 @@ const Gallery = () => {
         {allFilteredItems.length > 0 && (
           <Reveal delay={0.2}>
             <div className="text-center mt-10">
-              <Link
+              <LocalizedLink
                 to="/galeri"
                 className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 group"
               >
-                Tüm Galeriyi Gör
+                {t("home.gallery.viewAll")}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
+              </LocalizedLink>
             </div>
           </Reveal>
         )}
@@ -311,7 +321,7 @@ const Gallery = () => {
               )}
               <div className="text-center mt-4">
                 <p className="text-emerald-400 text-sm">
-                  {filteredItems[selectedImage].category}
+                  {categoryLabel(filteredItems[selectedImage].category)}
                 </p>
                 <h3 className="text-white text-xl font-semibold mt-1">
                   {filteredItems[selectedImage].title}

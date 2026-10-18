@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "home": "Ana Sayfa",
+    "about": "Hakkımızda",
+    "gallery": "Galeri",
+    "awards": "Ödül Törenleri",
+    "products": "Ürünler",
+    "packages": "Paketler",
+    "reserve": "Rezervasyon Yap",
+    "login": "Giriş Yap",
+    "account": "Hesabım",
+    "adminPanel": "Yönetim Paneli",
+    "myPhotos": "Fotoğraflarım",
+    "cart": "Sepet",
+    "menu": "Menü",
+    "language": "Dil"
+  },
+  "footer": {
+    "about": "RNG Sport olarak ritmik cimnastik başta olmak üzere spor organizasyonlarında fotoğraf ve video prodüksiyon hizmeti sunuyoruz.",
+    "quickLinks": "Hızlı Bağlantılar",
+    "contact": "İletişim",
+    "location": "İstanbul, Türkiye",
+    "securePayment": "Güvenli Ödeme",
+    "paymentLogosAlt": "Ödeme Yöntemleri - iyzico, Visa, Mastercard",
+    "copyright": "© 2026 Range Media Tüm hakları saklıdır.",
+    "email": "E-posta",
+    "phone": "Telefon"
+  },
+  "legalLinks": {
+    "privacy": "Gizlilik Politikası",
+    "kvkk": "KVKK Aydınlatma Metni",
+    "distanceSales": "Mesafeli Satış Sözleşmesi",
+    "refund": "İptal ve İade Koşulları"
+  },
+  "whatsapp": {
+    "message": "Merhaba, bilgi almak istiyorum.",
+    "label": "Bize Ulaşın",
+    "aria": "WhatsApp ile iletişime geç"
+  },
+  "langBanner": {
+    "text": "Bu sayfayı Türkçe görüntülüyorsunuz.",
+    "switch": "Türkçe",
+    "dismiss": "Kapat"
+  },
+  "apparatus": {
+    "top": "Top",
+    "labut": "Labut",
+    "ip": "İp",
+    "kurdele": "Kurdele",
+    "cember": "Çember",
+    "serbest": "Serbest"
+  },
+  "category": {
+    "photo": "Fotoğraf",
+    "video": "Video",
+    "full": "Komple"
+  },
+  "status": {
+    "PENDING": "Beklemede",
+    "CONFIRMED": "Onaylandı",
+    "PAID": "Ödendi",
+    "FAILED": "Başarısız",
+    "CANCELLED": "İptal",
+    "DELIVERED": "Teslim Edildi"
+  },
+  "series": "{{count}} Seri",
+  "seriesLower": "{{count}} seri",
+  "loading": "Yükleniyor...",
+  "error": "Bir hata oluştu",
+  "backHome": "Ana Sayfaya Dön",
+  "cancel": "Vazgeç",
+  "delete": "Sil",
+  "edit": "Düzenle",
+  "save": "Kaydet",
+  "close": "Kapat",
+  "download": "İndir",
+  "loadMore": "Daha Fazla Yükle",
+  "retry": "Tekrar dene",
+  "required": "zorunlu",
+  "optional": "opsiyonel",
+  "total": "Toplam"
+}

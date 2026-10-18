@@ -133,3 +133,194 @@ export const products: Product[] = [
 
 export const getProduct = (slug?: string) =>
   products.find((product) => product.slug === slug);
+
+// ---------------------------------------------------------------------------
+// Çeviriler. Türkçe asıl metin yukarıda; burada olmayan ürün Türkçe kalır.
+// ---------------------------------------------------------------------------
+type ProductText = Pick<
+  Product,
+  "name" | "tagline" | "cardSummary" | "imageAlt" | "intro" | "sections" | "meta" | "comingSoonNote"
+>;
+
+const TRANSLATIONS: Record<"en" | "ru", Record<string, ProductText>> = {
+  en: {
+    "sporcu-figuru": {
+      name: "Personalised Athlete Figure",
+      tagline: "Your pose. Your name. Your figure.",
+      cardSummary: "A three-dimensional figure with a name plate, created from the athlete's own pose.",
+      imageAlt: "RNG Sport personalised athlete figure",
+      intro: [
+        "A competition photo, an unforgettable pose, or the move that captures the athlete best…",
+        "The RNG SPORT Personalised Athlete Figure is created specifically from the athlete herself. Personal elements such as pose, hairstyle, costume details and name are built into the design, resulting in a figure that belongs to her alone.",
+        "Designed together with a base and a personalised name area, the figure becomes a keepsake of competitions, achievements and the sporting journey that can be treasured for years.",
+      ],
+      sections: [
+        {
+          title: "Made just for you",
+          body: ["Every figure is personalised using reference images of the athlete."],
+          bullets: [
+            "The athlete's pose",
+            "Hairstyle and characteristic details",
+            "Gymnastics costume",
+            "The athlete's name",
+            "Text on the base",
+            "Event-specific details",
+          ],
+        },
+        {
+          title: "More than a photo",
+          body: [
+            "Competitions end, medals pile up, photos stay in the archive.",
+            "This figure turns that period of the athlete's life into a three-dimensional keepsake — a small memory of her in her room, on the trophy shelf or on her desk.",
+          ],
+        },
+      ],
+      meta: "Personalised production • 3D design • Custom name plate",
+      comingSoonNote: "RNG SPORT personalised athlete figures will be available to order soon.",
+    },
+    "isikli-cimnastik-harfi": {
+      name: "Personalised Illuminated Gymnastics Letter",
+      tagline: "The first letter of your name, your gymnastics world.",
+      cardSummary:
+        "An illuminated decorative design based on the initial of your name, adorned with gymnastics details.",
+      imageAlt: "RNG Sport personalised illuminated gymnastics letter",
+      intro: [
+        "A decorative design based on the initial of the athlete's name, bringing together gymnastics figures, personal details and light.",
+        "Inside each letter, a small gymnastics scene tells the story of the athlete's world. With rhythmic gymnastics apparatus, athlete figures and name-specific details, it becomes a completely personal object rather than a standard decoration.",
+        "When the light is switched on, the details inside the letter stand out, creating a special atmosphere — especially in an athlete's room.",
+      ],
+      sections: [
+        {
+          title: "Every letter tells a different story",
+          body: [
+            "B for Belinay, D for Defne, E for Eylül…",
+            "But it is not only the letter that changes.",
+            "Each design can be recreated around the athlete's name and gymnastics world.",
+          ],
+        },
+        {
+          title: "With gymnastics details",
+          body: ["Different gymnastics elements can be used in the design:"],
+          bullets: [
+            "Ball",
+            "Hoop",
+            "Ribbon",
+            "Clubs",
+            "Rope",
+            "Gymnast figures",
+            "Stars and competition details",
+            "The athlete's name",
+          ],
+        },
+        {
+          title: "Decor by day, light by night",
+          body: [
+            "The built-in lighting makes these details visible at night too, turning the decorative letter into a soft ambient light.",
+            "By day, part of the room's decoration. By night, a personal object whose light brings out the details of the design.",
+            "Designed to be used in the athlete's own room, in the trophy corner or next to her desk.",
+          ],
+        },
+      ],
+      meta: "Personalised letter • Gymnastics theme • Illuminated design • Name personalisation",
+      comingSoonNote: "The RNG SPORT Illuminated Gymnastics Letter will be available to order soon.",
+    },
+  },
+  ru: {
+    "sporcu-figuru": {
+      name: "Именная фигурка спортсменки",
+      tagline: "Твоя поза. Твоё имя. Твоя фигурка.",
+      cardSummary: "Объёмная фигурка с именной табличкой, созданная по собственной позе спортсменки.",
+      imageAlt: "Именная фигурка спортсменки RNG Sport",
+      intro: [
+        "Фото с соревнований, незабываемая поза или движение, которое лучше всего передаёт характер спортсменки…",
+        "Именная фигурка RNG SPORT создаётся специально по образу самой спортсменки. Поза, причёска, детали костюма и имя включаются в дизайн — получается фигурка, принадлежащая только ей.",
+        "Фигурка с подставкой и именной табличкой становится памятью о соревнованиях, победах и спортивном пути, которую можно хранить годами.",
+      ],
+      sections: [
+        {
+          title: "Создаётся специально для тебя",
+          body: ["Каждая фигурка персонализируется по фотографиям спортсменки."],
+          bullets: [
+            "Поза спортсменки",
+            "Причёска и характерные детали",
+            "Гимнастический купальник",
+            "Имя спортсменки",
+            "Надпись на подставке",
+            "Детали конкретного турнира",
+          ],
+        },
+        {
+          title: "Больше, чем фотография",
+          body: [
+            "Соревнования заканчиваются, медали копятся, фото остаются в архиве.",
+            "А эта фигурка превращает тот период жизни спортсменки в объёмное воспоминание — в её комнате, на полке с кубками или на рабочем столе.",
+          ],
+        },
+      ],
+      meta: "Индивидуальное изготовление • 3D-дизайн • Именная табличка",
+      comingSoonNote: "Именные фигурки RNG SPORT скоро станут доступны для заказа.",
+    },
+    "isikli-cimnastik-harfi": {
+      name: "Именная светящаяся гимнастическая буква",
+      tagline: "Первая буква твоего имени — твой мир гимнастики.",
+      cardSummary: "Декоративная буква с подсветкой по инициалу имени, украшенная гимнастическими деталями.",
+      imageAlt: "Именная светящаяся гимнастическая буква RNG Sport",
+      intro: [
+        "Декоративный дизайн по первой букве имени спортсменки, объединяющий фигуры гимнасток, личные детали и свет.",
+        "Внутри каждой буквы создаётся маленькая гимнастическая сцена, рассказывающая о мире спортсменки. Предметы художественной гимнастики, фигурки гимнасток и именные детали превращают её не в стандартный декор, а в полностью личную вещь.",
+        "Когда включается подсветка, детали внутри буквы оживают и создают особую атмосферу — особенно в комнате спортсменки.",
+      ],
+      sections: [
+        {
+          title: "У каждой буквы своя история",
+          body: [
+            "B — для Белинай, D — для Дефне, E — для Эйлюль…",
+            "Но меняется не только буква.",
+            "Каждый дизайн можно создать заново под имя спортсменки и её мир гимнастики.",
+          ],
+        },
+        {
+          title: "С гимнастическими деталями",
+          body: ["В дизайне можно использовать разные гимнастические элементы:"],
+          bullets: [
+            "Мяч",
+            "Обруч",
+            "Лента",
+            "Булавы",
+            "Скакалка",
+            "Фигурки гимнасток",
+            "Звёзды и детали соревнований",
+            "Имя спортсменки",
+          ],
+        },
+        {
+          title: "Днём — декор, ночью — свет",
+          body: [
+            "Встроенная подсветка делает детали видимыми и ночью, превращая декоративную букву в мягкий ночник.",
+            "Днём — часть интерьера комнаты. Ночью — личная вещь, свет которой раскрывает детали дизайна.",
+            "Создаётся для комнаты спортсменки, уголка с наградами или рабочего стола.",
+          ],
+        },
+      ],
+      meta: "Именная буква • Гимнастическая тема • Подсветка • Персонализация имени",
+      comingSoonNote: "Светящаяся гимнастическая буква RNG SPORT скоро станет доступна для заказа.",
+    },
+  },
+};
+
+/** Ürünün o dildeki metinleri (Türkçe veya çevirisi olmayan dilde asıl metin) */
+export const localizeProduct = (product: Product, lang: string): Product => {
+  const text = lang === "en" || lang === "ru" ? TRANSLATIONS[lang][product.slug] : undefined;
+  return text ? { ...product, ...text } : product;
+};
+
+/** "Satışa çıkınca haber ver" WhatsApp mesajı, sayfanın dilinde */
+const NOTIFY_MESSAGES: Record<string, (name: string) => string> = {
+  en: (name) => `Hello, could you let me know when "${name}" goes on sale?`,
+  ru: (name) => `Здравствуйте, сообщите, пожалуйста, когда «${name}» поступит в продажу?`,
+};
+
+export const notifyMeUrlFor = (productName: string, lang: string) =>
+  NOTIFY_MESSAGES[lang]
+    ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(NOTIFY_MESSAGES[lang](productName))}`
+    : notifyMeUrl(productName);

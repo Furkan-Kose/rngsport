@@ -8,6 +8,8 @@ import {
   FolderDown,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
+
 import api from "../lib/api";
 import SEO from "../components/SEO";
 import MediaLightbox from "../components/MediaLightbox";
@@ -45,6 +47,7 @@ const MyGalleryPage = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const fetchPhotos = useCallback(
     async (page: number, album: string | null, type: TypeFilter, append: boolean) => {
@@ -58,12 +61,14 @@ const MyGalleryPage = () => {
         setPagination(data.pagination);
       } catch (error) {
         console.error("Galeri yüklenemedi:", error);
-        toast.error("Fotoğraflar yüklenirken bir hata oluştu");
+        toast.error(t("pages.media.loadError"));
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
       }
     },
+    // t yalnızca hata bildiriminde
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -92,7 +97,7 @@ const MyGalleryPage = () => {
       triggerDownload(data.url, photo.fileName);
     } catch (error) {
       console.error("İndirme hatası:", error);
-      toast.error("Fotoğraf indirilemedi");
+      toast.error(t("pages.media.downloadError"));
     } finally {
       setDownloadingId(null);
     }
@@ -102,7 +107,7 @@ const MyGalleryPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO title="Fotoğraflarım" description="Çekim fotoğraflarınızı görüntüleyin ve indirin." />
+      <SEO title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -119,9 +124,9 @@ const MyGalleryPage = () => {
                 <Images className="w-7 h-7 text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gradient-brand">Galerim</h1>
+                <h1 className="text-3xl font-bold text-gradient-brand">{t("pages.myGallery.title")}</h1>
                 <p className="text-zinc-500 text-sm">
-                  {pagination ? `${pagination.total} dosya` : "Çekim fotoğraf ve videolarınız"}
+                  {pagination ? t("pages.media.files", { count: pagination.total }) : t("pages.myGallery.subtitle")}
                 </p>
               </div>
             </div>
@@ -134,16 +139,18 @@ const MyGalleryPage = () => {
                 {zip.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
                 {zip.progress
                   ? zip.progress.total
-                    ? `Hazırlanıyor ${zip.progress.done}/${zip.progress.total}`
-                    : "Hazırlanıyor..."
-                  : `${activeAlbum ? "Bu Albümü İndir" : "Tümünü İndir"} (.zip)`}
+                    ? t("pages.media.preparingProgress", { done: zip.progress.done, total: zip.progress.total })
+                    : t("pages.media.preparing")
+                  : activeAlbum
+                    ? t("pages.media.downloadAlbum")
+                    : t("pages.media.downloadAll")}
               </button>
             )}
           </div>
 
           {photos.length > 0 && isMobileDevice() && (
               <p className="text-xs text-zinc-500 mb-4 -mt-4">
-                📱 Telefonda fotoğraf ve videoları tek tek indirirseniz doğrudan galerinize kaydedilir. Zip dosyası telefonda &quot;Dosyalar&quot; uygulamasına iner.
+                {t("pages.media.mobileHint")}
               </p>
             )}
 
@@ -159,7 +166,7 @@ const MyGalleryPage = () => {
                       : "bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:border-emerald-500/30 hover:text-zinc-300"
                   }`}
                 >
-                  Tüm Yarışmalar
+                  {t("pages.myGallery.allCompetitions")}
                 </button>
                 {albums.map((album) => (
                   <button
@@ -179,9 +186,9 @@ const MyGalleryPage = () => {
             )}
             {(
               [
-                { value: "all", label: "Hepsi", icon: null },
-                { value: "image", label: "Fotoğraflar", icon: Camera },
-                { value: "video", label: "Videolar", icon: Video },
+                { value: "all", label: t("pages.myGallery.all"), icon: null },
+                { value: "image", label: t("pages.myGallery.photos"), icon: Camera },
+                { value: "video", label: t("pages.myGallery.videos"), icon: Video },
               ] as const
             ).map(({ value, label, icon: Icon }) => (
               <button
@@ -208,11 +215,10 @@ const MyGalleryPage = () => {
             <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-12 text-center">
               <Images className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
               <h2 className="text-lg font-semibold text-white mb-2">
-                Henüz fotoğrafınız yüklenmedi
+                {t("pages.myGallery.emptyTitle")}
               </h2>
               <p className="text-sm text-zinc-500 max-w-md mx-auto">
-                Çekiminiz tamamlandıktan sonra fotoğraflarınız burada görünecek.
-                Teslim süresi paketinize göre değişiklik gösterir.
+                {t("pages.myGallery.emptyText")}
               </p>
             </div>
           ) : (
@@ -232,7 +238,7 @@ const MyGalleryPage = () => {
                     className="px-6 py-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 font-medium transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
                   >
                     {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Daha Fazla Yükle
+                    {t("pages.media.loadMore")}
                   </button>
                 </div>
               )}

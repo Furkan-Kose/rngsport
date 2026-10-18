@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "../../components/LocalizedLink";
 import { motion } from "framer-motion";
 import { KeyRound, Mail, MailCheck } from "lucide-react";
 import api from "../../lib/api";
@@ -10,6 +11,7 @@ const ForgotPasswordPage = () => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,7 +23,7 @@ const ForgotPasswordPage = () => {
       setIsSent(true);
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { message?: string } } };
-      setError(errorObj.response?.data?.message || "Bir hata oluştu, lütfen tekrar deneyin");
+      setError(errorObj.response?.data?.message || t("auth.errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -29,7 +31,7 @@ const ForgotPasswordPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO title="Şifremi Unuttum" description="RNG Sport hesabınızın şifresini sıfırlayın." />
+      <SEO title={t("auth.forgot.seoTitle")} description={t("auth.forgot.seoDescription")} />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -44,9 +46,9 @@ const ForgotPasswordPage = () => {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-4">
               <KeyRound className="w-7 h-7 text-emerald-400" />
             </div>
-            <h1 className="text-3xl font-bold text-gradient-brand">Şifremi Unuttum</h1>
+            <h1 className="text-3xl font-bold text-gradient-brand">{t("auth.forgot.title")}</h1>
             <p className="text-zinc-500 text-sm mt-2">
-              E-posta adresinize sıfırlama bağlantısı gönderelim
+              {t("auth.forgot.subtitle")}
             </p>
           </div>
 
@@ -58,17 +60,16 @@ const ForgotPasswordPage = () => {
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-4">
                   <MailCheck className="w-7 h-7 text-emerald-400" />
                 </div>
-                <h2 className="text-lg font-semibold text-white mb-2">Bağlantı Gönderildi</h2>
+                <h2 className="text-lg font-semibold text-white mb-2">{t("auth.forgot.sentTitle")}</h2>
                 <p className="text-sm text-zinc-400 mb-6">
-                  Bu e-posta kayıtlıysa şifre sıfırlama bağlantısı gönderildi.
-                  Gelen kutunuzu (ve spam klasörünü) kontrol edin.
+                  {t("auth.forgot.sentText")}
                 </p>
-                <Link
+                <LocalizedLink
                   to="/giris"
                   className="text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
                 >
-                  Giriş sayfasına dön
-                </Link>
+                  {t("auth.forgot.backToLogin")}
+                </LocalizedLink>
               </div>
             ) : (
               <>
@@ -82,7 +83,7 @@ const ForgotPasswordPage = () => {
                   <div>
                     <label htmlFor="email" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
                       <Mail className="w-4 h-4" />
-                      E-posta <span className="text-red-400">*</span>
+                      {t("auth.email")} <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="email"
@@ -90,7 +91,7 @@ const ForgotPasswordPage = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                      placeholder="ornek@eposta.com"
+                      placeholder={t("auth.emailPlaceholder")}
                       required
                     />
                   </div>
@@ -100,15 +101,15 @@ const ForgotPasswordPage = () => {
                     disabled={isSubmitting}
                     className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25 transition-all duration-300"
                   >
-                    {isSubmitting ? "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
+                    {isSubmitting ? t("auth.forgot.submitting") : t("auth.forgot.submit")}
                   </button>
                 </form>
 
                 <p className="text-center text-sm text-zinc-500 mt-6">
-                  Şifrenizi hatırladınız mı?{" "}
-                  <Link to="/giris" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
-                    Giriş Yapın
-                  </Link>
+                  {t("auth.forgot.remember")}{" "}
+                  <LocalizedLink to="/giris" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                    {t("auth.forgot.login")}
+                  </LocalizedLink>
                 </p>
               </>
             )}

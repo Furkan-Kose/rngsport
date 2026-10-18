@@ -1,6 +1,8 @@
 // /api/award-ceremonies yanıt tipleri — public sayfalar ve admin paneli ortak
 
 export interface AwardCeremony {
+  /** EN/RU çevirileri (admin formu için; public yanıtta metinler zaten çevrili) */
+  translations?: Partial<Record<"en" | "ru", Record<string, string | string[]>>>;
   id: string;
   slug: string;
   title: string;

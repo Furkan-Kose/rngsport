@@ -1,24 +1,30 @@
 import { Instagram, Mail, Phone, ShieldCheck } from "lucide-react";
-
-const socialLinks = [
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/range.media",
-    icon: Instagram,
-    external: true,
-  },
-  { label: "E-posta", href: "mailto:range.media0@gmail.com", icon: Mail },
-  { label: "Telefon", href: "tel:+905398444521", icon: Phone },
-];
-import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
+import LocalizedLink from "./LocalizedLink";
+import { useLocalizedPath } from "../lib/localePath";
 
 const Footer = () => {
+  const { t } = useTranslation();
+  const localize = useLocalizedPath();
+
+  const socialLinks = [
+    {
+      label: "Instagram",
+      href: "https://www.instagram.com/range.media",
+      icon: Instagram,
+      external: true,
+    },
+    { label: t("common.footer.email"), href: "mailto:range.media0@gmail.com", icon: Mail },
+    { label: t("common.footer.phone"), href: "tel:+905398444521", icon: Phone },
+  ];
+
   const navLinks = [
-    { name: "Ana Sayfa", href: "/#" },
-    { name: "Hakkımızda", href: "/hakkimizda" },
-    { name: "Galeri", href: "/galeri" },
-    { name: "Ürünler", href: "/urunler" },
-    { name: "Paketler", href: "/paketler" },
+    { name: t("common.nav.home"), href: localize("/#") },
+    { name: t("common.nav.about"), href: localize("/hakkimizda") },
+    { name: t("common.nav.gallery"), href: localize("/galeri") },
+    { name: t("common.nav.awards"), href: localize("/odul-torenleri") },
+    { name: t("common.nav.products"), href: localize("/urunler") },
+    { name: t("common.nav.packages"), href: localize("/paketler") },
   ];
 
   return (
@@ -39,9 +45,7 @@ const Footer = () => {
               />
             </a>
             <p className="text-gray-400 max-w-md mb-6 leading-relaxed">
-              RNG Sport olarak ritmik cimnastik başta olmak üzere spor
-              organizasyonlarında fotoğraf ve video prodüksiyon hizmeti
-              sunuyoruz.
+              {t("common.footer.about")}
             </p>
             <div className="flex gap-3">
               {socialLinks.map(({ label, href, icon: Icon, external }) => (
@@ -66,7 +70,7 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-gray-100 mb-6 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-emerald-500" />
-              Hızlı Bağlantılar
+              {t("common.footer.quickLinks")}
             </h4>
             <ul className="space-y-3">
               {navLinks.map((link) => (
@@ -86,13 +90,13 @@ const Footer = () => {
           <div>
             <h4 className="font-bold text-gray-100 mb-6 flex items-center gap-2">
               <span className="w-1 h-4 rounded-full bg-emerald-500" />
-              İletişim
+              {t("common.footer.contact")}
             </h4>
             <ul className="space-y-3 text-gray-400">
               <li className="hover:text-emerald-400 transition-colors">
                 +90 (539) 844 45 21
               </li>
-              <li>İstanbul, Türkiye</li>
+              <li>{t("common.footer.location")}</li>
             </ul>
           </div>
         </div>
@@ -102,12 +106,12 @@ const Footer = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="text-xs font-medium text-emerald-300">
-              Güvenli Ödeme
+              {t("common.footer.securePayment")}
             </span>
           </div>
           <img
             src="/footerLogo.png"
-            alt="Ödeme Yöntemleri - iyzico, Visa, Mastercard"
+            alt={t("common.footer.paymentLogosAlt")}
             className="h-10 opacity-70 hover:opacity-100 transition-opacity"
           />
         </div>
@@ -120,33 +124,33 @@ const Footer = () => {
             rel="noopener noreferrer"
             className="text-sm text-gray-400 hover:text-emerald-400 transition-colors"
           >
-            © 2026 Range Media Tüm hakları saklıdır.
+            {t("common.footer.copyright")}
           </a>
           <div className="flex flex-col md:flex-row gap-2 md:gap-6 text-sm text-gray-400">
-            <Link
+            <LocalizedLink
               to="/gizlilik-ve-guvenlik-politikasi"
               className="hover:text-emerald-400 transition-colors"
             >
-              Gizlilik Politikası
-            </Link>
-            <Link
+              {t("common.legalLinks.privacy")}
+            </LocalizedLink>
+            <LocalizedLink
               to="/kvkk-aydinlatma-metni"
               className="hover:text-emerald-400 transition-colors"
             >
-              KVKK Aydınlatma Metni
-            </Link>
-            <Link
+              {t("common.legalLinks.kvkk")}
+            </LocalizedLink>
+            <LocalizedLink
               to="/mesafeli-satis-sozlesmesi"
               className="hover:text-emerald-400 transition-colors"
             >
-              Mesafeli Satış Sözleşmesi
-            </Link>
-            <Link
+              {t("common.legalLinks.distanceSales")}
+            </LocalizedLink>
+            <LocalizedLink
               to="/iptal-ve-iade-kosullari"
               className="hover:text-emerald-400 transition-colors"
             >
-              İptal ve İade Koşulları
-            </Link>
+              {t("common.legalLinks.refund")}
+            </LocalizedLink>
           </div>
         </div>
       </div>
