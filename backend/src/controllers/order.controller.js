@@ -5,7 +5,9 @@ import { localizeRecordItems } from "../utils/i18n.js";
 import {
   validateRequiredCustomerInfo,
   sanitizeNotes,
+  buildPartialCustomerUpdate,
 } from "../utils/validators.js";
+import { validateApparatuses } from "../utils/apparatuses.js";
 import { validateAndPriceItems } from "../utils/items.js";
 import {
   parsePaginationQuery,
@@ -13,6 +15,7 @@ import {
 } from "../utils/pagination.js";
 import {
   resolveAccountFor,
+  resolveGuestAccount,
   requesterRole,
   ownRecordsWhere,
   syncProfileGaps,
@@ -173,8 +176,13 @@ export const getOrder = async (req, res) => {
   });
 };
 
+// Admin: sipariş güncelle. Müşteri bilgileri, not, durum, ödeme no ve kalem
+// başına aletler düzenlenebilir. Paket/seri/adet bilerek düzenlenemez: online
+// siparişte tutar iyzico'dan tahsil edildi, fiyat değişirse tahsilatla çelişir.
+//   itemApparatuses: [{ id: <OrderItem id>, apparatuses: ["top", ...] }]
 export const updateOrder = async (req, res) => {
-  const { status, paymentId } = req.body;
+  const { id } = req.params;
+  const { status, paymentId, itemApparatuses } = req.body;
 
   if (status && !VALID_ORDER_STATUSES.includes(status)) {
     throw new AppError("Geçersiz sipariş durumu", 400);
@@ -183,31 +191,64 @@ export const updateOrder = async (req, res) => {
     throw new AppError("Geçersiz ödeme ID", 400);
   }
 
-  // Teslimat maili için önceki durumu bilmemiz gerekiyor
+  const data = {
+    ...buildPartialCustomerUpdate(req.body),
+    ...(status && { status }),
+    ...(paymentId && { paymentId: paymentId.trim() }),
+  };
+
+  // Teslimat maili için önceki durum; e-posta değişimi için müşteri bilgileri
   const existing = await prisma.order.findUnique({
-    where: { id: req.params.id },
-    select: { status: true },
+    where: { id },
+    select: {
+      status: true,
+      customerEmail: true,
+      athleteName: true,
+      clubName: true,
+      birthYear: true,
+      customerPhone: true,
+      items: { select: { id: true, seriesCount: true } },
+    },
   });
   if (!existing) {
     throw new AppError("Sipariş bulunamadı", 404);
   }
 
-  const order = await prisma.order
-    .update({
-      where: { id: req.params.id },
-      data: {
-        ...(status && { status }),
-        ...(paymentId && { paymentId: paymentId.trim() }),
-      },
-      include: { items: true },
+  // Alet düzeltmeleri: her kalem bu siparişe ait olmalı, seri sayısı kadar alet
+  const apparatusUpdates = [];
+  if (itemApparatuses !== undefined) {
+    if (!Array.isArray(itemApparatuses)) {
+      throw new AppError("Aletler liste formatında olmalı", 400);
+    }
+    for (const entry of itemApparatuses) {
+      const item = existing.items.find((it) => it.id === entry?.id);
+      if (!item) throw new AppError("Kayıt bulunamadı", 404);
+      apparatusUpdates.push({
+        id: item.id,
+        apparatuses: validateApparatuses(entry.apparatuses, item.seriesCount),
+      });
+    }
+  }
+
+  // E-posta değiştiyse sipariş yeni e-postanın hesabına taşınır (profilinde görünsün)
+  if (data.customerEmail && data.customerEmail !== existing.customerEmail) {
+    const account = await resolveGuestAccount({ ...existing, ...data });
+    data.userId = account.userId;
+  }
+
+  const order = await prisma
+    .$transaction(async (tx) => {
+      for (const u of apparatusUpdates) {
+        await tx.orderItem.update({ where: { id: u.id }, data: { apparatuses: u.apparatuses } });
+      }
+      return tx.order.update({ where: { id }, data, include: { items: true } });
     })
     .catch(rethrowPrismaError({ notFound: "Sipariş bulunamadı" }));
 
-  if (status) {
-    bus.emit("shooting-list-changed");
-    // Sadakat: ödendi/teslim → puan; iptal → geri al
-    syncPointsForRecord("order", order);
-  }
+  // Ad / alet / durum değişikliği çekim listesi eşleşmesini etkiler
+  bus.emit("shooting-list-changed");
+  // Sadakat: ödendi/teslim → puan; iptal → geri al
+  if (status) syncPointsForRecord("order", order);
 
   // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget).
   // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.

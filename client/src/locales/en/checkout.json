@@ -9,6 +9,7 @@
     "phone": "Contact Phone",
     "email": "Email Address",
     "contactEmail": "Contact Email",
+    "emailPlaceholder": "example@gmail.com",
     "emailLocked": "Your email is linked to your account and cannot be changed.",
     "notes": "Additional Note",
     "optional": "(optional)",
@@ -109,12 +110,11 @@
       "full": "Complete Package"
     },
     "summary": "Order Summary",
-    "paymentClosed": "Online payment is closed for this competition. You can make a booking instead.",
-    "reserve": "Book Now",
     "iyzicoAlt": "Secure payment with iyzico",
     "secure": "Secure payment is provided by iyzico.",
     "orderInfo": "Order Details",
     "toPayment": "Proceed to Payment",
-    "payment": "Payment"
+    "payment": "Payment",
+    "pickApparatusFirst": "Select the apparatus for each package before proceeding to payment."
   }
 }

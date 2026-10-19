@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   ShoppingCart,
   ArrowLeft,
@@ -25,6 +26,7 @@ import { useMyLoyalty } from "../hooks/useMyLoyalty";
 import LoyaltyPriceLines from "../components/LoyaltyPriceLines";
 import PriorityCheckbox from "../components/PriorityCheckbox";
 import { applyDiscount, formatTL, pointsFor } from "../lib/loyalty";
+import PriorityBadge from "../components/PriorityBadge";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart, type CartItem } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -217,7 +219,7 @@ const CartItemCard = ({ item }: { item: CartItem }) => {
 };
 
 const CartPage = () => {
-  const { items, getTotalPrice, getItemPrice, clearCart } = useCart();
+  const { items, getTotalPrice, getItemPrice, clearCart, refreshPackages } = useCart();
   const { user, isAuthenticated } = useAuth();
   const { t } = useTranslation();
 
@@ -273,6 +275,22 @@ const CartPage = () => {
       return { ...prev, [key]: [...current, slug] };
     });
   };
+
+  // Sepetteki paket bilgisini güncel fiyat/ad ile tazele (bkz. CartContext.refreshPackages)
+  useEffect(() => {
+    if (items.length === 0) return;
+    api
+      .get("/api/packages")
+      .then(({ data }) => refreshPackages(data))
+      .catch((err) => console.error("Paketler tazelenemedi:", err));
+    // Yalnızca sayfa açılışında (dil değişince sayfa yeniden kurulur)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Her paket için seri sayısı kadar alet seçilmeden ödemeye geçilmez
+  const apparatusMissing = items.some(
+    (it) => (itemApparatuses[itemKey(it)] ?? []).length !== it.seriesCount,
+  );
 
   // URL'den hata mesajı kontrolü
   useEffect(() => {
@@ -339,8 +357,8 @@ const CartPage = () => {
         orderId: orderData.order.id,
       });
 
-      // Sepeti temizle
-      clearCart();
+      // Sepet burada boşaltılmaz: ödeme başarısız olursa müşteri dolu sepete döner.
+      // Başarı sayfası (OrderSuccessPage) sipariş PAID ise boşaltır.
 
       // iyzico moduna göre işlem yap
       if (IYZICO_MODE === "redirect" && paymentData.paymentPageUrl) {
@@ -360,6 +378,23 @@ const CartPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Pencere açıkken arka sayfa kaymasın; Esc ile kapanır (işlem sürerken kapanmaz)
+  useEffect(() => {
+    if (!showCheckout) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isSubmitting) closeModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+    // closeModal her render'da yeni; yalnızca açılıp kapanmaya ve işlem durumuna bağlı
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCheckout, isSubmitting]);
 
   const closeModal = () => {
     setShowCheckout(false);
@@ -539,38 +574,19 @@ const CartPage = () => {
                     </div>
                   </div>
 
-                  {items.some(
-                    (it) =>
-                      (itemApparatuses[itemKey(it)] ?? []).length !==
-                      it.seriesCount,
-                  ) && (
+                  {apparatusMissing && (
                     <p className="text-xs text-amber-400 mb-2 text-center">
-                      {/* Devam etmeden önce her paket için aletleri seçin. */}
-                      {t("checkout.cart.paymentClosed")}
+                      {t("checkout.cart.pickApparatusFirst")}
                     </p>
                   )}
-                  {/* <button
-                  disabled={
-                    isSubmitting ||
-                    items.some(
-                      (it) =>
-                        (itemApparatuses[itemKey(it)] ?? []).length !==
-                        it.seriesCount,
-                    )
-                  }
-                  onClick={() => setShowCheckout(true)}
-                  className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="w-5 h-5" />
-                  {isSubmitting ? "İşleniyor..." : "Ödemeye Geç"}
-                </button> */}
-
-                  {/* ödeme geçici olarak kapalı */}
-                  <LocalizedLink to="/rezervasyon">
-                    <button className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2" >
-                      {t("checkout.cart.reserve")}
-                    </button>
-                  </LocalizedLink>
+                  <button
+                    disabled={isSubmitting || apparatusMissing}
+                    onClick={() => setShowCheckout(true)}
+                    className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    {isSubmitting ? t("checkout.form.processing") : t("checkout.cart.toPayment")}
+                  </button>
 
                   <div className="flex justify-center mt-4">
                     <img
@@ -590,204 +606,250 @@ const CartPage = () => {
         )}
       </div>
 
-      {/* Checkout Modal */}
-      <AnimatePresence>
-        {showCheckout && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
-          >
+      {/* Sipariş penceresi. document.body'ye çizilir: sayfa içeriği MainLayout'ta
+          "relative z-10" bir kutuda olduğu için içeride kalsa üst menünün (z-50)
+          altında kalıyordu. Masaüstünde iki sütun, mobilde tam ekran + sabit alt bar. */}
+      {createPortal(
+        <AnimatePresence>
+          {showCheckout && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 20 }}
-              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
-              className={`bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-h-[95vh] overflow-y-auto shadow-[0_0_60px_-10px_rgba(16,185,129,0.3)] ${
-                step === "payment" ? "max-w-4xl" : "max-w-lg"
-              }`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center sm:p-4 bg-black/75 backdrop-blur-md"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget && !isSubmitting) closeModal();
+              }}
             >
-              {step === "form" ? (
-                <>
-                  <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-                    <h3 className="text-lg font-semibold text-white">
-                      {t("checkout.cart.orderInfo")}
-                    </h3>
-                    <button
-                      onClick={closeModal}
-                      className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                    {error && (
-                      <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                        {error}
-                      </div>
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="checkout-title"
+                initial={{ opacity: 0, scale: 0.97, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: 20 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }}
+                className="relative flex flex-col w-full h-full sm:h-auto sm:max-h-[92vh] sm:max-w-4xl bg-zinc-900 sm:border border-zinc-800 sm:rounded-2xl overflow-hidden shadow-[0_0_60px_-10px_rgba(16,185,129,0.3)]"
+              >
+                {/* Başlık — sabit */}
+                <div className="shrink-0 flex items-center justify-between px-5 sm:px-6 py-4 border-b border-zinc-800">
+                  <h3 id="checkout-title" className="text-lg font-semibold text-white flex items-center gap-2">
+                    {step === "form" ? (
+                      <>
+                        <ShoppingCart className="w-5 h-5 text-emerald-400" />
+                        {t("checkout.cart.orderInfo")}
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-5 h-5 text-emerald-400" />
+                        {t("checkout.cart.payment")}
+                      </>
                     )}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    disabled={isSubmitting}
+                    aria-label={t("common.close")}
+                    className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors disabled:opacity-40"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-                    <div>
-                      <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                        <User className="w-4 h-4" />
-                        {t("checkout.form.athleteName")}{" "}
-                        <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="athleteName"
-                        value={form.athleteName}
-                        onChange={handleChange}
-                        placeholder={t("checkout.form.athleteNamePlaceholder")}
-                        className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                      />
-                    </div>
+                {step === "form" ? (
+                  <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                    {/* Kayan içerik */}
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="grid lg:grid-cols-[minmax(0,1fr)_340px]">
+                        {/* Sol: sporcu ve iletişim bilgileri */}
+                        <div className="p-5 sm:p-6 space-y-4">
+                          {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                              {error}
+                            </div>
+                          )}
 
-                    <div>
-                      <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                        <Building className="w-4 h-4" />
-                        {t("checkout.form.clubName")} <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="clubName"
-                        value={form.clubName}
-                        onChange={handleChange}
-                        placeholder={t("checkout.form.clubNamePlaceholder")}
-                        className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                      />
-                    </div>
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                                <User className="w-4 h-4" />
+                                {t("checkout.form.athleteName")} <span className="text-red-400">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                name="athleteName"
+                                value={form.athleteName}
+                                onChange={handleChange}
+                                placeholder={t("checkout.form.athleteNamePlaceholder")}
+                                className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                              />
+                            </div>
+                            <div>
+                              <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                                <Building className="w-4 h-4" />
+                                {t("checkout.form.clubName")} <span className="text-red-400">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                name="clubName"
+                                value={form.clubName}
+                                onChange={handleChange}
+                                placeholder={t("checkout.form.clubNamePlaceholder")}
+                                className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                              />
+                            </div>
+                            <div>
+                              <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                                <CalendarDays className="w-4 h-4" />
+                                {t("checkout.form.birthYear")} <span className="text-red-400">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                name="birthYear"
+                                value={form.birthYear}
+                                onChange={handleChange}
+                                placeholder={t("checkout.form.birthYearPlaceholder")}
+                                className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                              />
+                            </div>
+                            <div>
+                              <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                                <Phone className="w-4 h-4" />
+                                {t("checkout.form.phone")} <span className="text-red-400">*</span>
+                              </label>
+                              <input
+                                type="tel"
+                                name="customerPhone"
+                                value={form.customerPhone}
+                                onChange={handleChange}
+                                placeholder="0532 123 45 67"
+                                className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                              />
+                            </div>
+                          </div>
 
-                    <div>
-                      <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                        <CalendarDays className="w-4 h-4" />
-                        {t("checkout.form.birthYear")}{" "}
-                        <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="birthYear"
-                        value={form.birthYear}
-                        onChange={handleChange}
-                        placeholder={t("checkout.form.birthYearPlaceholder")}
-                        className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                      />
-                    </div>
+                          <div>
+                            <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                              <Mail className="w-4 h-4" />
+                              {t("checkout.form.contactEmail")} <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="email"
+                              name="customerEmail"
+                              value={form.customerEmail}
+                              onChange={handleChange}
+                              placeholder={t("checkout.form.emailPlaceholder")}
+                              className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                            />
+                          </div>
 
-                    <div>
-                      <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                        <Phone className="w-4 h-4" />
-                        {t("checkout.form.phone")}{" "}
-                        <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        name="customerPhone"
-                        value={form.customerPhone}
-                        onChange={handleChange}
-                        placeholder="0532 123 45 67"
-                        className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                      />
-                    </div>
+                          <div>
+                            <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
+                              <MessageSquare className="w-4 h-4" />
+                              {t("checkout.form.notes")} <span className="text-zinc-600">{t("checkout.form.optional")}</span>
+                            </label>
+                            <textarea
+                              name="notes"
+                              value={form.notes}
+                              onChange={handleChange}
+                              placeholder={t("checkout.form.notesPlaceholder")}
+                              rows={3}
+                              className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
+                            />
+                          </div>
 
-                    <div>
-                      <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                        <Mail className="w-4 h-4" />
-                        {t("checkout.form.contactEmail")}{" "}
-                        <span className="text-red-400">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        name="customerEmail"
-                        value={form.customerEmail}
-                        onChange={handleChange}
-                        placeholder="ornek@gmail.com"
-                        className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                        <MessageSquare className="w-4 h-4" />
-                        {t("checkout.form.notes")}{" "}
-                        <span className="text-zinc-600">{t("checkout.form.optional")}</span>
-                      </label>
-                      <textarea
-                        name="notes"
-                        value={form.notes}
-                        onChange={handleChange}
-                        placeholder={t("checkout.form.notesPlaceholder")}
-                        rows={3}
-                        className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
-                      />
-                    </div>
-
-                    <div className="pt-4 border-t border-zinc-800">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-zinc-400">{t("checkout.form.totalAmount")}</span>
-                        <span className="text-xl font-bold text-emerald-400">
-                          {formatTL(discountedTotal)}
-                        </span>
-                      </div>
-
-                      <LoyaltyPriceLines
-                        subtotal={subtotal}
-                        discountPercent={discountPercent}
-                        tierName={loyalty?.tier?.name}
-                        redeemPoints={loyalty?.tier?.minPoints ?? 0}
-                        earnPoints={earnPoints}
-                        isGuest={!isAuthenticated}
-                        loginRedirect="/sepet"
-                      />
-
-                      {/* Hesap bağlama bilgisi */}
-                      {isAuthenticated ? (
-                        <div className="mb-4 flex items-start gap-2 text-sm text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
-                          <Check className="w-4 h-4 mt-0.5 shrink-0" />
-                          <span>
-                            {t("checkout.form.accountLinked")}
-                          </span>
+                          {/* Hesap bağlama bilgisi */}
+                          {isAuthenticated ? (
+                            <div className="flex items-start gap-2 text-sm text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
+                              <Check className="w-4 h-4 mt-0.5 shrink-0" />
+                              <span>{t("checkout.form.accountLinked")}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-start gap-2 text-sm text-zinc-400 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
+                              <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
+                              <span>{t("checkout.form.accountNewOrder")}</span>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="mb-4 flex items-start gap-2 text-sm text-zinc-400 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
-                          <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
-                          <span>
-                            {t("checkout.form.accountNewOrder")}
-                          </span>
-                        </div>
-                      )}
 
-                      {/* KVKK Onay */}
-                      <div className="mb-4">
-                        <label className="flex items-start gap-3 cursor-pointer group">
-                          <input
-                            type="checkbox"
-                            checked={kvkkAccepted}
-                            onChange={(e) => setKvkkAccepted(e.target.checked)}
-                            className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
-                          />
-                          <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                            <LocalizedLink
-                              to="/kvkk-aydinlatma-metni"
-                              target="_blank"
-                              className="text-emerald-400 hover:text-emerald-300 underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {t("checkout.form.kvkkLinkShort")}
-                            </LocalizedLink>
-                            {t("checkout.form.kvkkSuffix")}{" "}
-                            <span className="text-red-400">*</span>
-                          </span>
-                        </label>
+                        {/* Sağ: sipariş özeti */}
+                        <aside className="p-5 sm:p-6 bg-zinc-950/50 border-t lg:border-t-0 lg:border-l border-zinc-800 space-y-4">
+                          <h4 className="text-sm font-semibold text-zinc-300 uppercase tracking-wider">
+                            {t("checkout.cart.summary")}
+                          </h4>
+                          <ul className="space-y-3">
+                            {items.map((item) => (
+                              <li key={itemKey(item)} className="text-sm">
+                                <div className="flex justify-between gap-3">
+                                  <span className="text-zinc-200 min-w-0">
+                                    {item.package.name}
+                                    <PriorityBadge show={item.priority} />
+                                  </span>
+                                  <span className="text-zinc-200 shrink-0">₺{formatNumber(getItemPrice(item))}</span>
+                                </div>
+                                <p className="text-xs text-zinc-500 mt-0.5">
+                                  {t("common.series", { count: item.seriesCount })} × {item.quantity}
+                                  {(itemApparatuses[itemKey(item)] ?? []).length > 0 && (
+                                    <>
+                                      {" · "}
+                                      {(itemApparatuses[itemKey(item)] ?? [])
+                                        .map((slug) => t(`common.apparatus.${slug}`))
+                                        .join(", ")}
+                                    </>
+                                  )}
+                                </p>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <div className="pt-3 border-t border-zinc-800">
+                            <LoyaltyPriceLines
+                              subtotal={subtotal}
+                              discountPercent={discountPercent}
+                              tierName={loyalty?.tier?.name}
+                              redeemPoints={loyalty?.tier?.minPoints ?? 0}
+                              earnPoints={earnPoints}
+                              isGuest={!isAuthenticated}
+                              loginRedirect="/sepet"
+                            />
+                          </div>
+
+                          {/* KVKK Onay */}
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={kvkkAccepted}
+                              onChange={(e) => setKvkkAccepted(e.target.checked)}
+                              className="mt-1 w-5 h-5 shrink-0 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
+                            />
+                            <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                              <LocalizedLink
+                                to="/kvkk-aydinlatma-metni"
+                                target="_blank"
+                                className="text-emerald-400 hover:text-emerald-300 underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {t("checkout.form.kvkkLinkShort")}
+                              </LocalizedLink>
+                              {t("checkout.form.kvkkSuffix")} <span className="text-red-400">*</span>
+                            </span>
+                          </label>
+                        </aside>
                       </div>
+                    </div>
 
+                    {/* Alt bar — sabit: toplam + ödeme butonu hep görünür */}
+                    <div className="shrink-0 flex items-center gap-4 px-5 sm:px-6 py-4 border-t border-zinc-800 bg-zinc-900">
+                      <div className="min-w-0">
+                        <p className="text-xs text-zinc-500">{t("checkout.form.totalAmount")}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-gradient-brand">{formatTL(discountedTotal)}</p>
+                      </div>
                       <button
                         type="submit"
                         disabled={isSubmitting || !kvkkAccepted}
-                        className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
+                        className="ml-auto flex-1 sm:flex-none sm:min-w-56 py-3.5 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
                       >
                         {isSubmitting ? (
                           <>
@@ -803,35 +865,21 @@ const CartPage = () => {
                       </button>
                     </div>
                   </form>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-emerald-400" />
-                      {t("checkout.cart.payment")}
-                    </h3>
-                    <button
-                      onClick={closeModal}
-                      className="p-2 text-zinc-400 hover:text-white rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  <div className="p-6">
-                    {/* iyzico checkout form */}
+                ) : (
+                  <div className="flex-1 overflow-y-auto p-6">
+                    {/* iyzico checkout form (popup modu) */}
                     <IyzicoCheckoutForm html={paymentHtml} />
                     <p className="text-xs text-zinc-500 text-center mt-4">
                       🔒 {t("checkout.cart.secure")}
                     </p>
                   </div>
-                </>
-              )}
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   );
 };

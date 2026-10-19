@@ -36,6 +36,7 @@ interface CartContextType {
   updateSeriesCount: (packageId: string, oldSeriesCount: 1 | 2 | 3, newSeriesCount: 1 | 2 | 3) => void;
   setPriority: (packageId: string, seriesCount: 1 | 2 | 3, priority: boolean) => void;
   clearCart: () => void;
+  refreshPackages: (fresh: Package[]) => void;
   getItemPrice: (item: CartItem) => number;
   getTotalPrice: () => number;
   getTotalItems: () => number;
@@ -78,7 +79,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       // Yoksa yeni ekle
       return [...prev, { package: pkg, seriesCount, quantity: 1 }];
     });
-    toast.success(`${pkg.name} sepete eklendi!`);
+    toast.success(i18n.t("pages.cartToast.added", { name: pkg.name }));
   };
 
   const removeFromCart = (packageId: string, seriesCount: 1 | 2 | 3) => {
@@ -156,6 +157,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setItems([]);
   };
 
+  // Sepet paket bilgisini eklendiği anki haliyle saklıyor. Sepet sayfası açılınca
+  // güncel paketlerle (fiyat, öncelik ücreti, o anki dildeki ad) tazelenir; artık
+  // satışta olmayan paket çıkarılır. Asıl tutarı yine sunucu hesaplar.
+  const refreshPackages = (fresh: Package[]) => {
+    const byId = new Map(fresh.map((p) => [p.id, p]));
+    setItems((prev) =>
+      prev.flatMap((item) => {
+        const pkg = byId.get(item.package.id);
+        if (!pkg) return [];
+        return [{ ...item, package: pkg, priority: !!item.priority && pkg.priorityFee != null }];
+      }),
+    );
+  };
+
   const getItemPrice = (item: CartItem): number => {
     const { package: pkg, seriesCount, quantity } = item;
     const basePrice =
@@ -191,6 +206,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         updateSeriesCount,
         setPriority,
         clearCart,
+        refreshPackages,
         getItemPrice,
         getTotalPrice,
         getTotalItems,

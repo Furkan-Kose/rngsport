@@ -98,7 +98,8 @@
     "intro": "Choose based on how many of your athlete's routines you want captured. Book now and pay at our stand on competition day."
   },
   "cartToast": {
-    "removed": "Item removed from cart!"
+    "removed": "Item removed from cart!",
+    "added": "{{name}} added to cart!"
   },
   "about": {
     "seoTitle": "About Us",

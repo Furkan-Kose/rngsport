@@ -9,6 +9,7 @@
     "phone": "İletişim için Telefon",
     "email": "E-posta Adresi",
     "contactEmail": "İletişim için E-posta",
+    "emailPlaceholder": "ornek@gmail.com",
     "emailLocked": "E-posta hesabınıza bağlı olduğu için değiştirilemez.",
     "notes": "Ek Not",
     "optional": "(opsiyonel)",
@@ -107,12 +108,11 @@
       "full": "Komple Paket"
     },
     "summary": "Sipariş Özeti",
-    "paymentClosed": "Bu yarışma için web sitemiz üzerinden ödeme kapalıdır. Rezervasyon yapabilirsiniz.",
-    "reserve": "Rezervasyon Yap",
     "iyzicoAlt": "iyzico ile güvenli ödeme",
     "secure": "Güvenli ödeme iyzico altyapısı ile sağlanmaktadır.",
     "orderInfo": "Sipariş Bilgileri",
     "toPayment": "Ödemeye Geç",
-    "payment": "Ödeme"
+    "payment": "Ödeme",
+    "pickApparatusFirst": "Ödemeye geçmeden önce her paket için aletleri seçin."
   }
 }

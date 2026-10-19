@@ -9,11 +9,14 @@ import api from "../lib/api";
 import Reveal from "../components/ui/Reveal";
 import SEO from "../components/SEO";
 import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCard";
+import { useCart } from "../context/CartContext";
+import PriorityBadge from "../components/PriorityBadge";
 
 interface OrderData {
   id: string;
   /** Şifre belirleme kartı için hesap durumu (backend: claimStatusFor) */
   account?: AccountInfo;
+  status: string;
   athleteName: string;
   clubName: string;
   totalPrice: number;
@@ -21,6 +24,7 @@ interface OrderData {
     package: { name: string };
     seriesCount: number;
     quantity: number;
+    priority?: boolean;
   }>;
 }
 
@@ -29,6 +33,7 @@ const OrderSuccessPage = () => {
   const orderId = searchParams.get("id");
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { clearCart } = useCart();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -37,12 +42,16 @@ const OrderSuccessPage = () => {
         .get(`/api/orders/${orderId}`)
         .then(({ data }) => {
           setOrder(data);
+          // Sepet ödeme sayfasına giderken korunur; ödeme kesinleşince boşaltılır
+          if (data.status === "PAID") clearCart();
           setLoading(false);
         })
         .catch(() => setLoading(false));
     } else {
       setLoading(false);
     }
+    // clearCart her render'da yeni; eklenirse istek döngüye girer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   return (
@@ -128,6 +137,7 @@ const OrderSuccessPage = () => {
                             >
                               <span>
                                 {item.package.name} ({t("common.series", { count: item.seriesCount })})
+                                <PriorityBadge show={item.priority} />
                               </span>
                               <span>x{item.quantity}</span>
                             </div>

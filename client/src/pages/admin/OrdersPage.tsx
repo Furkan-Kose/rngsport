@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Pencil, Save, Trash2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import api from '../../lib/api';
 import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
-import { getApparatusLabel } from '../../constants/apparatuses';
+import { APPARATUSES, getApparatusLabel } from '../../constants/apparatuses';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import PriorityBadge from '../../components/PriorityBadge';
 
 interface OrderItem {
+  id: string;
   packageId: string;
   packageName: string;
   category: string;
@@ -23,6 +26,7 @@ interface Order {
   clubName: string;
   birthYear: string;
   customerPhone: string;
+  customerEmail: string | null;
   notes: string | null;
   subtotal: number | null;
   discountPercent: number;
@@ -43,6 +47,21 @@ interface Pagination {
 
 const ITEMS_PER_PAGE = 10;
 
+interface EditForm {
+  athleteName: string;
+  clubName: string;
+  birthYear: string;
+  customerPhone: string;
+  customerEmail: string;
+  notes: string;
+}
+
+const inputClass =
+  'w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
+
+const errorMessage = (err: unknown, fallback: string) =>
+  (err as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
+
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
@@ -56,6 +75,14 @@ const OrdersPage = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  // Detay penceresinde düzenleme: müşteri bilgileri + kalem başına aletler.
+  // Paket/seri/adet düzenlenmez — online siparişte tutar iyzico'dan tahsil edildi.
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editApparatuses, setEditApparatuses] = useState<Record<string, string[]>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchOrders = useCallback(async (page: number = 1) => {
     setIsLoading(true);
@@ -112,6 +139,78 @@ const OrdersPage = () => {
       }
     } catch (error) {
       console.error('Update order error:', error);
+    }
+  };
+
+  const openOrder = (order: Order | null) => {
+    setSelectedOrder(order);
+    setEditForm(null);
+    setEditError('');
+    setConfirmDelete(false);
+  };
+
+  const startEdit = (order: Order) => {
+    setEditForm({
+      athleteName: order.athleteName,
+      clubName: order.clubName,
+      birthYear: order.birthYear,
+      customerPhone: order.customerPhone,
+      customerEmail: order.customerEmail ?? '',
+      notes: order.notes ?? '',
+    });
+    setEditApparatuses(Object.fromEntries(order.items.map((it) => [it.id, it.apparatuses ?? []])));
+    setEditError('');
+  };
+
+  const toggleApparatus = (itemId: string, slug: string, max: number) => {
+    setEditApparatuses((prev) => {
+      const current = prev[itemId] ?? [];
+      if (current.includes(slug)) return { ...prev, [itemId]: current.filter((s) => s !== slug) };
+      if (current.length >= max) return prev;
+      return { ...prev, [itemId]: [...current, slug] };
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!selectedOrder || !editForm) return;
+    const incomplete = selectedOrder.items.find(
+      (it) => (editApparatuses[it.id] ?? []).length !== it.seriesCount,
+    );
+    if (incomplete) {
+      setEditError('Her kalem için seri sayısı kadar alet seçin');
+      return;
+    }
+    setIsSaving(true);
+    setEditError('');
+    try {
+      const { data } = await api.patch(`/api/orders/${selectedOrder.id}`, {
+        ...editForm,
+        itemApparatuses: selectedOrder.items.map((it) => ({ id: it.id, apparatuses: editApparatuses[it.id] })),
+      });
+      const updated: Order = data.order;
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      setSelectedOrder(updated);
+      setEditForm(null);
+      toast.success('Sipariş güncellendi');
+    } catch (err) {
+      setEditError(errorMessage(err, 'Sipariş güncellenemedi'));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteOrder = async () => {
+    if (!selectedOrder) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/orders/${selectedOrder.id}`);
+      toast.success('Sipariş silindi');
+      openOrder(null);
+      fetchOrders(pagination.page);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Sipariş silinemedi'));
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -293,7 +392,7 @@ const OrdersPage = () => {
                 <button
                   key={order.id}
                   type="button"
-                  onClick={() => setSelectedOrder(order)}
+                  onClick={() => openOrder(order)}
                   className="w-full text-left p-4 hover:bg-gray-700/20 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -344,7 +443,7 @@ const OrdersPage = () => {
                       <td className="px-6 py-4 text-gray-400 text-sm">{formatDate(order.createdAt)}</td>
                       <td className="px-6 py-4">
                         <button
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={() => openOrder(order)}
                           className="text-amber-400 hover:text-amber-300 text-sm font-medium"
                         >
                           Detay
@@ -367,7 +466,7 @@ const OrdersPage = () => {
             <div className="p-4 sm:p-6 border-b border-gray-700 flex items-center justify-between">
               <h2 className="text-lg sm:text-xl font-semibold text-white">Sipariş Detayı</h2>
               <button
-                onClick={() => setSelectedOrder(null)}
+                onClick={() => openOrder(null)}
                 className="text-gray-400 hover:text-white"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -377,7 +476,39 @@ const OrdersPage = () => {
             </div>
 
             <div className="p-4 sm:p-6 space-y-6">
-              {/* Order Info */}
+              {/* Order Info — düzenleme modunda form */}
+              {editForm ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    ['athleteName', 'Sporcu Adı'],
+                    ['clubName', 'Kulüp'],
+                    ['birthYear', 'Doğum Yılı'],
+                    ['customerPhone', 'Telefon'],
+                    ['customerEmail', 'E-posta'],
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className={key === 'customerEmail' ? 'sm:col-span-2' : ''}>
+                      <span className="block text-xs text-gray-400 mb-1">{label}</span>
+                      <input
+                        value={editForm[key]}
+                        onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                        className={inputClass}
+                      />
+                    </label>
+                  ))}
+                  <p className="sm:col-span-2 text-xs text-gray-500 -mt-1">
+                    E-posta değişirse sipariş o e-postanın hesabına taşınır.
+                  </p>
+                  <label className="sm:col-span-2">
+                    <span className="block text-xs text-gray-400 mb-1">Not</span>
+                    <textarea
+                      rows={2}
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                      className={`${inputClass} resize-y`}
+                    />
+                  </label>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <p className="text-gray-400 text-sm">Sipariş ID</p>
@@ -407,6 +538,12 @@ const OrdersPage = () => {
                   <p className="text-gray-400 text-sm">Tarih</p>
                   <p className="text-white">{formatDate(selectedOrder.createdAt)}</p>
                 </div>
+                {selectedOrder.customerEmail && (
+                  <div className="sm:col-span-2">
+                    <p className="text-gray-400 text-sm">E-posta</p>
+                    <p className="text-white break-all">{selectedOrder.customerEmail}</p>
+                  </div>
+                )}
                 {selectedOrder.notes && (
                   <div className="sm:col-span-2">
                     <p className="text-gray-400 text-sm">Notlar</p>
@@ -414,6 +551,7 @@ const OrdersPage = () => {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Order Items */}
               <div>
@@ -429,7 +567,30 @@ const OrdersPage = () => {
                         <p className="text-gray-400 text-xs sm:text-sm">
                           {getCategoryLabel(item.category)} • {item.seriesCount} Seri x {item.quantity} Adet
                         </p>
-                        {item.apparatuses && item.apparatuses.length > 0 && (
+                        {editForm ? (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {APPARATUSES.map((a) => {
+                              const picked = (editApparatuses[item.id] ?? []).includes(a.slug);
+                              return (
+                                <button
+                                  key={a.slug}
+                                  type="button"
+                                  onClick={() => toggleApparatus(item.id, a.slug, item.seriesCount)}
+                                  className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                                    picked
+                                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                      : 'bg-gray-800 text-gray-400 border-gray-600 hover:text-white'
+                                  }`}
+                                >
+                                  {a.label}
+                                </button>
+                              );
+                            })}
+                            <span className="text-[11px] text-gray-500 self-center ml-1">
+                              {(editApparatuses[item.id] ?? []).length}/{item.seriesCount}
+                            </span>
+                          </div>
+                        ) : item.apparatuses && item.apparatuses.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {item.apparatuses.map((slug) => (
                               <span
@@ -458,6 +619,54 @@ const OrdersPage = () => {
                     {formatPrice(selectedOrder.totalPrice)}
                   </span>
                 </div>
+              </div>
+
+              {/* Düzenle / Sil */}
+              {editError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                  {editError}
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-gray-700">
+                {editForm ? (
+                  <>
+                    <button
+                      onClick={saveEdit}
+                      disabled={isSaving}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium disabled:opacity-50"
+                    >
+                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      Kaydet
+                    </button>
+                    <button
+                      onClick={() => setEditForm(null)}
+                      disabled={isSaving}
+                      className="px-4 py-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 text-sm"
+                    >
+                      Vazgeç
+                    </button>
+                    <span className="text-xs text-gray-500">
+                      Paket, seri ve adet değiştirilemez (tutar iyzico'dan tahsil edildi).
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => startEdit(selectedOrder)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-sm font-medium"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Düzenle
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(true)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-sm font-medium"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Sil
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Actions */}
@@ -492,6 +701,23 @@ const OrdersPage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        open={confirmDelete && !!selectedOrder}
+        title="Sipariş silinsin mi?"
+        message={
+          selectedOrder && (
+            <>
+              <strong>{selectedOrder.athleteName}</strong> adına {formatPrice(selectedOrder.totalPrice)} tutarlı
+              sipariş kalıcı olarak silinecek ve çekim listesinden düşecek. iyzico'daki ödeme iade
+              edilmez; iade gerekiyorsa iyzico panelinden ayrıca yapın.
+            </>
+          )
+        }
+        isDeleting={isDeleting}
+        onConfirm={deleteOrder}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 };

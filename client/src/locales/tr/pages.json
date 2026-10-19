@@ -97,7 +97,8 @@
     "intro": "Sporcunuzun kaç serisini çektirmek istediğinize göre seçin. Rezervasyonu şimdi oluşturun, ödemeyi yarışma günü standımızda tamamlayın."
   },
   "cartToast": {
-    "removed": "Ürün sepetten çıkarıldı!"
+    "removed": "Ürün sepetten çıkarıldı!",
+    "added": "{{name}} sepete eklendi!"
   },
   "about": {
     "seoTitle": "Hakkımızda",

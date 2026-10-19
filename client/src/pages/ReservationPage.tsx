@@ -848,7 +848,7 @@ const ReservationPage = () => {
                   value={form.customerEmail}
                   onChange={handleChange}
                   readOnly={!!editingId}
-                  placeholder="ornek@gmail.com"
+                  placeholder={t("checkout.form.emailPlaceholder")}
                   className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors read-only:opacity-60 read-only:cursor-not-allowed"
                 />
                 {editingId && (
