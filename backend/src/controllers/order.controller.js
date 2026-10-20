@@ -8,6 +8,7 @@ import {
   buildPartialCustomerUpdate,
 } from "../utils/validators.js";
 import { validateApparatuses } from "../utils/apparatuses.js";
+import { shootingListChecker } from "../utils/names.js";
 import { validateAndPriceItems } from "../utils/items.js";
 import {
   parsePaginationQuery,
@@ -120,7 +121,7 @@ export const getAllOrders = async (req, res) => {
   const { page, limit, skip, status, search } = parsePaginationQuery(req);
   const where = buildCustomerSearchWhere({ status, search });
 
-  const [orders, total] = await Promise.all([
+  const [orders, total, checkList] = await Promise.all([
     prisma.order.findMany({
       where,
       include: { items: true },
@@ -129,10 +130,12 @@ export const getAllOrders = async (req, res) => {
       take: limit,
     }),
     prisma.order.count({ where }),
+    shootingListChecker(),
   ]);
 
   res.json({
-    data: orders,
+    // listMatch + unmatchedApparatuses: çekim listesiyle isim+alet eşleşmesi (admin renklendirmesi)
+    data: orders.map((o) => ({ ...o, ...checkList(o) })),
     pagination: {
       page,
       limit,

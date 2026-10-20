@@ -5,6 +5,9 @@ import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import ReservationFormModal from '../../components/admin/ReservationFormModal';
 import { getApparatusLabel } from '../../constants/apparatuses';
+import { ListMatchLegend, ListMatchWarning } from '../../components/admin/ShootingListMatch';
+import { listMatchTint, type ListMatchFields } from '../../lib/listMatch';
+
 import PriorityBadge from '../../components/PriorityBadge';
 
 interface ReservationItem {
@@ -18,7 +21,7 @@ interface ReservationItem {
   priority?: boolean;
 }
 
-interface Reservation {
+interface Reservation extends ListMatchFields {
   id: string;
   athleteName: string;
   clubName: string;
@@ -33,7 +36,6 @@ interface Reservation {
   status: string;
   createdAt: string;
   items: ReservationItem[];
-  inShootingList?: boolean | null;
 }
 
 interface Pagination {
@@ -187,14 +189,11 @@ const ReservationsPage = () => {
   };
 
 
-  // Onaylı/ödenmiş rezervasyonun sporcusu çekim listesinde mi? (yalnızca isim bazlı)
-  // Varsa yeşilimsi, listede yoksa (isim hatalı olabilir) kırmızımsı arka plan.
-  const getRowTint = (r: Reservation) => {
-    if (r.status !== 'CONFIRMED' && r.status !== 'PAID' && r.status !== 'DELIVERED') return '';
-    if (r.inShootingList === true) return 'bg-green-500/5';
-    if (r.inShootingList === false) return 'bg-red-500/10';
-    return '';
-  };
+  // Onaylı/ödenmiş rezervasyonun çekim listesiyle isim + alet eşleşmesi:
+  // yeşil eşleşiyor, turuncu alet uyuşmuyor, kırmızı isim yok (bkz. lib/listMatch)
+  const isActive = (r: Reservation) =>
+    r.status === 'CONFIRMED' || r.status === 'PAID' || r.status === 'DELIVERED';
+  const getRowTint = (r: Reservation) => (isActive(r) ? listMatchTint(r.listMatch) : '');
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
@@ -360,17 +359,7 @@ const ReservationsPage = () => {
         ) : (
           <>
             {/* Çekim listesi eşleşme açıklaması (yalnızca onaylı/ödenmiş rezervasyonlarda) */}
-            <div className="px-4 py-2.5 border-b border-gray-700/50 flex items-center gap-4 text-xs text-gray-400 flex-wrap">
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-green-500/30 border border-green-500/40" />
-                Çekim listesinde
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-red-500/30 border border-red-500/40" />
-                Listede bulunamadı (isim hatalı olabilir)
-              </span>
-              <span className="text-gray-500">— yalnızca onaylanan/ödenen rezervasyonlar için</span>
-            </div>
+            <ListMatchLegend scope="onaylanan/ödenen rezervasyonlar" />
 
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-gray-700/50">
@@ -491,6 +480,13 @@ const ReservationsPage = () => {
             </div>
 
             <div className="p-4 sm:p-6 space-y-6">
+              {isActive(selectedReservation) && (
+                <ListMatchWarning
+                  listMatch={selectedReservation.listMatch}
+                  unmatchedApparatuses={selectedReservation.unmatchedApparatuses}
+                />
+              )}
+
               {/* Reservation Info */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">

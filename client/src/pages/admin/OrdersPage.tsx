@@ -6,6 +6,9 @@ import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import { APPARATUSES, getApparatusLabel } from '../../constants/apparatuses';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { ListMatchLegend, ListMatchWarning } from '../../components/admin/ShootingListMatch';
+import { listMatchTint, type ListMatchFields } from '../../lib/listMatch';
+
 import PriorityBadge from '../../components/PriorityBadge';
 
 interface OrderItem {
@@ -20,7 +23,7 @@ interface OrderItem {
   priority?: boolean;
 }
 
-interface Order {
+interface Order extends ListMatchFields {
   id: string;
   athleteName: string;
   clubName: string;
@@ -192,6 +195,8 @@ const OrdersPage = () => {
       setSelectedOrder(updated);
       setEditForm(null);
       toast.success('Sipariş güncellendi');
+      // PATCH yanıtında eşleşme bilgisi yok; ad/alet değişmiş olabilir → listeyi tazele
+      fetchOrders(pagination.page);
     } catch (err) {
       setEditError(errorMessage(err, 'Sipariş güncellenemedi'));
     } finally {
@@ -231,6 +236,11 @@ const OrdersPage = () => {
     }).format(new Date(date));
   };
 
+
+  // Ödenmiş siparişin çekim listesiyle isim + alet eşleşmesi:
+  // yeşil eşleşiyor, turuncu alet uyuşmuyor, kırmızı isim yok (bkz. lib/listMatch)
+  const isPaid = (o: Order) => o.status === 'PAID' || o.status === 'DELIVERED';
+  const getRowTint = (o: Order) => (isPaid(o) ? listMatchTint(o.listMatch) : '');
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
@@ -386,6 +396,9 @@ const OrdersPage = () => {
           </div>
         ) : (
           <>
+            {/* Çekim listesi eşleşme açıklaması (yalnızca ödenmiş siparişlerde) */}
+            <ListMatchLegend scope="ödenen siparişler" />
+
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-gray-700/50">
               {orders.map((order) => (
@@ -393,7 +406,7 @@ const OrdersPage = () => {
                   key={order.id}
                   type="button"
                   onClick={() => openOrder(order)}
-                  className="w-full text-left p-4 hover:bg-gray-700/20 transition-colors"
+                  className={`w-full text-left p-4 hover:bg-gray-700/20 transition-colors ${getRowTint(order)}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -429,7 +442,7 @@ const OrdersPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-700/50">
                   {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-700/20 transition-colors">
+                    <tr key={order.id} className={`hover:bg-gray-700/20 transition-colors ${getRowTint(order)}`}>
                       <td className="px-6 py-4">
                         <div>
                           <p className="text-white font-medium">{order.athleteName}</p>
@@ -476,6 +489,13 @@ const OrdersPage = () => {
             </div>
 
             <div className="p-4 sm:p-6 space-y-6">
+              {!editForm && isPaid(selectedOrder) && (
+                <ListMatchWarning
+                  listMatch={selectedOrder.listMatch}
+                  unmatchedApparatuses={selectedOrder.unmatchedApparatuses}
+                />
+              )}
+
               {/* Order Info — düzenleme modunda form */}
               {editForm ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -12,7 +12,7 @@ import {
   parsePaginationQuery,
   buildCustomerSearchWhere,
 } from "../utils/pagination.js";
-import { matchKey } from "../utils/names.js";
+import { matchKey, shootingListChecker } from "../utils/names.js";
 import {
   resolveGuestAccount,
   resolveAccountFor,
@@ -116,7 +116,7 @@ export const getAllReservations = async (req, res) => {
   const { page, limit, skip, status, search } = parsePaginationQuery(req);
   const where = buildCustomerSearchWhere({ status, search });
 
-  const [reservations, total, shootingNames] = await Promise.all([
+  const [reservations, total, checkList] = await Promise.all([
     prisma.reservation.findMany({
       where,
       include: { items: true },
@@ -125,18 +125,13 @@ export const getAllReservations = async (req, res) => {
       take: limit,
     }),
     prisma.reservation.count({ where }),
-    prisma.shootingListEntry.findMany({ select: { athleteName: true } }),
+    shootingListChecker(),
   ]);
-
-  // Çekim listesindeki isimleri normalize edip Set'e koy; sporcu adı eşleşmesi
-  // için (yalnızca isim bazlı). Liste hiç yoksa eşleşme uygulanamaz → null.
-  const nameSet = new Set(shootingNames.map((e) => matchKey(e.athleteName)));
-  const hasList = nameSet.size > 0;
 
   res.json({
     data: reservations.map((r) => ({
       ...r,
-      inShootingList: hasList ? nameSet.has(matchKey(r.athleteName)) : null,
+      ...checkList(r), // listMatch + unmatchedApparatuses (admin renklendirmesi)
     })),
     pagination: {
       page,
