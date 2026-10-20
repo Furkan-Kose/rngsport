@@ -6,6 +6,7 @@ import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import { APPARATUSES, getApparatusLabel } from '../../constants/apparatuses';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { useRecordsLiveRefresh } from '../../hooks/useRecordsLiveRefresh';
 import { ListMatchLegend, ListMatchWarning } from '../../components/admin/ShootingListMatch';
 import { listMatchTint, type ListMatchFields } from '../../lib/listMatch';
 
@@ -87,8 +88,9 @@ const OrdersPage = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchOrders = useCallback(async (page: number = 1) => {
-    setIsLoading(true);
+  // silent: arka plan yenilemesi (canlı akış) — yükleniyor göstergesi çıkmaz
+  const fetchOrders = useCallback(async (page: number = 1, silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -123,6 +125,10 @@ const OrdersPage = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  // Başka bir admin sipariş düzenlerse / yeni sipariş ödenirse liste kendiliğinden yenilenir.
+  // Detay penceresi açıkken bekler (yazılanlar kaybolmasın).
+  useRecordsLiveRefresh(() => fetchOrders(pagination.page, true), !!selectedOrder || confirmDelete);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {

@@ -4,6 +4,7 @@ import {
   clearShootingList,
   exportShootingList,
   getShootingList,
+  resetShootingTimes,
   streamShootingList,
   updateShootingEntry,
   uploadShootingList,
@@ -48,5 +49,6 @@ router.patch("/:id", canViewList, updateShootingEntry);
 router.get("/export", requireAdmin, exportShootingList);
 router.post("/upload", requireAdmin, upload.single("file"), uploadShootingList);
 router.delete("/", requireAdmin, clearShootingList);
+router.post("/reset-times", requireAdmin, resetShootingTimes);
 
 export default router;

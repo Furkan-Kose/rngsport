@@ -760,6 +760,50 @@ export const uploadShootingList = async (req, res) => {
   });
 };
 
+// Admin: bir günün sürelerini toplu sıfırla (test ve hatalı başlangıçlar için).
+// track: photo | video | all. Foto sıfırlanınca elle düzeltilmiş klasör numaraları da
+// gider (klasörler foto başlangıç sırasından türetiliyor). Eşleşmelere dokunmaz.
+const RESET_FIELDS = {
+  photo: { photoStartedAt: null, photoEndedAt: null, photoFolderOverride: null },
+  video: { videoStartedAt: null, videoEndedAt: null },
+};
+
+export const resetShootingTimes = async (req, res) => {
+  const dayId = req.body?.dayId ? String(req.body.dayId) : null;
+  const track = req.body?.track;
+  if (!dayId) throw new AppError("Gün belirtilmedi", 400);
+  if (!["photo", "video", "all"].includes(track)) throw new AppError("Geçersiz işlem", 400);
+
+  const day = await prisma.shootingDay.findUnique({ where: { id: dayId }, select: { id: true } });
+  if (!day) throw new AppError("Gün bulunamadı", 404);
+
+  const data =
+    track === "all" ? { ...RESET_FIELDS.photo, ...RESET_FIELDS.video } : RESET_FIELDS[track];
+  // Sadece gerçekten süresi/düzeltmesi olan satırlar sayılsın
+  const touched =
+    track === "photo"
+      ? [{ photoStartedAt: { not: null } }, { photoEndedAt: { not: null } }, { photoFolderOverride: { not: null } }]
+      : track === "video"
+        ? [{ videoStartedAt: { not: null } }, { videoEndedAt: { not: null } }]
+        : [
+            { photoStartedAt: { not: null } },
+            { photoEndedAt: { not: null } },
+            { photoFolderOverride: { not: null } },
+            { videoStartedAt: { not: null } },
+            { videoEndedAt: { not: null } },
+          ];
+
+  const { count } = await prisma.shootingListEntry.updateMany({
+    where: { dayId, OR: touched },
+    data,
+  });
+
+  // Açık ekranlar (fotoğrafçı/videocu) hemen güncellensin; eşleşme değişmediği için "refresh"
+  bus.emit("shooting-list-refresh");
+
+  res.json({ message: "Süreler sıfırlandı", count });
+};
+
 // Bir günü (ve cascade ile tüm satırlarını) sil
 export const clearShootingList = async (req, res) => {
   const dayId = req.query.dayId ? String(req.query.dayId) : null;
@@ -791,9 +835,23 @@ export const streamShootingList = (req, res) => {
   const onChange = (originId = "") => {
     res.write(`event: refresh\ndata: ${originId}\n\n`);
   };
+  // Sipariş/rezervasyon değişti: çekim listesi + admin Rezervasyonlar/Siparişler sayfaları
+  // yenilensin. Süre yazımları ("refresh") bu olayı göndermez — o sayfalar her butona
+  // basışta boşuna yenilenmesin.
+  const onRecordsChange = () => {
+    onChange();
+    res.write(`event: records\ndata: ${Date.now()}\n\n`);
+  };
 
-  bus.on("shooting-list-changed", onChange);
+  // Yeni (bekleyen) kayıt: çekim listesini etkilemez, sadece admin sayfaları yenilensin
+  const onRecordsOnly = () => res.write(`event: records
+data: ${Date.now()}
+
+`);
+
+  bus.on("shooting-list-changed", onRecordsChange);
   bus.on("shooting-list-refresh", onChange);
+  bus.on("records-changed", onRecordsOnly);
 
   // Proxy idle timeout'larına karşı periyodik keepalive
   const ping = setInterval(() => {
@@ -802,7 +860,8 @@ export const streamShootingList = (req, res) => {
 
   req.on("close", () => {
     clearInterval(ping);
-    bus.off("shooting-list-changed", onChange);
+    bus.off("shooting-list-changed", onRecordsChange);
     bus.off("shooting-list-refresh", onChange);
+    bus.off("records-changed", onRecordsOnly);
   });
 };

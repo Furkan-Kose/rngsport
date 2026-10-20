@@ -4,6 +4,7 @@ import api from '../../lib/api';
 import DiscountLine from '../../components/admin/DiscountLine';
 import StatusBadge from '../../lib/orderStatus';
 import ReservationFormModal from '../../components/admin/ReservationFormModal';
+import { useRecordsLiveRefresh } from '../../hooks/useRecordsLiveRefresh';
 import { getApparatusLabel } from '../../constants/apparatuses';
 import { ListMatchLegend, ListMatchWarning } from '../../components/admin/ShootingListMatch';
 import { listMatchTint, type ListMatchFields } from '../../lib/listMatch';
@@ -66,8 +67,9 @@ const ReservationsPage = () => {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editTarget, setEditTarget] = useState<Reservation | null>(null);
 
-  const fetchReservations = useCallback(async (page: number = 1) => {
-    setIsLoading(true);
+  // silent: arka plan yenilemesi (canlı akış) — yükleniyor göstergesi çıkmaz
+  const fetchReservations = useCallback(async (page: number = 1, silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -94,6 +96,13 @@ const ReservationsPage = () => {
   useEffect(() => {
     fetchReservations(1);
   }, [filterStatus, searchQuery]);
+
+  // Başka bir admin rezervasyon ekler/düzenlerse ya da müşteri kendi rezervasyonunu
+  // değiştirirse liste kendiliğinden yenilenir. Detay / form / silme penceresi açıkken bekler.
+  useRecordsLiveRefresh(
+    () => fetchReservations(pagination.page, true),
+    !!selectedReservation || formModalOpen || !!deleteConfirmId,
+  );
 
   // Debounced search
   useEffect(() => {

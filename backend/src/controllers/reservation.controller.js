@@ -223,6 +223,10 @@ export const createReservation = async (req, res) => {
     },
   });
 
+  // Admin Rezervasyonlar sayfaları yeni kaydı canlı görsün (bekleyen kayıt çekim
+  // listesini etkilemez, o yüzden "shooting-list-changed" değil)
+  bus.emit("records-changed");
+
   // Rezervasyon onay maili (fire-and-forget — token üretimi response'u bekletmesin).
   // Hesap hâlâ şifresizse şifre belirleme linki de iliştirilir; başarı ekranındaki
   // kartı atlayanlar için yedek yol.

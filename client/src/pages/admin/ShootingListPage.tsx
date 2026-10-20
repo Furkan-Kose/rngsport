@@ -11,6 +11,7 @@ import {
   Play,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Trash2,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ import { useAuth } from '../../context/AuthContext';
 import { TRACK_LABELS, type Track } from '../../lib/roles';
 import { trackTimes, type ShootTrack } from '../../lib/shooting';
 import PriorityBadge from '../../components/PriorityBadge';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 
 interface ShootingItem {
   packageName: string;
@@ -127,6 +129,18 @@ const isTrackRecording = (entry: ShootingEntry, track: ShootTrack) => {
   return !!startedAt && !endedAt;
 };
 
+// Bu izde çekilecek mi (foto: willBeShotPhoto, video: willBeShotVideo)
+const isTrackShot = (entry: ShootingEntry, track: ShootTrack) =>
+  track === 'photo' ? entry.willBeShotPhoto : entry.willBeShotVideo;
+
+// Satırın açık izleri: çekilecek olanda "ÇEKİLİYOR" (zümrüt), çekilmeyecek olanda
+// "SAHNEDE" (nötr) — ekip zincir için çekilmeyen sporcuda da Başlat'a basıyor.
+const rowRunState = (entry: ShootingEntry, tracks: ShootTrack[]) => {
+  const running = tracks.filter((t) => isTrackRecording(entry, t));
+  const isRecording = running.some((t) => isTrackShot(entry, t));
+  return { isRecording, isOnStage: running.length > 0 && !isRecording, isRunning: running.length > 0 };
+};
+
 // Bir satırın tek bir izi. Zincirleme akış: "Başlat" → sıradakine basınca kendiliğinden kapanır.
 // Ayrı bir durdur butonu yok; son kaydı kapatmak için yeşil rozete tıklanır.
 const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit, onEditFolder }: TrackTimerProps) => {
@@ -152,20 +166,34 @@ const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit, onEditFol
           Başlat
         </button>
       ) : !ended ? (
-        <button
-          type="button"
-          onClick={() => onAction(entry, track, 'end')}
-          disabled={busy}
-          title="Çekimi bitir (sıradaki sporcuya basınca da kapanır)"
-          className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm shadow-emerald-500/30 transition-colors disabled:opacity-50"
-        >
-          {busy ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          )}
-          ÇEKİLİYOR · {started}
-        </button>
+        isTrackShot(entry, track) ? (
+          <button
+            type="button"
+            onClick={() => onAction(entry, track, 'end')}
+            disabled={busy}
+            title="Çekimi bitir (sıradaki sporcuya basınca da kapanır)"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm shadow-emerald-500/30 transition-colors disabled:opacity-50"
+          >
+            {busy ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            )}
+            ÇEKİLİYOR · {started}
+          </button>
+        ) : (
+          // Çekilmeyecek sporcu sahnede: süre zincir için tutuluyor, çekim yok
+          <button
+            type="button"
+            onClick={() => onAction(entry, track, 'end')}
+            disabled={busy}
+            title="Bu sporcu çekilmeyecek; süre yalnızca sırayı takip için tutuluyor"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold bg-violet-600 hover:bg-violet-500 border border-violet-400/60 text-white shadow-sm shadow-violet-500/30 transition-colors disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <span className="w-1.5 h-1.5 rounded-full bg-violet-200" />}
+            SAHNEDE · {started}
+          </button>
+        )
       ) : (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-gray-700/50 border border-gray-600 text-gray-300">
           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
@@ -247,6 +275,8 @@ const ShootingListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('position');
   const [isClearing, setIsClearing] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   // Yükleme modalı: null = yeni gün; dolu = o günün üzerine yaz
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -386,6 +416,26 @@ const ShootingListPage = () => {
       toast.error('Excel indirilemedi');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  // Admin: seçili iz görünümüne göre günün sürelerini toplu sıfırla (Tümü → foto + video)
+  const handleResetTimes = async () => {
+    if (!activeDay) return;
+    setIsResetting(true);
+    try {
+      const { data } = await api.post('/api/shooting-list/reset-times', {
+        dayId: activeDay.id,
+        track,
+      });
+      toast.success(`${data.count} satırın süreleri sıfırlandı`);
+      setConfirmReset(false);
+      await fetchList(1, false, activeDay.id);
+    } catch (error) {
+      console.error('Süreler sıfırlanamadı:', error);
+      toast.error('Süreler sıfırlanamadı');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -544,6 +594,13 @@ const ShootingListPage = () => {
                 Excel İndir
               </button>
               <button
+                onClick={() => setConfirmReset(true)}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Süreleri Sıfırla
+              </button>
+              <button
                 onClick={handleDeleteDay}
                 disabled={isClearing}
                 className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
@@ -649,9 +706,9 @@ const ShootingListPage = () => {
             {/* Mobile cards */}
             <div className="lg:hidden divide-y divide-gray-700/50">
               {entries.map((entry) => {
-                const isRecording = visibleTracks.some((t) => isTrackRecording(entry, t));
-                // Kaydı alınan satır asla soluk görünmesin
-                const disabledRow = !entry.willBeShot && !isRecording;
+                const { isRecording, isOnStage, isRunning } = rowRunState(entry, visibleTracks);
+                // Sahnedeki satır (çekilsin ya da çekilmesin) asla soluk görünmesin
+                const disabledRow = !entry.willBeShot && !isRunning;
                 const hasItems = entry.items.length > 0;
                 const hasNotes = !!entry.notes;
                 return (
@@ -660,7 +717,9 @@ const ShootingListPage = () => {
                     className={`p-4 border-l-2 transition-colors ${
                       isRecording
                         ? 'border-emerald-400 bg-emerald-500/10'
-                        : 'border-transparent'
+                        : isOnStage
+                          ? 'border-violet-400 bg-violet-500/15'
+                          : 'border-transparent'
                     } ${disabledRow ? 'opacity-60' : ''}`}
                   >
                     <div className="min-w-0">
@@ -755,9 +814,9 @@ const ShootingListPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-700/50">
                   {entries.map((entry) => {
-                    const isRecording = visibleTracks.some((t) => isTrackRecording(entry, t));
-                    // Kaydı alınan satır asla soluk görünmesin
-                    const disabledRow = !entry.willBeShot && !isRecording;
+                    const { isRecording, isOnStage, isRunning } = rowRunState(entry, visibleTracks);
+                    // Sahnedeki satır (çekilsin ya da çekilmesin) asla soluk görünmesin
+                    const disabledRow = !entry.willBeShot && !isRunning;
                     const hasItems = entry.items.length > 0;
                     const hasNotes = !!entry.notes;
 
@@ -767,12 +826,14 @@ const ShootingListPage = () => {
                         className={`transition-colors ${
                           isRecording
                             ? 'bg-emerald-500/10 hover:bg-emerald-500/15'
-                            : 'hover:bg-gray-700/20'
+                            : isOnStage
+                              ? 'bg-violet-500/15 hover:bg-violet-500/20'
+                              : 'hover:bg-gray-700/20'
                         } ${disabledRow ? 'opacity-50 hover:opacity-70' : ''}`}
                       >
                         <td
                           className={`px-5 py-3 text-gray-400 font-mono text-sm align-top border-l-2 ${
-                            isRecording ? 'border-emerald-400' : 'border-transparent'
+                            isRecording ? 'border-emerald-400' : isOnStage ? 'border-violet-400' : 'border-transparent'
                           }`}
                         >
                           {entry.position}
@@ -895,6 +956,26 @@ const ShootingListPage = () => {
         clientId={clientIdRef.current}
         onClose={() => setFolderEntry(null)}
         onSaved={() => fetchList(pagination.page, true)}
+      />
+
+      <ConfirmDeleteModal
+        open={confirmReset && !!activeDay}
+        title="Süreler sıfırlansın mı?"
+        message={
+          activeDay && (
+            <>
+              <strong>{activeDay.label}</strong> günündeki{' '}
+              <strong>{track === 'all' ? 'fotoğraf ve video' : track === 'photo' ? 'fotoğraf' : 'video'}</strong>{' '}
+              başlangıç/bitiş saatlerinin hepsi silinecek
+              {track !== 'video' && ' (elle düzeltilen klasör numaraları da)'}. Sporcular, "çekilecek"
+              işaretleri ve eşleşmeler değişmez. Bu işlem geri alınamaz.
+            </>
+          )
+        }
+        confirmLabel="Evet, Sıfırla"
+        isDeleting={isResetting}
+        onConfirm={handleResetTimes}
+        onCancel={() => setConfirmReset(false)}
       />
     </div>
   );
