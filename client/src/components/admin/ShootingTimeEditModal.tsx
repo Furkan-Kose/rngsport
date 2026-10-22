@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, RotateCcw, Save, X } from 'lucide-react';
 import api from '../../lib/api';
-import { TRACK_LABELS } from '../../lib/roles';
 import { trackTimes, type ShootTrack, type TrackTimestamps } from '../../lib/shooting';
 
 export interface ShootingEntry extends TrackTimestamps {
@@ -158,7 +157,7 @@ const ShootingTimeEditModal = ({
           {tracks.map((track) => (
             <div key={track} className="space-y-3 rounded-lg border border-gray-700 p-3">
               <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide">
-                {TRACK_LABELS[track]}
+                Çekim saati
               </p>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Başlangıç</label>

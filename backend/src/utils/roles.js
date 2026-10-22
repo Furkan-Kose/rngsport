@@ -40,8 +40,12 @@ export const resolveTrack = (role, requested) => {
 };
 
 // İz bazlı Prisma alan adları — tek yerden türetilir.
+// Süre TEK ve ortak: foto/video ekibi aynı başlangıç/bitişi kullanır (kim basarsa bassın
+// herkes aynı süreyi görür, zincir gün bazında tektir). Ortak süre tarihsel nedenle foto
+// kolonlarında (photoStartedAt/photoEndedAt → shootStartedAt/shootEndedAt) tutulur;
+// videoStartedAt/videoEndedAt artık okunmaz/yazılmaz. "Çekilecek mi" ise iz bazlı kalır.
 export const trackFields = (track) => ({
   willBeShot: track === "photo" ? "willBeShotPhoto" : track === "video" ? "willBeShotVideo" : "willBeShot",
-  startedAt: track === "video" ? "videoStartedAt" : "photoStartedAt",
-  endedAt: track === "video" ? "videoEndedAt" : "photoEndedAt",
+  startedAt: "photoStartedAt",
+  endedAt: "photoEndedAt",
 });

@@ -113,6 +113,8 @@ const clock = (iso: string | null) =>
     : null;
 
 interface TrackTimerProps {
+  /** Ekranın görünümü — ÇEKİLİYOR/SAHNEDE ayrımı buna göre (Tümü → herhangi bir paket) */
+  viewTrack: Track;
   entry: ShootingEntry;
   track: ShootTrack;
   /** Admin "Tümü" görünümünde iki iz alt alta — hangisi olduğu etiketlensin */
@@ -143,7 +145,8 @@ const rowRunState = (entry: ShootingEntry, tracks: ShootTrack[]) => {
 
 // Bir satırın tek bir izi. Zincirleme akış: "Başlat" → sıradakine basınca kendiliğinden kapanır.
 // Ayrı bir durdur butonu yok; son kaydı kapatmak için yeşil rozete tıklanır.
-const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit, onEditFolder }: TrackTimerProps) => {
+const TrackTimer = ({ entry, track, viewTrack, showLabel, busy, onAction, onEdit, onEditFolder }: TrackTimerProps) => {
+  const shot = viewTrack === 'all' ? entry.willBeShot : isTrackShot(entry, viewTrack);
   const { startedAt, endedAt } = trackTimes(entry, track);
   const started = clock(startedAt);
   const ended = clock(endedAt);
@@ -166,7 +169,7 @@ const TrackTimer = ({ entry, track, showLabel, busy, onAction, onEdit, onEditFol
           Başlat
         </button>
       ) : !ended ? (
-        isTrackShot(entry, track) ? (
+        shot ? (
           <button
             type="button"
             onClick={() => onAction(entry, track, 'end')}
@@ -424,10 +427,7 @@ const ShootingListPage = () => {
     if (!activeDay) return;
     setIsResetting(true);
     try {
-      const { data } = await api.post('/api/shooting-list/reset-times', {
-        dayId: activeDay.id,
-        track,
-      });
+      const { data } = await api.post('/api/shooting-list/reset-times', { dayId: activeDay.id });
       toast.success(`${data.count} satırın süreleri sıfırlandı`);
       setConfirmReset(false);
       await fetchList(1, false, activeDay.id);
@@ -470,8 +470,9 @@ const ShootingListPage = () => {
     const key = `${entry.id}:${timerTrack}`;
     const snapshot = entries;
     const now = new Date().toISOString();
-    const startField = timerTrack === 'photo' ? 'photoStartedAt' : 'videoStartedAt';
-    const endField = timerTrack === 'photo' ? 'photoEndedAt' : 'videoEndedAt';
+    // Süre ortak: her iz aynı kolonları kullanır (bkz. lib/shooting trackTimes)
+    const startField = 'photoStartedAt';
+    const endField = 'photoEndedAt';
 
     setEntries((prev) =>
       prev.map((row) => {
@@ -480,7 +481,7 @@ const ShootingListPage = () => {
             ? { ...row, [startField]: now, [endField]: null }
             : { ...row, [endField]: now };
         }
-        // Zincir: aynı izde açık olan diğer satır aynı anda kapanır
+        // Zincir: o gün açık olan diğer satır aynı anda kapanır (tek ortak zincir)
         if (action === 'start' && row[startField] && !row[endField]) {
           return { ...row, [endField]: now };
         }
@@ -512,19 +513,21 @@ const ShootingListPage = () => {
     }
   };
 
-  const renderTimers = (entry: ShootingEntry) =>
-    visibleTracks.map((t) => (
-      <TrackTimer
-        key={t}
-        entry={entry}
-        track={t}
-        showLabel={visibleTracks.length > 1}
-        busy={timerBusyKey === `${entry.id}:${t}`}
-        onAction={handleTimerAction}
-        onEdit={setEditEntry}
-        onEditFolder={setFolderEntry}
-      />
-    ));
+  // Satır başına TEK ortak süre. İstek izi: personelde kendi izi, admin "Tümü"de foto
+  // (süre ortak; klasör rozeti foto izine ait olduğu için admin onu da görür).
+  const timerTrack: ShootTrack = track === 'all' ? 'photo' : track;
+  const renderTimers = (entry: ShootingEntry) => (
+    <TrackTimer
+      entry={entry}
+      track={timerTrack}
+      viewTrack={track}
+      showLabel={false}
+      busy={timerBusyKey === `${entry.id}:${timerTrack}`}
+      onAction={handleTimerAction}
+      onEdit={setEditEntry}
+      onEditFolder={setFolderEntry}
+    />
+  );
 
   return (
     <div className="space-y-6">
@@ -944,7 +947,7 @@ const ShootingListPage = () => {
 
       <ShootingTimeEditModal
         entry={editEntry}
-        tracks={visibleTracks}
+        tracks={[timerTrack]}
         canEditExpected={isAdmin}
         clientId={clientIdRef.current}
         onClose={() => setEditEntry(null)}
@@ -964,11 +967,9 @@ const ShootingListPage = () => {
         message={
           activeDay && (
             <>
-              <strong>{activeDay.label}</strong> günündeki{' '}
-              <strong>{track === 'all' ? 'fotoğraf ve video' : track === 'photo' ? 'fotoğraf' : 'video'}</strong>{' '}
-              başlangıç/bitiş saatlerinin hepsi silinecek
-              {track !== 'video' && ' (elle düzeltilen klasör numaraları da)'}. Sporcular, "çekilecek"
-              işaretleri ve eşleşmeler değişmez. Bu işlem geri alınamaz.
+              <strong>{activeDay.label}</strong> günündeki bütün başlangıç/bitiş saatleri ve elle
+              düzeltilen klasör numaraları silinecek. Sporcular, "çekilecek" işaretleri ve eşleşmeler
+              değişmez. Bu işlem geri alınamaz.
             </>
           )
         }

@@ -10,8 +10,10 @@ export interface TrackTimestamps {
   videoEndedAt: string | null;
 }
 
-// Bir kaydın seçili izine ait başlangıç/bitiş saatleri
-export const trackTimes = (entry: TrackTimestamps, track: ShootTrack) =>
-  track === 'photo'
-    ? { startedAt: entry.photoStartedAt, endedAt: entry.photoEndedAt }
-    : { startedAt: entry.videoStartedAt, endedAt: entry.videoEndedAt };
+// Bir kaydın başlangıç/bitiş saatleri. Süre TEK ve ortak: foto ve video ekibi aynı
+// süreyi görür (backend'de foto kolonlarında tutulur). İz parametresi geriye uyum için.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- iz parametresi çağıranlarla uyum için
+export const trackTimes = (entry: TrackTimestamps, _track?: ShootTrack) => ({
+  startedAt: entry.photoStartedAt,
+  endedAt: entry.photoEndedAt,
+});

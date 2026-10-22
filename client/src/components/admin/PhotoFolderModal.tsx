@@ -98,6 +98,20 @@ const PhotoFolderModal = ({ entry, clientId, onClose, onSaved }: Props) => {
             </p>
           </div>
 
+          {/* SD kart değişince kamera yeniden 100'den başlar */}
+          <button
+            type="button"
+            onClick={() => void save(100)}
+            disabled={isSubmitting}
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-200 text-sm font-medium disabled:opacity-50"
+          >
+            <Folder className="w-4 h-4" />
+            SD kart değişti — bu sporcuyu 100 yap
+          </button>
+          <p className="text-xs text-gray-500 -mt-2">
+            Bu sporcu 100 olur, sonrakiler 101, 102 … diye devam eder; öncekiler değişmez.
+          </p>
+
           <div className="flex flex-wrap gap-2">
             <button
               type="submit"

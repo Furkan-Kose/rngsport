@@ -459,10 +459,8 @@ const toExcelRow = (e) => ({
   "Foto Çekilecek": e.willBeShotPhoto ? "Evet" : "Hayır",
   "Video Çekilecek": e.willBeShotVideo ? "Evet" : "Hayır",
   "Foto Klasör": e.photoFolder ?? "",
-  "Foto Başlangıç": excelTime(e.photoStartedAt),
-  "Foto Bitiş": excelTime(e.photoEndedAt),
-  "Video Başlangıç": excelTime(e.videoStartedAt),
-  "Video Bitiş": excelTime(e.videoEndedAt),
+  "Başlangıç": excelTime(e.photoStartedAt),
+  "Bitiş": excelTime(e.photoEndedAt),
   "Telefon": e.customerPhone || "",
   "Paket / Seri": (e.items || [])
     .map((it) => `${it.packageName}${it.priority ? " [ÖNCELİKLİ]" : ""} (${it.seriesCount}×${it.quantity})`)
@@ -612,11 +610,10 @@ const buildUpdateData = (body, { isAdmin, track, now }) => {
 export const updateShootingEntry = async (req, res) => {
   const { id } = req.params;
   const isAdmin = req.user?.role === ROLES.ADMIN;
-  // Personelde iz rolden zorlanır; admin gövdede foto/video belirtmek zorunda
-  const track = resolveTrack(req.user?.role, req.body?.track);
-  if (track === "all") {
-    throw new AppError("Güncelleme için iz (foto/video) belirtilmeli", 400);
-  }
+  // Personelde iz rolden zorlanır. Süre ortak olduğu için admin "Tümü" görünümünden de
+  // yazabilir; klasör düzeltmesi foto izine ait olduğundan "all" foto gibi değerlendirilir.
+  const requested = resolveTrack(req.user?.role, req.body?.track);
+  const track = requested === "all" ? "photo" : requested;
   const now = new Date();
   const data = buildUpdateData(req.body, { isAdmin, track, now });
 
@@ -654,7 +651,7 @@ export const updateShootingEntry = async (req, res) => {
   // clientId: işlemi yapan istemci kendi yankısını yok sayabilsin diye.
   bus.emit("shooting-list-refresh", req.body?.clientId ?? "");
 
-  res.json({ message: "Güncellendi", entry: formatEntry(record, track) });
+  res.json({ message: "Güncellendi", entry: formatEntry(record, requested) });
 };
 
 const parseExcelBuffer = (buffer) => {
@@ -760,42 +757,31 @@ export const uploadShootingList = async (req, res) => {
   });
 };
 
-// Admin: bir günün sürelerini toplu sıfırla (test ve hatalı başlangıçlar için).
-// track: photo | video | all. Foto sıfırlanınca elle düzeltilmiş klasör numaraları da
-// gider (klasörler foto başlangıç sırasından türetiliyor). Eşleşmelere dokunmaz.
-const RESET_FIELDS = {
-  photo: { photoStartedAt: null, photoEndedAt: null, photoFolderOverride: null },
-  video: { videoStartedAt: null, videoEndedAt: null },
+// Admin: bir günün (ortak) sürelerini toplu sıfırla (test ve hatalı başlangıçlar için).
+// Elle düzeltilmiş klasör numaraları da gider (klasörler başlangıç sırasından
+// türetiliyor). Eşleşmelere dokunmaz.
+// Süre ortak (foto kolonları); eski iz bazlı video kolonları da temizlenir ki boşta veri kalmasın
+const RESET_DATA = {
+  photoStartedAt: null,
+  photoEndedAt: null,
+  photoFolderOverride: null,
+  videoStartedAt: null,
+  videoEndedAt: null,
 };
 
 export const resetShootingTimes = async (req, res) => {
   const dayId = req.body?.dayId ? String(req.body.dayId) : null;
-  const track = req.body?.track;
   if (!dayId) throw new AppError("Gün belirtilmedi", 400);
-  if (!["photo", "video", "all"].includes(track)) throw new AppError("Geçersiz işlem", 400);
 
   const day = await prisma.shootingDay.findUnique({ where: { id: dayId }, select: { id: true } });
   if (!day) throw new AppError("Gün bulunamadı", 404);
 
-  const data =
-    track === "all" ? { ...RESET_FIELDS.photo, ...RESET_FIELDS.video } : RESET_FIELDS[track];
   // Sadece gerçekten süresi/düzeltmesi olan satırlar sayılsın
-  const touched =
-    track === "photo"
-      ? [{ photoStartedAt: { not: null } }, { photoEndedAt: { not: null } }, { photoFolderOverride: { not: null } }]
-      : track === "video"
-        ? [{ videoStartedAt: { not: null } }, { videoEndedAt: { not: null } }]
-        : [
-            { photoStartedAt: { not: null } },
-            { photoEndedAt: { not: null } },
-            { photoFolderOverride: { not: null } },
-            { videoStartedAt: { not: null } },
-            { videoEndedAt: { not: null } },
-          ];
+  const touched = Object.keys(RESET_DATA).map((field) => ({ [field]: { not: null } }));
 
   const { count } = await prisma.shootingListEntry.updateMany({
     where: { dayId, OR: touched },
-    data,
+    data: RESET_DATA,
   });
 
   // Açık ekranlar (fotoğrafçı/videocu) hemen güncellensin; eşleşme değişmediği için "refresh"
