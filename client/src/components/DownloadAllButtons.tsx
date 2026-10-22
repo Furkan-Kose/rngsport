@@ -1,4 +1,4 @@
-import { FolderDown, Loader2, Smartphone } from "lucide-react";
+import { FolderDown, Loader2, Shrink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatFileSize, type DownloadSizes, type MediaQuality } from "../lib/media";
 
@@ -40,7 +40,7 @@ const DownloadAllButtons = ({
     isRunning && runningQuality === quality ? (
       <Loader2 className="w-4 h-4 animate-spin" />
     ) : quality === "preview" ? (
-      <Smartphone className="w-4 h-4" />
+      <Shrink className="w-4 h-4" />
     ) : (
       <FolderDown className="w-4 h-4" />
     );

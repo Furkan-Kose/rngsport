@@ -14,13 +14,13 @@
     "zipDone": "Zip file downloaded",
     "zipServer": "The gallery is large, so the zip is being prepared on the server; the download will start shortly",
     "zipFailed": "The download was interrupted. Please try again or download the files one by one.",
-    "downloadOriginal": "Original quality",
-    "downloadSmall": "For phone",
+    "downloadOriginal": "Original",
+    "downloadSmall": "Small size",
     "zipOriginal": "Download All · Original ({{size}})",
-    "zipSmall": "Download All · For phone ({{size}})",
+    "zipSmall": "Download All · Small size ({{size}})",
     "albumOriginal": "Download Album · Original ({{size}})",
-    "albumSmall": "Download Album · For phone ({{size}})",
-    "qualityHint": "The “For phone” version is smaller and downloads faster. Download the original quality for printing or enlarging."
+    "albumSmall": "Download Album · Small size ({{size}})",
+    "qualityHint": "The small size downloads fast and is ideal for viewing and sharing. Download the original for printing or enlarging."
   },
   "myGallery": {
     "seoTitle": "My Photos",

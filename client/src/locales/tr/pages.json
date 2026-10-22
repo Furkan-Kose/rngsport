@@ -13,13 +13,13 @@
     "zipDone": "Zip dosyası indirildi",
     "zipServer": "Galeri büyük olduğu için zip sunucudan hazırlanıyor, indirme birazdan başlayacak",
     "zipFailed": "Toplu indirme yarıda kaldı. Lütfen tekrar deneyin veya dosyaları tek tek indirin.",
-    "downloadOriginal": "Orijinal kalite",
-    "downloadSmall": "Telefon için",
+    "downloadOriginal": "Orijinal",
+    "downloadSmall": "Küçük boyut",
     "zipOriginal": "Tümünü İndir · Orijinal ({{size}})",
-    "zipSmall": "Tümünü İndir · Telefon için ({{size}})",
+    "zipSmall": "Tümünü İndir · Küçük boyut ({{size}})",
     "albumOriginal": "Albümü İndir · Orijinal ({{size}})",
-    "albumSmall": "Albümü İndir · Telefon için ({{size}})",
-    "qualityHint": "“Telefon için” sürüm daha küçüktür ve hızlı iner. Baskı veya büyütme için orijinal kaliteyi indirin."
+    "albumSmall": "Albümü İndir · Küçük boyut ({{size}})",
+    "qualityHint": "Küçük boyut hızlı iner; telefonda bakmak ve paylaşmak için idealdir. Baskı veya büyütme için orijinali indirin."
   },
   "myGallery": {
     "seoTitle": "Fotoğraflarım",
