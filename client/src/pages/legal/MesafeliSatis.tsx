@@ -77,10 +77,10 @@ const MesafeliSatis = () => {
                     <span className="text-gray-400 text-sm">Telefon:</span>
                     <p>
                       <a
-                        href="tel:+905398444521"
+                        href="tel:+905423406557"
                         className="text-emerald-400 hover:text-emerald-300"
                       >
-                        0 539 844 45 21
+                        0 542 340 65 57
                       </a>
                     </p>
                   </div>

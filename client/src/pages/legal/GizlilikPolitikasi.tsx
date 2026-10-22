@@ -234,10 +234,10 @@ const GizlilikPolitikasi = () => {
                   <div>
                     <p className="text-gray-400 text-sm mb-1">Telefon</p>
                     <a
-                      href="tel:+905398444521"
+                      href="tel:+905423406557"
                       className="text-emerald-400 hover:text-emerald-300 transition-colors"
                     >
-                      0 539 844 45 21
+                      0 542 340 65 57
                     </a>
                   </div>
                   <div>

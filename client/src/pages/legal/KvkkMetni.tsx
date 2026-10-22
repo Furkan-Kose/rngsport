@@ -256,10 +256,10 @@ const KvkkMetni = () => {
                 <br />
                 Sorularınız için{" "}
                 <a
-                  href="tel:+905398444521"
+                  href="tel:+905423406557"
                   className="text-emerald-500 hover:text-emerald-400 transition-colors"
                 >
-                  +90 (539) 844 45 21
+                  +90 (542) 340 65 57
                 </a>{" "}
                 numaralı telefondan bize ulaşabilirsiniz.
               </p>

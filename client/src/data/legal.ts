@@ -30,7 +30,7 @@ export interface LegalDoc {
 
 export type LegalKey = "privacy" | "kvkk" | "distanceSales" | "refund";
 
-const PHONE = { value: "+90 539 844 45 21", href: "tel:+905398444521" };
+const PHONE = { value: "+90 542 340 65 57", href: "tel:+905423406557" };
 const EMAIL = { value: "hakankose5534@gmail.com", href: "mailto:hakankose5534@gmail.com" };
 const ADDRESS = "Başıbüyük Mah. Aydınlılar Sk. No: 39 Maltepe/İstanbul";
 const COMPANY = "Hakan Köse - Range Media";
@@ -193,7 +193,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
       ],
       footer: [
         "This text has been prepared under the Personal Data Protection Law No. 6698.",
-        "For questions, you can reach us by phone at +90 (539) 844 45 21.",
+        "For questions, you can reach us by phone at +90 (542) 340 65 57.",
       ],
     },
     distanceSales: {
@@ -513,7 +513,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
       ],
       footer: [
         "Настоящий текст подготовлен в соответствии с Законом № 6698 о защите персональных данных.",
-        "По вопросам звоните нам: +90 (539) 844 45 21.",
+        "По вопросам звоните нам: +90 (542) 340 65 57.",
       ],
     },
     distanceSales: {

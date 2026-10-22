@@ -5,7 +5,7 @@
  */
 
 /** WhatsApp numarası WpButton.tsx ve Footer.tsx'te de geçiyor (ortak sabit yok) */
-export const WHATSAPP_NUMBER = "905398444521";
+export const WHATSAPP_NUMBER = "905423406557";
 
 /** "Satışa çıkınca haber ver" için hazır mesajlı WhatsApp bağlantısı */
 export const notifyMeUrl = (productName: string) =>
