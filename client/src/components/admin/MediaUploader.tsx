@@ -26,23 +26,27 @@ export interface FileMeta {
 }
 
 const UPLOAD_CONCURRENCY = 5;
+// Sunucu tek istekte en fazla 100 dosya kabul ediyor (utils/uploads.js MAX_FILES_PER_BATCH).
+// Seçimde sınır yok: dosyalar 100'erli gruplar halinde sırayla yüklenir, her grup ayrı kaydedilir.
+const SERVER_BATCH = 100;
 
 // Dosyaları en fazla UPLOAD_CONCURRENCY paralellikle R2'ye PUT eder;
-// başarılı olanların metadata'sını döner.
+// başarılı olanların metadata'sını döner. presigned[i] ↔ files[i] (sunucu sırayı korur) —
+// ada göre eşleştirme, farklı klasörlerden aynı adlı iki dosyayı karıştırıyordu.
 const uploadWithPool = async (
   presigned: PresignedFile[],
-  fileMap: Map<string, File>,
-  onProgress: (done: number) => void
+  files: File[],
+  onProgress: () => void
 ) => {
   const succeeded: UploadedFile[] = [];
   const failed: string[] = [];
-  let done = 0;
   let index = 0;
 
   const worker = async () => {
     while (index < presigned.length) {
-      const item = presigned[index++];
-      const file = fileMap.get(item.fileName);
+      const i = index++;
+      const item = presigned[i];
+      const file = files[i];
       if (!file) continue;
       try {
         // Plain axios: api singleton'ı withCredentials gönderir, R2'ye cookie gitmemeli
@@ -62,8 +66,7 @@ const uploadWithPool = async (
         console.error(`Yükleme hatası (${item.fileName}):`, error);
         failed.push(item.fileName);
       } finally {
-        done += 1;
-        onProgress(done);
+        onProgress();
       }
     }
   };
@@ -112,34 +115,43 @@ const MediaUploader = ({ presign, confirm, onUploaded, renderFields }: MediaUplo
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return;
 
+    const total = selectedFiles.length;
     setIsUploading(true);
-    setUploadProgress({ done: 0, total: selectedFiles.length });
+    setUploadProgress({ done: 0, total });
 
+    let done = 0;
+    let uploaded = 0;
+    const failed: string[] = [];
     try {
-      const presigned = await presign(
-        selectedFiles.map((f) => ({ fileName: f.name, contentType: f.type, size: f.size }))
-      );
-
-      const fileMap = new Map(selectedFiles.map((f) => [f.name, f]));
-      const { succeeded, failed } = await uploadWithPool(presigned, fileMap, (done) =>
-        setUploadProgress({ done, total: selectedFiles.length })
-      );
-
-      if (succeeded.length > 0) {
-        await confirm(succeeded);
-        toast.success(`${succeeded.length} dosya yüklendi`);
+      for (let start = 0; start < total; start += SERVER_BATCH) {
+        const batch = selectedFiles.slice(start, start + SERVER_BATCH);
+        const presigned = await presign(
+          batch.map((f) => ({ fileName: f.name, contentType: f.type, size: f.size }))
+        );
+        const result = await uploadWithPool(presigned, batch, () => {
+          done += 1;
+          setUploadProgress({ done, total });
+        });
+        // Her grup hemen kaydedilir: sonraki grupta hata olsa da yüklenenler kaybolmaz
+        if (result.succeeded.length > 0) {
+          await confirm(result.succeeded);
+          uploaded += result.succeeded.length;
+        }
+        failed.push(...result.failed);
       }
+
+      if (uploaded > 0) toast.success(`${uploaded} dosya yüklendi`);
       if (failed.length > 0) {
         toast.error(`${failed.length} dosya yüklenemedi: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? '...' : ''}`);
       }
-
       clearSelection();
-      onUploaded();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || 'Yükleme sırasında hata oluştu');
+      const message = err.response?.data?.message || 'Yükleme sırasında hata oluştu';
+      toast.error(uploaded > 0 ? `${message} (${uploaded} dosya yüklendi, kalanlar yüklenmedi)` : message);
     } finally {
       setIsUploading(false);
+      onUploaded();
     }
   };
 
@@ -156,7 +168,7 @@ const MediaUploader = ({ presign, confirm, onUploaded, renderFields }: MediaUplo
         {renderFields?.(isUploading)}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Dosyalar (foto: jpg/png/webp ≤30MB · video: mp4/mov/webm ≤500MB, 100 dosya)
+            Dosyalar (foto: jpg/png/webp ≤30MB · video: mp4/mov/webm ≤500MB · sayı sınırı yok)
           </label>
           <input
             ref={fileInputRef}
