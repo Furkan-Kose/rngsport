@@ -12,6 +12,8 @@ import {
   presignCeremonyUploads,
   confirmCeremonyUploads,
   deleteCeremonyPhoto,
+  getCeremonyMissingPreviews,
+  saveCeremonyPreviews,
 } from "../controllers/awardCeremony.controller.js";
 import { authMiddleware, requireAdmin } from "../middleware/authMiddleware.js";
 
@@ -20,12 +22,14 @@ const admin = [authMiddleware, requireAdmin];
 
 // Admin — /admin/* ve /photos/* rotaları /:slug'dan ÖNCE tanımlı olmalı
 router.get("/admin/:id", ...admin, getCeremonyAdmin);
+router.get("/admin/:id/missing-previews", ...admin, getCeremonyMissingPreviews);
 router.post("/", ...admin, createCeremony);
 router.put("/:id", ...admin, updateCeremony);
 router.delete("/photos/:photoId", ...admin, deleteCeremonyPhoto);
 router.delete("/:id", ...admin, deleteCeremony);
 router.post("/:id/presign", ...admin, presignCeremonyUploads);
 router.post("/:id/confirm", ...admin, confirmCeremonyUploads);
+router.post("/:id/previews", ...admin, saveCeremonyPreviews);
 
 // Public — giriş gerekmez
 router.get("/", getAllCeremonies);

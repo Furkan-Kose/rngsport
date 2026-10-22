@@ -10,6 +10,17 @@ import {
   streamZip,
   zipFileName,
   zipManifest,
+  presignVariants,
+  variantRecordFields,
+  mediaViewFields,
+  parseQuality,
+  downloadTarget,
+  downloadSizes,
+  deleteMediaObjects,
+  MISSING_PREVIEW_BATCH,
+  missingPreviewWhere,
+  missingPreviewItems,
+  savePreviews,
 } from "../utils/uploads.js";
 import {
   presignUpload,
@@ -82,7 +93,7 @@ const listCeremonyPhotos = async (ceremonyId, query) => {
     ...(type && { contentType: { startsWith: `${type}/` } }),
   };
 
-  const [photos, total] = await Promise.all([
+  const [photos, total, sizes] = await Promise.all([
     prisma.awardPhoto.findMany({
       where,
       orderBy: { createdAt: "asc" },
@@ -90,6 +101,7 @@ const listCeremonyPhotos = async (ceremonyId, query) => {
       take: limit,
     }),
     prisma.awardPhoto.count({ where }),
+    downloadSizes(prisma.awardPhoto, { ceremonyId }),
   ]);
 
   // Presign lokal HMAC hesabı — network çağrısı yok, toplu üretim ucuz
@@ -100,12 +112,13 @@ const listCeremonyPhotos = async (ceremonyId, query) => {
       size: p.size,
       contentType: p.contentType,
       createdAt: p.createdAt,
-      url: await presignView(p.r2Key),
+      ...(await mediaViewFields(p)),
     }))
   );
 
   return {
     data,
+    downloadSizes: sizes,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 };
@@ -120,7 +133,7 @@ export const getAllCeremonies = async (req, res) => {
         where: { contentType: { startsWith: "image/" } },
         orderBy: { createdAt: "asc" },
         take: 1,
-        select: { r2Key: true },
+        select: { r2Key: true, previewKey: true },
       },
     },
   });
@@ -129,7 +142,9 @@ export const getAllCeremonies = async (req, res) => {
     ceremonies.map(async (c) => ({
       ...formatCeremony(c, req.locale),
       photoCount: c._count.photos,
-      coverUrl: c.photos[0] ? await presignView(c.photos[0].r2Key) : null,
+      coverUrl: c.photos[0]
+        ? await presignView(c.photos[0].previewKey ?? c.photos[0].r2Key)
+        : null,
     }))
   );
 
@@ -154,7 +169,8 @@ export const downloadCeremonyPhoto = async (req, res) => {
   if (!photo || photo.ceremony.slug !== req.params.slug) {
     throw new AppError("Fotoğraf bulunamadı", 404);
   }
-  res.json({ url: await presignDownload(photo.r2Key, photo.fileName) });
+  const target = downloadTarget(photo, parseQuality(req.query.quality));
+  res.json({ url: await presignDownload(target.key, target.fileName) });
 };
 
 // Toplu indirilecek dosyalar
@@ -173,22 +189,23 @@ const findCeremonyZipPhotos = async (slug) => {
 // Public: tarayıcıda zip için dosya listesi (asıl yol — dosyalar doğrudan R2'den iner)
 export const getCeremonyZipManifest = async (req, res) => {
   const { photos, zipName } = await findCeremonyZipPhotos(req.params.slug);
-  res.json(await zipManifest(photos, zipName));
+  res.json(await zipManifest(photos, zipName, undefined, parseQuality(req.query.quality)));
 };
 
 // Public: sunucuda zip (yedek yol: çok büyük galeri + tarayıcı kaldıramıyor)
 export const downloadAllCeremonyPhotos = async (req, res) => {
   const { photos, zipName } = await findCeremonyZipPhotos(req.params.slug);
-  await streamZip(res, photos, zipName);
+  await streamZip(res, photos, zipName, undefined, parseQuality(req.query.quality));
 };
 
 // Admin: tek tören (id ile — slug'dan bağımsız)
 export const getCeremonyAdmin = async (req, res) => {
   const ceremony = await findCeremony({ id: req.params.id });
-  res.json({
-    ceremony: formatCeremony(ceremony),
-    ...(await listCeremonyPhotos(ceremony.id, req.query)),
-  });
+  const [list, missingPreviews] = await Promise.all([
+    listCeremonyPhotos(ceremony.id, req.query),
+    prisma.awardPhoto.count({ where: { ceremonyId: ceremony.id, ...missingPreviewWhere } }),
+  ]);
+  res.json({ ceremony: formatCeremony(ceremony), ...list, missingPreviews });
 };
 
 // Admin: yeni tören
@@ -246,7 +263,7 @@ export const updateCeremony = async (req, res) => {
 export const deleteCeremony = async (req, res) => {
   const photos = await prisma.awardPhoto.findMany({
     where: { ceremonyId: req.params.id },
-    select: { r2Key: true },
+    select: { r2Key: true, thumbKey: true, previewKey: true },
   });
 
   await prisma.awardCeremony
@@ -254,9 +271,10 @@ export const deleteCeremony = async (req, res) => {
     .catch(rethrowPrismaError(CEREMONY_NOT_FOUND));
 
   (async () => {
-    for (const { r2Key } of photos) {
-      await deleteObject(r2Key).catch((err) =>
-        console.error(`[r2] Tören dosyası silinemedi (${r2Key}):`, err.message)
+    const keys = photos.flatMap((p) => [p.r2Key, p.thumbKey, p.previewKey]).filter(Boolean);
+    for (const key of keys) {
+      await deleteObject(key).catch((err) =>
+        console.error(`[r2] Tören dosyası silinemedi (${key}):`, err.message)
       );
     }
   })();
@@ -279,6 +297,7 @@ export const presignCeremonyUploads = async (req, res) => {
         key,
         fileName: file.fileName,
         uploadUrl: await presignUpload(key, file.contentType),
+        ...(await presignVariants(key, file.contentType)),
       };
     })
   );
@@ -299,7 +318,12 @@ export const confirmCeremonyUploads = async (req, res) => {
     if (!key || !String(key).startsWith(prefix)) {
       throw new AppError("Geçersiz dosya anahtarı", 400);
     }
-    return { ceremonyId: ceremony.id, r2Key: key, ...fileRecordFields(file) };
+    return {
+      ceremonyId: ceremony.id,
+      r2Key: key,
+      ...fileRecordFields(file),
+      ...variantRecordFields(file, key),
+    };
   });
 
   const result = await prisma.awardPhoto.createMany({ data, skipDuplicates: true });
@@ -313,10 +337,28 @@ export const deleteCeremonyPhoto = async (req, res) => {
     throw new AppError("Fotoğraf bulunamadı", 404);
   }
 
-  await deleteObject(photo.r2Key);
+  await deleteMediaObjects(photo);
   await prisma.awardPhoto
     .delete({ where: { id: photo.id } })
     .catch(rethrowPrismaError({ notFound: "Fotoğraf bulunamadı" }));
 
   res.json({ message: "Fotoğraf silindi" });
+};
+
+// Admin: önizlemesi olmayan eski fotoğraflar (tarayıcı önizleme üretsin diye, parça parça)
+export const getCeremonyMissingPreviews = async (req, res) => {
+  const ceremony = await findCeremony({ id: req.params.id });
+  const where = { ceremonyId: ceremony.id, ...missingPreviewWhere };
+  const [photos, remaining] = await Promise.all([
+    prisma.awardPhoto.findMany({ where, orderBy: { createdAt: "asc" }, take: MISSING_PREVIEW_BATCH }),
+    prisma.awardPhoto.count({ where }),
+  ]);
+  res.json({ remaining, files: await missingPreviewItems(photos) });
+};
+
+// Admin: tarayıcının yüklediği önizlemeleri kayda bağlar
+export const saveCeremonyPreviews = async (req, res) => {
+  const ceremony = await findCeremony({ id: req.params.id });
+  const count = await savePreviews(prisma.awardPhoto, { ceremonyId: ceremony.id }, req.body?.files);
+  res.json({ message: "Önizlemeler kaydedildi", count });
 };

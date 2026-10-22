@@ -2,14 +2,17 @@ import { useRef, useState, type ReactNode } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Loader2, Upload, X } from 'lucide-react';
+import { uploadImageVariants, type UploadedVariants, type VariantTargets } from '../../lib/imageVariants';
+import { formatFileSize } from '../../lib/media';
 
-export interface PresignedFile {
+// Görsellerde önizleme yükleme linkleri de gelir (bkz. lib/imageVariants)
+export interface PresignedFile extends VariantTargets {
   key: string;
   fileName: string;
   uploadUrl: string;
 }
 
-export interface UploadedFile {
+export interface UploadedFile extends Partial<UploadedVariants> {
   key: string;
   fileName: string;
   size: number;
@@ -46,11 +49,14 @@ const uploadWithPool = async (
         await axios.put(item.uploadUrl, file, {
           headers: { 'Content-Type': file.type },
         });
+        // Önizlemeler yerel dosyadan üretilir; üretilemezse dosya önizlemesiz kaydedilir
+        const variants = file.type.startsWith('image/') ? await uploadImageVariants(file, item) : null;
         succeeded.push({
           key: item.key,
           fileName: item.fileName,
           size: file.size,
           contentType: file.type,
+          ...variants,
         });
       } catch (error) {
         console.error(`Yükleme hatası (${item.fileName}):`, error);
@@ -67,12 +73,6 @@ const uploadWithPool = async (
   );
 
   return { succeeded, failed };
-};
-
-const formatSize = (bytes: number | null) => {
-  if (!bytes) return '';
-  const mb = bytes / (1024 * 1024);
-  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 };
 
 interface MediaUploaderProps {
@@ -206,7 +206,7 @@ const MediaUploader = ({ presign, confirm, onUploaded, renderFields }: MediaUplo
       {selectedFiles.length > 0 && (
         <div className="mb-4 text-sm text-gray-300">
           <span className="font-medium text-white">{selectedFiles.length}</span> dosya seçildi
-          ({formatSize(totalSelectedSize)})
+          ({formatFileSize(totalSelectedSize)})
           {!isUploading && (
             <button
               onClick={clearSelection}

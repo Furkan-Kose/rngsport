@@ -5,6 +5,7 @@ import { ArrowLeft, Award, ExternalLink, Images, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid, { type AdminMediaItem } from '../../components/admin/AdminMediaGrid';
+import PreviewBackfill from '../../components/admin/PreviewBackfill';
 import type { AwardCeremony, AwardPhoto, Pagination } from '../../lib/awardCeremonies';
 
 const AwardCeremonyGalleryPage = () => {
@@ -14,6 +15,7 @@ const AwardCeremonyGalleryPage = () => {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [missingPreviews, setMissingPreviews] = useState(0);
 
   const fetchPhotos = useCallback(
     async (page: number, append: boolean) => {
@@ -23,6 +25,7 @@ const AwardCeremonyGalleryPage = () => {
         setCeremony(data.ceremony);
         setPhotos((prev) => (append ? [...prev, ...data.data] : data.data));
         setPagination(data.pagination);
+        setMissingPreviews(data.missingPreviews ?? 0);
       } catch (error) {
         console.error('Tören galerisi yüklenemedi:', error);
         toast.error('Galeri yüklenemedi');
@@ -95,6 +98,15 @@ const AwardCeremonyGalleryPage = () => {
           await api.post(`/api/award-ceremonies/${id}/confirm`, { files });
         }}
         onUploaded={() => fetchPhotos(1, false)}
+      />
+
+      <PreviewBackfill
+        missing={missingPreviews}
+        fetchBatch={async () => (await api.get(`/api/award-ceremonies/admin/${id}/missing-previews`)).data}
+        save={async (files) => {
+          await api.post(`/api/award-ceremonies/${id}/previews`, { files });
+        }}
+        onDone={() => fetchPhotos(1, false)}
       />
 
       {isLoading ? (

@@ -3,13 +3,14 @@ import { useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "../components/LocalizedLink";
 import { motion } from "framer-motion";
-import { ArrowLeft, Award, Calendar, FolderDown, Images, Loader2, MapPin } from "lucide-react";
+import { ArrowLeft, Award, Calendar, Images, Loader2, MapPin } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../lib/api";
 import SEO from "../components/SEO";
 import MediaGrid from "../components/MediaGrid";
 import MediaLightbox from "../components/MediaLightbox";
-import type { MediaItem } from "../lib/media";
+import DownloadAllButtons from "../components/DownloadAllButtons";
+import { withQuality, type DownloadSizes, type MediaItem, type MediaQuality } from "../lib/media";
 import { triggerDownload } from "../lib/download";
 import { useZipDownload } from "../hooks/useZipDownload";
 import { isMobileDevice } from "../lib/zipDownload";
@@ -25,6 +26,8 @@ const AwardCeremonyDetailPage = () => {
   const [notFound, setNotFound] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadSizes, setDownloadSizes] = useState<DownloadSizes | null>(null);
+  const [zipQuality, setZipQuality] = useState<MediaQuality | null>(null);
   const { t } = useTranslation();
 
   const fetchPage = useCallback(
@@ -35,6 +38,7 @@ const AwardCeremonyDetailPage = () => {
         setCeremony(data.ceremony);
         setPhotos((prev) => (append ? [...prev, ...data.data] : data.data));
         setPagination(data.pagination);
+        setDownloadSizes(data.downloadSizes ?? null);
       } catch (error) {
         const status = (error as { response?: { status?: number } }).response?.status;
         if (status === 404) {
@@ -64,16 +68,21 @@ const AwardCeremonyDetailPage = () => {
 
   // Toplu indirme: zip tarayıcıda, dosyalar doğrudan R2'den (bkz. lib/zipDownload)
   const zip = useZipDownload();
-  const handleDownloadAll = () =>
-    zip.start(
-      `/api/award-ceremonies/${slug}/download-manifest`,
-      `/api/award-ceremonies/${slug}/download-all`,
+  const handleDownloadAll = async (quality: MediaQuality) => {
+    setZipQuality(quality);
+    await zip.start(
+      withQuality(`/api/award-ceremonies/${slug}/download-manifest`, quality),
+      withQuality(`/api/award-ceremonies/${slug}/download-all`, quality),
     );
+    setZipQuality(null);
+  };
 
-  const handleDownload = async (item: MediaItem) => {
+  const handleDownload = async (item: MediaItem, quality: MediaQuality) => {
     setDownloadingId(item.id);
     try {
-      const { data } = await api.get(`/api/award-ceremonies/${slug}/photos/${item.id}/download`);
+      const { data } = await api.get(
+        withQuality(`/api/award-ceremonies/${slug}/photos/${item.id}/download`, quality),
+      );
       triggerDownload(data.url, item.fileName);
     } catch (error) {
       console.error("İndirme hatası:", error);
@@ -148,18 +157,13 @@ const AwardCeremonyDetailPage = () => {
                 </div>
               </div>
               {photos.length > 0 && (
-                <button
-                  onClick={handleDownloadAll}
-                  disabled={zip.isRunning}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold transition-all duration-300"
-                >
-                  {zip.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
-                  {zip.progress
-                  ? zip.progress.total
-                    ? t("pages.media.preparingProgress", { done: zip.progress.done, total: zip.progress.total })
-                    : t("pages.media.preparing")
-                  : t("pages.media.downloadAll")}
-                </button>
+                <DownloadAllButtons
+                  sizes={downloadSizes}
+                  progress={zip.progress}
+                  runningQuality={zipQuality}
+                  onStart={handleDownloadAll}
+                  primaryClassName="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold transition-all duration-300"
+                />
               )}
             </div>
 
@@ -167,6 +171,9 @@ const AwardCeremonyDetailPage = () => {
               <p className="text-xs text-zinc-500 mb-4">
                 {t("pages.media.mobileHint")}
               </p>
+            )}
+            {downloadSizes?.hasPreview && (
+              <p className="text-xs text-zinc-500 mb-4">{t("pages.media.qualityHint")}</p>
             )}
 
             {photos.length === 0 ? (

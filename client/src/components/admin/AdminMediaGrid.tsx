@@ -4,6 +4,7 @@ export interface AdminMediaItem {
   id: string;
   fileName: string;
   url: string;
+  thumbUrl?: string | null;
   contentType: string | null;
   album?: string | null;
 }
@@ -27,7 +28,7 @@ const AdminMediaGrid = ({ items, deletingId, onDelete }: AdminMediaGridProps) =>
         {isVideo(item) ? (
           <video src={item.url} preload="metadata" muted className="w-full h-full object-cover" />
         ) : (
-          <img src={item.url} alt={item.fileName} loading="lazy" className="w-full h-full object-cover" />
+          <img src={item.thumbUrl || item.url} alt={item.fileName} loading="lazy" className="w-full h-full object-cover" />
         )}
         {isVideo(item) && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

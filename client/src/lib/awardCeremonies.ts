@@ -23,6 +23,9 @@ export interface AwardPhoto {
   id: string;
   fileName: string;
   url: string;
+  thumbUrl?: string | null;
+  previewUrl?: string | null;
+  previewSize?: number | null;
   size: number | null;
   contentType: string | null;
   createdAt: string;

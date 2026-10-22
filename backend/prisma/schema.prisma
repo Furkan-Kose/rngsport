@@ -102,6 +102,10 @@ model GalleryPhoto {
   album       String? // Opsiyonel çekim/albüm etiketi
   size        Int?
   contentType String?
+  // Önizlemeler (tarayıcı yüklerken üretir; eski kayıtlarda boş → orijinal gösterilir)
+  thumbKey    String? // ızgara küçük resmi (~480px)
+  previewKey  String? // büyük görünüm + "telefon için" indirme (~2048px)
+  previewSize Int?
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -280,6 +284,10 @@ model AwardPhoto {
   fileName    String
   size        Int?
   contentType String?
+  // Önizlemeler (bkz. GalleryPhoto)
+  thumbKey    String?
+  previewKey  String?
+  previewSize Int?
   createdAt   DateTime @default(now())
 
   ceremony AwardCeremony @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)

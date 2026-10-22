@@ -2,15 +2,15 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Download, X, ChevronLeft, ChevronRight, Loader2, Smartphone } from "lucide-react";
 
-import { isVideoItem, type MediaItem } from "../lib/media";
+import { formatFileSize, isVideoItem, lightboxSrc, type MediaItem, type MediaQuality } from "../lib/media";
 
 interface MediaLightboxProps {
   items: MediaItem[];
   index: number | null;
   onIndexChange: (index: number | null) => void;
-  onDownload: (item: MediaItem) => void;
+  onDownload: (item: MediaItem, quality: MediaQuality) => void;
   downloadingId: string | null;
 }
 
@@ -104,15 +104,16 @@ const MediaLightbox = ({ items, index, onIndexChange, onDownload, downloadingId 
               />
             ) : (
               <img
-                src={item.url}
+                key={item.id}
+                src={lightboxSrc(item)}
                 alt={item.fileName}
                 className="max-w-full max-h-[75vh] object-contain rounded-xl"
               />
             )}
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
               <p className="text-sm text-zinc-400 truncate max-w-60">{item.fileName}</p>
               <button
-                onClick={() => onDownload(item)}
+                onClick={() => onDownload(item, "original")}
                 disabled={downloadingId === item.id}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-medium transition-all duration-300 disabled:opacity-50"
               >
@@ -121,8 +122,22 @@ const MediaLightbox = ({ items, index, onIndexChange, onDownload, downloadingId 
                 ) : (
                   <Download className="w-4 h-4" />
                 )}
-                {t("pages.media.download")}
+                {item.previewUrl ? t("pages.media.downloadOriginal") : t("pages.media.download")}
+                {item.size ? <span className="opacity-75">· {formatFileSize(item.size)}</span> : null}
               </button>
+              {item.previewUrl && (
+                <button
+                  onClick={() => onDownload(item, "preview")}
+                  disabled={downloadingId === item.id}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-white text-sm font-medium transition-all duration-300 disabled:opacity-50"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  {t("pages.media.downloadSmall")}
+                  {item.previewSize ? (
+                    <span className="opacity-75">· {formatFileSize(item.previewSize)}</span>
+                  ) : null}
+                </button>
+              )}
             </div>
           </motion.div>
         </motion.div>

@@ -9,13 +9,19 @@ import {
   streamZip,
   zipFileName,
   zipManifest,
+  presignVariants,
+  variantRecordFields,
+  mediaViewFields,
+  parseQuality,
+  downloadTarget,
+  downloadSizes,
+  deleteMediaObjects,
+  MISSING_PREVIEW_BATCH,
+  missingPreviewWhere,
+  missingPreviewItems,
+  savePreviews,
 } from "../utils/uploads.js";
-import {
-  presignUpload,
-  presignView,
-  presignDownload,
-  deleteObject,
-} from "../lib/r2.js";
+import { presignUpload, presignDownload } from "../lib/r2.js";
 
 const sanitizeAlbum = (value) => {
   const trimmed = value ? String(value).trim().slice(0, 100) : "";
@@ -44,7 +50,7 @@ const listPhotosForUser = async (userId, query) => {
     ...(type && { contentType: { startsWith: `${type}/` } }),
   };
 
-  const [photos, total, albums] = await Promise.all([
+  const [photos, total, albums, sizes] = await Promise.all([
     prisma.galleryPhoto.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -58,6 +64,7 @@ const listPhotosForUser = async (userId, query) => {
       distinct: ["album"],
       orderBy: { album: "asc" },
     }),
+    downloadSizes(prisma.galleryPhoto, { userId, ...(album && { album }) }),
   ]);
 
   // Presign lokal HMAC hesabı — network çağrısı yok, toplu üretim ucuz
@@ -69,13 +76,14 @@ const listPhotosForUser = async (userId, query) => {
       size: p.size,
       contentType: p.contentType,
       createdAt: p.createdAt,
-      url: await presignView(p.r2Key),
+      ...(await mediaViewFields(p)),
     }))
   );
 
   return {
     data,
     albums: albums.map((a) => a.album),
+    downloadSizes: sizes,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 };
@@ -103,13 +111,15 @@ const findMyZipPhotos = async (req) => {
 export const getMyZipManifest = async (req, res) => {
   const { photos, zipName } = await findMyZipPhotos(req);
   // Albümler zip içinde klasör olur
-  res.json(await zipManifest(photos, zipName, (photo) => photo.album));
+  res.json(
+    await zipManifest(photos, zipName, (photo) => photo.album, parseQuality(req.query.quality))
+  );
 };
 
 // Sunucuda zip (yedek yol: tarayıcının kaldıramayacağı kadar büyük galeriler)
 export const downloadAllMyPhotos = async (req, res) => {
   const { photos, zipName } = await findMyZipPhotos(req);
-  await streamZip(res, photos, zipName, (photo) => photo.album);
+  await streamZip(res, photos, zipName, (photo) => photo.album, parseQuality(req.query.quality));
 };
 
 // Tek fotoğraf için indirme URL'i (sahiplik kontrolü)
@@ -125,7 +135,8 @@ export const downloadMyPhoto = async (req, res) => {
     throw new AppError("Bu fotoğrafa erişim yetkiniz yok", 403);
   }
 
-  res.json({ url: await presignDownload(photo.r2Key, photo.fileName) });
+  const target = downloadTarget(photo, parseQuality(req.query.quality));
+  res.json({ url: await presignDownload(target.key, target.fileName) });
 };
 
 // Admin: toplu yükleme için imzalı PUT URL'leri üretir
@@ -150,6 +161,7 @@ export const presignPhotoUploads = async (req, res) => {
         key,
         fileName: file.fileName,
         uploadUrl: await presignUpload(key, file.contentType),
+        ...(await presignVariants(key, file.contentType)),
       };
     })
   );
@@ -183,6 +195,7 @@ export const confirmPhotoUploads = async (req, res) => {
       r2Key: key,
       album: sanitizeAlbum(album),
       ...fileRecordFields(file),
+      ...variantRecordFields(file, key),
     };
   });
 
@@ -193,7 +206,11 @@ export const confirmPhotoUploads = async (req, res) => {
 
 // Admin: bir kullanıcının galerisi
 export const getUserPhotosAdmin = async (req, res) => {
-  res.json(await listPhotosForUser(req.params.userId, req.query));
+  const [list, missingPreviews] = await Promise.all([
+    listPhotosForUser(req.params.userId, req.query),
+    prisma.galleryPhoto.count({ where: { userId: req.params.userId, ...missingPreviewWhere } }),
+  ]);
+  res.json({ ...list, missingPreviews });
 };
 
 // Admin: fotoğraf sil (önce R2, sonra DB — R2 silinemezse DB kaydı kalır)
@@ -206,10 +223,26 @@ export const deletePhoto = async (req, res) => {
     throw new AppError("Fotoğraf bulunamadı", 404);
   }
 
-  await deleteObject(photo.r2Key);
+  await deleteMediaObjects(photo);
   await prisma.galleryPhoto
     .delete({ where: { id: photo.id } })
     .catch(rethrowPrismaError({ notFound: "Fotoğraf bulunamadı" }));
 
   res.json({ message: "Fotoğraf silindi" });
+};
+
+// Admin: önizlemesi olmayan eski fotoğraflar (tarayıcı önizleme üretsin diye, parça parça)
+export const getMissingPreviews = async (req, res) => {
+  const where = { userId: req.params.userId, ...missingPreviewWhere };
+  const [photos, remaining] = await Promise.all([
+    prisma.galleryPhoto.findMany({ where, orderBy: { createdAt: "asc" }, take: MISSING_PREVIEW_BATCH }),
+    prisma.galleryPhoto.count({ where }),
+  ]);
+  res.json({ remaining, files: await missingPreviewItems(photos) });
+};
+
+// Admin: tarayıcının yüklediği önizlemeleri kayda bağlar
+export const saveMissingPreviews = async (req, res) => {
+  const count = await savePreviews(prisma.galleryPhoto, { userId: req.params.userId }, req.body?.files);
+  res.json({ message: "Önizlemeler kaydedildi", count });
 };

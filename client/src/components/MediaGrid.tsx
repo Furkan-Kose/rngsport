@@ -1,12 +1,12 @@
 import { Download, Loader2, Play } from "lucide-react";
-import { isVideoItem, type MediaItem } from "../lib/media";
+import { formatFileSize, gridSrc, isVideoItem, type MediaItem, type MediaQuality } from "../lib/media";
 import { useTranslation } from "react-i18next";
 
 
 interface MediaGridProps {
   items: MediaItem[];
   onOpen: (index: number) => void;
-  onDownload: (item: MediaItem) => void;
+  onDownload: (item: MediaItem, quality: MediaQuality) => void;
   downloadingId: string | null;
 }
 
@@ -30,7 +30,7 @@ const MediaGrid = ({ items, onOpen, onDownload, downloadingId }: MediaGridProps)
           />
         ) : (
           <img
-            src={item.url}
+            src={gridSrc(item)}
             alt={item.fileName}
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -48,11 +48,11 @@ const MediaGrid = ({ items, onOpen, onDownload, downloadingId }: MediaGridProps)
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDownload(item);
+            onDownload(item, "original");
           }}
           disabled={downloadingId === item.id}
           className="absolute bottom-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-white sm:opacity-0 sm:group-hover:opacity-100 hover:bg-emerald-600/80 transition-all duration-300"
-          title={t("pages.media.download")}
+          title={`${t("pages.media.downloadOriginal")} ${formatFileSize(item.size)}`.trim()}
         >
           {downloadingId === item.id ? (
             <Loader2 className="w-4 h-4 animate-spin" />

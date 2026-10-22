@@ -5,6 +5,7 @@ import { ArrowLeft, Images, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid from '../../components/admin/AdminMediaGrid';
+import PreviewBackfill from '../../components/admin/PreviewBackfill';
 
 interface UserInfo {
   id: string;
@@ -18,6 +19,7 @@ interface GalleryPhoto {
   fileName: string;
   album: string | null;
   url: string;
+  thumbUrl?: string | null;
   size: number | null;
   contentType: string | null;
   createdAt: string;
@@ -41,6 +43,7 @@ const UserGalleryPage = () => {
 
   const [albumInput, setAlbumInput] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [missingPreviews, setMissingPreviews] = useState(0);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -60,6 +63,7 @@ const UserGalleryPage = () => {
         setPhotos((prev) => (append ? [...prev, ...data.data] : data.data));
         setAlbums(data.albums || []);
         setPagination(data.pagination);
+        setMissingPreviews(data.missingPreviews ?? 0);
       } catch (error) {
         console.error('Gallery fetch error:', error);
         toast.error('Galeri yüklenemedi');
@@ -160,6 +164,15 @@ const UserGalleryPage = () => {
             />
           </div>
         )}
+      />
+
+      <PreviewBackfill
+        missing={missingPreviews}
+        fetchBatch={async () => (await api.get(`/api/gallery/admin/user/${userId}/missing-previews`)).data}
+        save={async (files) => {
+          await api.post(`/api/gallery/admin/user/${userId}/previews`, { files });
+        }}
+        onDone={() => fetchPhotos(1, activeAlbum, false)}
       />
 
       {/* Albüm filtreleri */}

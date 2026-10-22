@@ -13,7 +13,14 @@
     "downloadError": "The photo could not be downloaded",
     "zipDone": "Zip file downloaded",
     "zipServer": "The gallery is large, so the zip is being prepared on the server; the download will start shortly",
-    "zipFailed": "The download was interrupted. Please try again or download the files one by one."
+    "zipFailed": "The download was interrupted. Please try again or download the files one by one.",
+    "downloadOriginal": "Original quality",
+    "downloadSmall": "For phone",
+    "zipOriginal": "Download All · Original ({{size}})",
+    "zipSmall": "Download All · For phone ({{size}})",
+    "albumOriginal": "Download Album · Original ({{size}})",
+    "albumSmall": "Download Album · For phone ({{size}})",
+    "qualityHint": "The “For phone” version is smaller and downloads faster. Download the original quality for printing or enlarging."
   },
   "myGallery": {
     "seoTitle": "My Photos",

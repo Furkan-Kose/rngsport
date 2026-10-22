@@ -5,7 +5,6 @@ import {
   Loader2,
   Camera,
   Video,
-  FolderDown,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
@@ -13,7 +12,8 @@ import { useTranslation } from "react-i18next";
 import api from "../lib/api";
 import SEO from "../components/SEO";
 import MediaLightbox from "../components/MediaLightbox";
-import type { MediaItem } from "../lib/media";
+import DownloadAllButtons from "../components/DownloadAllButtons";
+import { withQuality, type DownloadSizes, type MediaItem, type MediaQuality } from "../lib/media";
 import MediaGrid from "../components/MediaGrid";
 import { triggerDownload } from "../lib/download";
 import { useZipDownload } from "../hooks/useZipDownload";
@@ -24,6 +24,10 @@ interface GalleryPhoto {
   fileName: string;
   album: string | null;
   url: string;
+  thumbUrl?: string | null;
+  previewUrl?: string | null;
+  size?: number | null;
+  previewSize?: number | null;
   contentType: string | null;
   createdAt: string;
 }
@@ -47,6 +51,8 @@ const MyGalleryPage = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadSizes, setDownloadSizes] = useState<DownloadSizes | null>(null);
+  const [zipQuality, setZipQuality] = useState<MediaQuality | null>(null);
   const { t } = useTranslation();
 
   const fetchPhotos = useCallback(
@@ -59,6 +65,7 @@ const MyGalleryPage = () => {
         setPhotos((prev) => (append ? [...prev, ...data.data] : data.data));
         setAlbums(data.albums || []);
         setPagination(data.pagination);
+        setDownloadSizes(data.downloadSizes ?? null);
       } catch (error) {
         console.error("Galeri yüklenemedi:", error);
         toast.error(t("pages.media.loadError"));
@@ -85,15 +92,20 @@ const MyGalleryPage = () => {
 
   // Toplu indirme: zip tarayıcıda, dosyalar doğrudan R2'den (bkz. lib/zipDownload)
   const zip = useZipDownload();
-  const handleDownloadAll = () => {
+  const handleDownloadAll = async (quality: MediaQuality) => {
     const query = activeAlbum ? `?${new URLSearchParams({ album: activeAlbum })}` : "";
-    zip.start(`/api/gallery/my/download-manifest${query}`, `/api/gallery/my/download-all${query}`);
+    setZipQuality(quality);
+    await zip.start(
+      withQuality(`/api/gallery/my/download-manifest${query}`, quality),
+      withQuality(`/api/gallery/my/download-all${query}`, quality),
+    );
+    setZipQuality(null);
   };
 
-  const handleDownload = async (photo: GalleryPhoto) => {
+  const handleDownload = async (photo: GalleryPhoto, quality: MediaQuality) => {
     setDownloadingId(photo.id);
     try {
-      const { data } = await api.get(`/api/gallery/my/${photo.id}/download`);
+      const { data } = await api.get(withQuality(`/api/gallery/my/${photo.id}/download`, quality));
       triggerDownload(data.url, photo.fileName);
     } catch (error) {
       console.error("İndirme hatası:", error);
@@ -131,20 +143,14 @@ const MyGalleryPage = () => {
               </div>
             </div>
             {photos.length > 0 && (
-              <button
-                onClick={handleDownloadAll}
-                disabled={zip.isRunning}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
-              >
-                {zip.isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderDown className="w-4 h-4" />}
-                {zip.progress
-                  ? zip.progress.total
-                    ? t("pages.media.preparingProgress", { done: zip.progress.done, total: zip.progress.total })
-                    : t("pages.media.preparing")
-                  : activeAlbum
-                    ? t("pages.media.downloadAlbum")
-                    : t("pages.media.downloadAll")}
-              </button>
+              <DownloadAllButtons
+                sizes={downloadSizes}
+                album={activeAlbum !== null}
+                progress={zip.progress}
+                runningQuality={zipQuality}
+                onStart={handleDownloadAll}
+                primaryClassName="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
+              />
             )}
           </div>
 
@@ -153,6 +159,9 @@ const MyGalleryPage = () => {
                 {t("pages.media.mobileHint")}
               </p>
             )}
+          {downloadSizes?.hasPreview && (
+            <p className="text-xs text-zinc-500 mb-4 -mt-2">{t("pages.media.qualityHint")}</p>
+          )}
 
           {/* Filtreler: yarışma/albüm + tür */}
           <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -226,7 +235,7 @@ const MyGalleryPage = () => {
               <MediaGrid
                 items={photos}
                 onOpen={setLightboxIndex}
-                onDownload={(item) => handleDownload(item as GalleryPhoto)}
+                onDownload={(item, quality) => handleDownload(item as GalleryPhoto, quality)}
                 downloadingId={downloadingId}
               />
 
@@ -251,7 +260,7 @@ const MyGalleryPage = () => {
         items={photos}
         index={lightboxIndex}
         onIndexChange={setLightboxIndex}
-        onDownload={(item: MediaItem) => handleDownload(item as GalleryPhoto)}
+        onDownload={(item: MediaItem, quality: MediaQuality) => handleDownload(item as GalleryPhoto, quality)}
         downloadingId={downloadingId}
       />
     </div>

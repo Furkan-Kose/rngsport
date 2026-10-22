@@ -1,7 +1,7 @@
 import { ZipArchive } from "archiver";
 import { AppError } from "./errors.js";
 import { slugify } from "./slugify.js";
-import { getObjectStream, presignView } from "../lib/r2.js";
+import { deleteObject, getObjectStream, presignUpload, presignView } from "../lib/r2.js";
 
 // Müşteri galerisi ve ödül töreni galerileri aynı yükleme kurallarını paylaşır.
 export const MAX_FILES_PER_BATCH = 100;
@@ -61,6 +61,134 @@ export const fileRecordFields = ({ fileName, size, contentType }) => {
   };
 };
 
+// --- Önizlemeler -------------------------------------------------------------
+// Tarayıcı yüklerken her fotoğraftan iki JPEG üretir: ızgara için küçük resim (thumb) ve
+// büyük görünüm + "telefon için" indirme sürümü (preview). Orijinal hiç değişmez.
+// Key'ler orijinalin key'inden türetilir; confirm başka bir key kabul etmez (başka
+// klasöre yazılamasın diye). Önizlemesi olmayan eski kayıtlar orijinalle gösterilir.
+export const variantKeys = (r2Key) => {
+  const base = String(r2Key).replace(/\.[^./]+$/, "");
+  return { thumbKey: `${base}-thumb.jpg`, previewKey: `${base}-preview.jpg` };
+};
+
+const isImageType = (contentType) => String(contentType || "").startsWith("image/");
+
+// presign yanıtına eklenir: görsellerde önizlemeler için de imzalı PUT URL'leri
+export const presignVariants = async (key, contentType) => {
+  if (!isImageType(contentType)) return {};
+  const { thumbKey, previewKey } = variantKeys(key);
+  const [thumbUploadUrl, previewUploadUrl] = await Promise.all([
+    presignUpload(thumbKey, "image/jpeg"),
+    presignUpload(previewKey, "image/jpeg"),
+  ]);
+  return { thumbKey, thumbUploadUrl, previewKey, previewUploadUrl };
+};
+
+// confirm'deki önizleme alanları: yalnızca orijinalden türetilen key'ler kabul edilir.
+// Tarayıcı önizleme üretemediyse (desteklenmeyen format) alanlar boş kalır.
+export const variantRecordFields = (file, r2Key) => {
+  if (!file?.thumbKey && !file?.previewKey) return {};
+  const expected = variantKeys(r2Key);
+  if (file.thumbKey !== expected.thumbKey || file.previewKey !== expected.previewKey) {
+    throw new AppError("Geçersiz önizleme anahtarı", 400);
+  }
+  return {
+    thumbKey: expected.thumbKey,
+    previewKey: expected.previewKey,
+    previewSize: Number.isFinite(file.previewSize) ? Math.round(file.previewSize) : null,
+  };
+};
+
+// Liste yanıtındaki görüntüleme linkleri (thumb/preview yoksa null → istemci orijinale düşer)
+export const mediaViewFields = async (photo) => {
+  const [url, thumbUrl, previewUrl] = await Promise.all([
+    presignView(photo.r2Key),
+    photo.thumbKey ? presignView(photo.thumbKey) : null,
+    photo.previewKey ? presignView(photo.previewKey) : null,
+  ]);
+  return { url, thumbUrl, previewUrl, previewSize: photo.previewSize ?? null };
+};
+
+// ?quality=preview → "telefon için" sürüm; diğer her değer orijinal
+export const parseQuality = (value) => (value === "preview" ? "preview" : "original");
+
+// İndirilecek dosya: önizleme istenip varsa önizleme, yoksa orijinal
+export const downloadTarget = (photo, quality) =>
+  quality === "preview" && photo.previewKey
+    ? {
+        key: photo.previewKey,
+        fileName: `${String(photo.fileName).replace(/\.[^.]+$/, "")}-small.jpg`,
+        size: photo.previewSize ?? null,
+      }
+    : { key: photo.r2Key, fileName: photo.fileName, size: photo.size ?? null };
+
+// Toplu indirme butonlarındaki boyutlar: orijinal toplam + "telefon için" toplam
+// (önizlemesi olmayan dosya — video veya eski kayıt — orijinaliyle sayılır)
+export const downloadSizes = async (model, where) => {
+  const [all, withPreview] = await Promise.all([
+    model.aggregate({ where, _sum: { size: true } }),
+    model.aggregate({
+      where: { ...where, previewKey: { not: null } },
+      _sum: { size: true, previewSize: true },
+      _count: true,
+    }),
+  ]);
+  const original = all._sum.size ?? 0;
+  return {
+    original,
+    preview: original - (withPreview._sum.size ?? 0) + (withPreview._sum.previewSize ?? 0),
+    hasPreview: withPreview._count > 0,
+  };
+};
+
+// Orijinal + önizlemeler R2'den silinir (önizleme silinemezse yalnızca log)
+export const deleteMediaObjects = async (photo) => {
+  await deleteObject(photo.r2Key);
+  for (const key of [photo.thumbKey, photo.previewKey].filter(Boolean)) {
+    await deleteObject(key).catch((err) =>
+      console.error(`[r2] Önizleme silinemedi (${key}):`, err.message)
+    );
+  }
+};
+
+// Eski kayıtlar için önizleme üretimi (admin, tarayıcıda): önizlemesi olmayan görseller,
+// orijinalin okuma linki ve önizlemelerin yükleme linkleriyle. Parça parça çağrılır.
+export const MISSING_PREVIEW_BATCH = 20;
+export const missingPreviewWhere = { previewKey: null, contentType: { startsWith: "image/" } };
+
+export const missingPreviewItems = async (photos) =>
+  Promise.all(
+    photos.map(async (photo) => ({
+      id: photo.id,
+      fileName: photo.fileName,
+      url: await presignView(photo.r2Key),
+      ...(await presignVariants(photo.r2Key, photo.contentType)),
+    }))
+  );
+
+// Tarayıcı önizlemeleri yükledikten sonra kayıtları günceller. Key'ler yine sunucuda türetilir.
+export const savePreviews = async (model, scopeWhere, items) => {
+  if (!Array.isArray(items) || items.length === 0 || items.length > MAX_FILES_PER_BATCH) {
+    throw new AppError("Önizleme listesi gerekli", 400);
+  }
+  const ids = items.map((item) => String(item?.id));
+  const photos = await model.findMany({ where: { ...scopeWhere, id: { in: ids } } });
+  const sizeById = new Map(items.map((item) => [String(item.id), item.previewSize]));
+  await Promise.all(
+    photos.map((photo) => {
+      const size = sizeById.get(photo.id);
+      return model.update({
+        where: { id: photo.id },
+        data: {
+          ...variantKeys(photo.r2Key),
+          previewSize: Number.isFinite(size) ? Math.round(size) : null,
+        },
+      });
+    })
+  );
+  return photos.length;
+};
+
 // Zip içindeki dosya yolları. Aynı klasörde aynı ad iki kez geçerse id ile ayrışır.
 // Sunucu zip'i ve tarayıcıda oluşturulan zip aynı adları üretsin diye ortak.
 const zipEntryNames = (photos, folderOf) => {
@@ -78,18 +206,26 @@ const zipEntryNames = (photos, folderOf) => {
 
 // Tarayıcıda zip için dosya listesi: zip içi ad + boyut + doğrudan R2 linki.
 // Dosyalar Railway'den geçmez (R2 çıkış trafiği ücretsiz). Linkler 1 saat geçerli.
-export const zipManifest = async (photos, zipName, folderOf = () => null) => {
-  const names = zipEntryNames(photos, folderOf);
+// quality=preview: önizlemesi olan görseller "telefon için" sürümüyle girer (adı -small.jpg).
+const zipTargets = (photos, quality) =>
+  photos.map((photo) => ({ ...photo, ...downloadTarget(photo, quality) }));
+
+const zipNameFor = (zipName, quality) =>
+  quality === "preview" ? zipName.replace(/\.zip$/, "-small.zip") : zipName;
+
+export const zipManifest = async (photos, zipName, folderOf = () => null, quality = "original") => {
+  const targets = zipTargets(photos, quality);
+  const names = zipEntryNames(targets, folderOf);
   const files = await Promise.all(
-    photos.map(async (photo, i) => ({
+    targets.map(async (target, i) => ({
       name: names[i],
-      size: photo.size ?? null,
-      url: await presignView(photo.r2Key),
+      size: target.size,
+      url: await presignView(target.key),
     }))
   );
   return {
-    zipName,
-    totalSize: photos.reduce((sum, p) => sum + (p.size || 0), 0),
+    zipName: zipNameFor(zipName, quality),
+    totalSize: targets.reduce((sum, t) => sum + (t.size || 0), 0),
     files,
   };
 };
@@ -97,11 +233,11 @@ export const zipManifest = async (photos, zipName, folderOf = () => null) => {
 // Dosyaları R2'den okuyup zip olarak response'a stream'ler (yedek yol: tarayıcının
 // zip'i oluşturamadığı çok büyük galeriler — örn. telefonda).
 // folderOf(photo): zip içindeki klasör adı (yoksa kök).
-export const streamZip = async (res, photos, zipName, folderOf = () => null) => {
+export const streamZip = async (res, photos, zipName, folderOf = () => null, quality = "original") => {
   res.setHeader("Content-Type", "application/zip");
   res.setHeader(
     "Content-Disposition",
-    `attachment; filename*=UTF-8''${encodeURIComponent(zipName)}`
+    `attachment; filename*=UTF-8''${encodeURIComponent(zipNameFor(zipName, quality))}`
   );
 
   // Foto/videolar zaten sıkıştırılmış — level 0 (store) ile CPU harcamadan paketle
@@ -112,9 +248,10 @@ export const streamZip = async (res, photos, zipName, folderOf = () => null) => 
   });
   archive.pipe(res);
 
-  const names = zipEntryNames(photos, folderOf);
-  for (const [i, photo] of photos.entries()) {
-    const body = await getObjectStream(photo.r2Key);
+  const targets = zipTargets(photos, quality);
+  const names = zipEntryNames(targets, folderOf);
+  for (const [i, target] of targets.entries()) {
+    const body = await getObjectStream(target.key);
     archive.append(body, { name: names[i] });
   }
 
