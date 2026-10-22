@@ -259,3 +259,26 @@ export const streamZip = async (res, photos, zipName, folderOf = () => null, qua
 };
 
 export const zipFileName = (label, fallback) => `rngsport-${slugify(label) || fallback}.zip`;
+
+// Toplu silme (admin "Tüm fotoğrafları sil"): önce DB kayıtları — sayfa hemen boşalsın —
+// sonra R2 objeleri (orijinal + önizlemeler) arka planda. R2 silinemezse yalnızca log;
+// kayıtsız kalan obje sitede görünmez (DB tek doğruluk kaynağı).
+export const deleteAllMedia = async (model, where) => {
+  const photos = await model.findMany({
+    where,
+    select: { id: true, r2Key: true, thumbKey: true, previewKey: true },
+  });
+  if (photos.length === 0) return 0;
+  await model.deleteMany({ where: { id: { in: photos.map((p) => p.id) } } });
+
+  (async () => {
+    const keys = photos.flatMap((p) => [p.r2Key, p.thumbKey, p.previewKey]).filter(Boolean);
+    for (const key of keys) {
+      await deleteObject(key).catch((err) =>
+        console.error(`[r2] Dosya silinemedi (${key}):`, err.message)
+      );
+    }
+  })();
+
+  return photos.length;
+};

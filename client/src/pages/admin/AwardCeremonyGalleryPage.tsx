@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Award, ExternalLink, Images, Loader2 } from 'lucide-react';
+import { ArrowLeft, Award, ExternalLink, Images, Loader2, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid, { type AdminMediaItem } from '../../components/admin/AdminMediaGrid';
 import PreviewBackfill from '../../components/admin/PreviewBackfill';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import type { AwardCeremony, AwardPhoto, Pagination } from '../../lib/awardCeremonies';
 
 const AwardCeremonyGalleryPage = () => {
@@ -16,6 +17,8 @@ const AwardCeremonyGalleryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [missingPreviews, setMissingPreviews] = useState(0);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const fetchPhotos = useCallback(
     async (page: number, append: boolean) => {
@@ -57,6 +60,21 @@ const AwardCeremonyGalleryPage = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      const { data } = await api.delete(`/api/award-ceremonies/${id}/photos`);
+      toast.success(`${data.count} dosya silindi`);
+      setConfirmDeleteAll(false);
+      fetchPhotos(1, false);
+    } catch (error) {
+      console.error('Toplu silme hatası:', error);
+      toast.error('Fotoğraflar silinemedi');
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
 
   return (
@@ -76,6 +94,14 @@ const AwardCeremonyGalleryPage = () => {
         </h1>
         <p className="text-gray-400 mt-1 flex flex-wrap items-center gap-x-3">
           <span>{pagination?.total ?? 0} dosya · herkese açık</span>
+          {(pagination?.total ?? 0) > 0 && (
+            <button
+              onClick={() => setConfirmDeleteAll(true)}
+              className="inline-flex items-center gap-1 text-red-400 hover:text-red-300 hover:underline"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Tüm fotoğrafları sil
+            </button>
+          )}
           {ceremony && (
             <a
               href={`/odul-torenleri/${ceremony.slug}`}
@@ -133,6 +159,22 @@ const AwardCeremonyGalleryPage = () => {
           )}
         </>
       )}
+
+      <ConfirmDeleteModal
+        open={confirmDeleteAll}
+        title="Tüm fotoğraflar silinsin mi?"
+        message={
+          <>
+            <strong>{ceremony?.title}</strong> törenindeki <strong>{pagination?.total ?? 0}</strong> dosya
+            (önizlemeleriyle birlikte) kalıcı olarak silinecek. Tören ve sitedeki adresi kalır; yeni
+            fotoğrafları aynı yere yükleyebilirsiniz. Bu işlem geri alınamaz.
+          </>
+        }
+        confirmLabel="Evet, Hepsini Sil"
+        isDeleting={isDeletingAll}
+        onConfirm={handleDeleteAll}
+        onCancel={() => setConfirmDeleteAll(false)}
+      />
     </div>
   );
 };

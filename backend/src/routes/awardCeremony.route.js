@@ -14,6 +14,7 @@ import {
   deleteCeremonyPhoto,
   getCeremonyMissingPreviews,
   saveCeremonyPreviews,
+  deleteAllCeremonyPhotos,
 } from "../controllers/awardCeremony.controller.js";
 import { authMiddleware, requireAdmin } from "../middleware/authMiddleware.js";
 
@@ -26,6 +27,7 @@ router.get("/admin/:id/missing-previews", ...admin, getCeremonyMissingPreviews);
 router.post("/", ...admin, createCeremony);
 router.put("/:id", ...admin, updateCeremony);
 router.delete("/photos/:photoId", ...admin, deleteCeremonyPhoto);
+router.delete("/:id/photos", ...admin, deleteAllCeremonyPhotos);
 router.delete("/:id", ...admin, deleteCeremony);
 router.post("/:id/presign", ...admin, presignCeremonyUploads);
 router.post("/:id/confirm", ...admin, confirmCeremonyUploads);

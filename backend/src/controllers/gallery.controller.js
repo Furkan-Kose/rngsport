@@ -20,6 +20,7 @@ import {
   missingPreviewWhere,
   missingPreviewItems,
   savePreviews,
+  deleteAllMedia,
 } from "../utils/uploads.js";
 import { presignUpload, presignDownload } from "../lib/r2.js";
 
@@ -245,4 +246,14 @@ export const getMissingPreviews = async (req, res) => {
 export const saveMissingPreviews = async (req, res) => {
   const count = await savePreviews(prisma.galleryPhoto, { userId: req.params.userId }, req.body?.files);
   res.json({ message: "Önizlemeler kaydedildi", count });
+};
+
+// Admin: kullanıcının bütün fotoğraflarını (ya da ?album= verilirse o albümü) siler
+export const deleteAllUserPhotos = async (req, res) => {
+  const album = req.query.album ? String(req.query.album).slice(0, 100) : undefined;
+  const count = await deleteAllMedia(prisma.galleryPhoto, {
+    userId: req.params.userId,
+    ...(album && { album }),
+  });
+  res.json({ message: "Fotoğraflar silindi", count });
 };

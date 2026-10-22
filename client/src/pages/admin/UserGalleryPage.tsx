@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Images, Loader2 } from 'lucide-react';
+import { ArrowLeft, Images, Loader2, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid from '../../components/admin/AdminMediaGrid';
 import PreviewBackfill from '../../components/admin/PreviewBackfill';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 
 interface UserInfo {
   id: string;
@@ -44,6 +45,8 @@ const UserGalleryPage = () => {
   const [albumInput, setAlbumInput] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [missingPreviews, setMissingPreviews] = useState(0);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -99,6 +102,25 @@ const UserGalleryPage = () => {
     }
   };
 
+  // Seçili albüm varsa yalnızca o albüm, yoksa kullanıcının bütün galerisi
+  const handleDeleteAll = async () => {
+    setIsDeletingAll(true);
+    try {
+      const query = activeAlbum ? `?${new URLSearchParams({ album: activeAlbum })}` : '';
+      const { data } = await api.delete(`/api/gallery/admin/user/${userId}/photos${query}`);
+      toast.success(`${data.count} dosya silindi`);
+      setConfirmDeleteAll(false);
+      if (activeAlbum) setActiveAlbum(null);
+      else fetchPhotos(1, null, false);
+      fetchUser();
+    } catch (error) {
+      console.error('Toplu silme hatası:', error);
+      toast.error('Fotoğraflar silinemedi');
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   const loadMore = () => {
     if (!pagination || pagination.page >= pagination.totalPages) return;
     fetchPhotos(pagination.page + 1, activeAlbum, true);
@@ -121,8 +143,19 @@ const UserGalleryPage = () => {
           <Images className="w-7 h-7 text-amber-500" />
           {user?.name || 'Kullanıcı'} — Galeri
         </h1>
-        <p className="text-gray-400 mt-1">
-          {user?.email} · {pagination?.total ?? user?._count.photos ?? 0} fotoğraf
+        <p className="text-gray-400 mt-1 flex flex-wrap items-center gap-x-3">
+          <span>
+            {user?.email} · {pagination?.total ?? user?._count.photos ?? 0} fotoğraf
+          </span>
+          {(pagination?.total ?? 0) > 0 && (
+            <button
+              onClick={() => setConfirmDeleteAll(true)}
+              className="inline-flex items-center gap-1 text-red-400 hover:text-red-300 hover:underline"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {activeAlbum ? 'Bu albümü sil' : 'Tüm fotoğrafları sil'}
+            </button>
+          )}
         </p>
       </div>
 
@@ -234,6 +267,32 @@ const UserGalleryPage = () => {
           )}
         </>
       )}
+
+      <ConfirmDeleteModal
+        open={confirmDeleteAll}
+        title={activeAlbum ? 'Albüm silinsin mi?' : 'Tüm fotoğraflar silinsin mi?'}
+        message={
+          <>
+            {activeAlbum ? (
+              <>
+                <strong>{user?.name}</strong> galerisindeki <strong>{activeAlbum}</strong> albümünün{' '}
+                <strong>{pagination?.total ?? 0}</strong> dosyası
+              </>
+            ) : (
+              <>
+                <strong>{user?.name}</strong> galerisindeki <strong>{pagination?.total ?? 0}</strong> dosyanın
+                tamamı
+              </>
+            )}{' '}
+            (önizlemeleriyle birlikte) kalıcı olarak silinecek. Müşteri artık bu dosyaları göremez. Bu işlem
+            geri alınamaz.
+          </>
+        }
+        confirmLabel="Evet, Hepsini Sil"
+        isDeleting={isDeletingAll}
+        onConfirm={handleDeleteAll}
+        onCancel={() => setConfirmDeleteAll(false)}
+      />
     </div>
   );
 };

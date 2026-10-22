@@ -21,6 +21,7 @@ import {
   missingPreviewWhere,
   missingPreviewItems,
   savePreviews,
+  deleteAllMedia,
 } from "../utils/uploads.js";
 import {
   presignUpload,
@@ -361,4 +362,11 @@ export const saveCeremonyPreviews = async (req, res) => {
   const ceremony = await findCeremony({ id: req.params.id });
   const count = await savePreviews(prisma.awardPhoto, { ceremonyId: ceremony.id }, req.body?.files);
   res.json({ message: "Önizlemeler kaydedildi", count });
+};
+
+// Admin: törenin bütün dosyalarını siler; tören (adı, adresi) kalır
+export const deleteAllCeremonyPhotos = async (req, res) => {
+  const ceremony = await findCeremony({ id: req.params.id });
+  const count = await deleteAllMedia(prisma.awardPhoto, { ceremonyId: ceremony.id });
+  res.json({ message: "Fotoğraflar silindi", count });
 };
