@@ -16,7 +16,7 @@ const AwardCeremonies = () => {
             <div className="absolute -inset-4 bg-emerald-500/10 rounded-3xl blur-2xl" />
             <div className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
               <img
-                src="/odul-torenleri.jpeg"
+                src="/odul-torenleri.jpg"
                 alt={t("home.awards.imageAlt")}
                 loading="lazy"
                 className="w-full aspect-4/3 object-cover transition-transform duration-500 group-hover:scale-105"

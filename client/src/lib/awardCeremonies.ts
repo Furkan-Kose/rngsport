@@ -39,5 +39,5 @@ export interface Pagination {
 }
 
 // Kapak fotoğrafı henüz yüklenmemiş törenler için
-export const AWARD_FALLBACK_IMAGE = "/odul-torenleri.jpeg";
+export const AWARD_FALLBACK_IMAGE = "/odul-torenleri.jpg";
 

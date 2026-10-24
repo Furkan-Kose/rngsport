@@ -33,7 +33,7 @@ const AwardCeremoniesPage = () => {
       <section className="relative py-32 pb-44 overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="/odul-torenleri.jpeg"
+            src="/odul-torenleri.jpg"
             alt={t("pages.awards.imageAlt")}
             className="w-full h-full object-cover"
           />
