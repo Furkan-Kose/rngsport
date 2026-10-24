@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { pipeline } from "node:stream";
 import prisma from "../lib/prisma.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { presignUpload, getObject, deleteObject } from "../lib/r2.js";
@@ -306,7 +307,13 @@ export const servePackageImage = async (req, res) => {
     }
     // Key'ler uuid olduğu için içerik hiç değişmez — güvenle immutable
     res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-    object.Body.pipe(res);
+    // pipe() değil pipeline(): ziyaretçi bağlantıyı keserse R2 akışı da kapanır. Kapanmayan
+    // akışlar S3 istemcisinin bağlantı havuzunu doldurup bütün R2 okumalarını kilitlemişti.
+    pipeline(object.Body, res, (err) => {
+      if (err && err.code !== "ERR_STREAM_PREMATURE_CLOSE") {
+        console.error("[r2] Paket görseli aktarılamadı:", err.message);
+      }
+    });
   } catch (err) {
     if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
       throw new AppError("Görsel bulunamadı", 404);

@@ -248,14 +248,38 @@ export const streamZip = async (res, photos, zipName, folderOf = () => null, qua
   });
   archive.pipe(res);
 
+  // Dosyalar TEK TEK açılır ve ziyaretçi indirmeyi yarıda keserse açık R2 akışı kapatılır.
+  // Önceden hepsi baştan açılıyordu; telefonda yarıda bırakılan indirmeler S3 istemcisinin
+  // bağlantı havuzunu doldurup bütün R2 okumalarını (paket görselleri dahil) kilitledi.
+  let aborted = false;
+  let current = null;
+  res.on("close", () => {
+    if (res.writableFinished) return;
+    aborted = true;
+    current?.destroy();
+    archive.abort();
+  });
+
   const targets = zipTargets(photos, quality);
   const names = zipEntryNames(targets, folderOf);
   for (const [i, target] of targets.entries()) {
+    if (aborted) return;
     const body = await getObjectStream(target.key);
+    if (aborted) {
+      body.destroy();
+      return;
+    }
+    current = body;
     archive.append(body, { name: names[i] });
+    // Arşiv bu dosyayı bitirene (ya da akış kapanana) kadar bir sonrakini açma
+    await new Promise((resolve) => {
+      body.once("end", resolve);
+      body.once("close", resolve);
+      body.once("error", resolve);
+    });
   }
 
-  await archive.finalize();
+  if (!aborted) await archive.finalize();
 };
 
 export const zipFileName = (label, fallback) => `rngsport-${slugify(label) || fallback}.zip`;

@@ -25,6 +25,13 @@ const r2 = new S3Client({
     accessKeyId: env("R2_ACCESS_KEY_ID"),
     secretAccessKey: env("R2_SECRET_ACCESS_KEY"),
   },
+  // Varsayılan havuz 50 bağlantı ve zaman aşımı yok: kapanmayan bir akış bağlantıyı sonsuza
+  // kadar tutuyordu. Bağlantı kurma 5 sn; 2 dk hiç veri akmazsa bağlantı bırakılır.
+  requestHandler: {
+    connectionTimeout: 5_000,
+    requestTimeout: 120_000,
+    httpsAgent: { maxSockets: 200, keepAlive: true },
+  },
 });
 
 // Yapılandırma eksikse AWS SDK anlamsız hatalar veriyor ("No value provided for input
