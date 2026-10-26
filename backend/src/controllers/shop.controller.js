@@ -457,8 +457,13 @@ export const paymentCallback = async (req, res) => {
     if (!UNPAID_STATUSES.includes(order.status)) {
       return res.redirect(resultUrl(order.locale, order.id, { ok: true }));
     }
-    // Replay koruması: bu ödeme denemesinin conversationId'si olmalı
-    if (!order.conversationId || order.conversationId !== result.conversationId) {
+    // Replay koruması: iyzico sonucu bir conversationId döndürdüyse bu denemeninki olmalı.
+    // DİKKAT: checkoutForm.retrieve yanıtında conversationId genelde BOŞ gelir (iyzico sorgu
+    // isteğinin kendi conversationId'sini yansıtır). Boşken reddetmek ödemesi ALINMIŞ siparişi
+    // "doğrulama hatası" ile düşürüyordu (2026-10-26). Asıl güvence: token iyzico'dan geliyor,
+    // sonuç token ile iyzico'dan yeniden okunuyor, basketId siparişi, paidPrice tutarı doğruluyor.
+    // Paket ödemesi (payment.controller.js) de aynı kuralı kullanır.
+    if (result.conversationId && order.conversationId !== result.conversationId) {
       console.error(`[shop] ConversationId uyuşmuyor: ${order.id}`);
       return res.redirect(resultUrl(order.locale, order.id, { error: "Ödeme doğrulama hatası" }));
     }
