@@ -37,6 +37,7 @@ router.post("/:id/previews", ...admin, saveCeremonyPreviews);
 router.get("/", getAllCeremonies);
 router.get("/:slug", getCeremonyBySlug);
 router.get("/:slug/download-manifest", getCeremonyZipManifest);
+router.post("/:slug/download-manifest", getCeremonyZipManifest); // seçilenler: { ids }
 router.get("/:slug/download-all", downloadAllCeremonyPhotos);
 router.get("/:slug/photos/:photoId/download", downloadCeremonyPhoto);
 

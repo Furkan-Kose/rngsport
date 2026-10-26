@@ -23,7 +23,16 @@
     "confirmDelete": "Delete this booking?",
     "delete": "Delete",
     "cancel": "Cancel",
-    "edit": "Edit"
+    "edit": "Edit",
+    "delivery": {
+      "photoDone": "Photos delivered",
+      "videoDone": "Video delivered",
+      "reelsDone": "Reels video delivered",
+      "generalDone": "Files delivered",
+      "photoPending": "Photos in progress",
+      "videoPending": "Video in progress",
+      "reelsPending": "Reels video in progress"
+    }
   },
   "password": {
     "title": "Change Password",

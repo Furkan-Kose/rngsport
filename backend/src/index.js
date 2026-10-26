@@ -17,6 +17,7 @@ import userRoutes from "./routes/user.route.js";
 import tournamentRoutes from "./routes/tournament.route.js";
 import awardCeremonyRoutes from "./routes/awardCeremony.route.js";
 import loyaltyRoutes from "./routes/loyalty.route.js";
+import shopRoutes from "./routes/shop.route.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkEnv } from "./utils/env.js";
 import { translateResponses } from "./utils/i18n.js";
@@ -42,9 +43,10 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-// iyzico callback için CORS bypass
+// iyzico callback'leri için CORS bypass (paket ödemesi + mağaza)
+const IYZICO_CALLBACKS = new Set(["/api/payment/callback", "/api/shop/payment/callback"]);
 app.use((req, res, next) => {
-  if (req.path === "/api/payment/callback") {
+  if (IYZICO_CALLBACKS.has(req.path)) {
     return next(); // CORS uygulamadan devam et
   }
   cors(corsOptions)(req, res, next);
@@ -63,6 +65,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/award-ceremonies", awardCeremonyRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
+app.use("/api/shop", shopRoutes);
 
 app.use(errorHandler);
 

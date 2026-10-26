@@ -286,18 +286,101 @@ export const sendPasswordResetEmail = (to, name, token, { isFirstTime = false, l
 // setPasswordToken: hesap hâlâ şifresizse verilir; müşteri tek tıkla şifresini
 // belirleyip galerisine girer. Şifresi varsa null gelir, normal giriş yolu gösterilir.
 // locale: teslim edilen siparişin/rezervasyonun dili.
-export const sendDeliveryEmail = (to, name, setPasswordToken = null, locale) => {
+// Parça parça teslim: her parçanın kendi konusu, metni ve butonu.
+// Şifre belirleme / altbilgi metinleri TEXT[lang].delivery'den ortak gelir.
+const DELIVERY_TEXT = {
+  tr: {
+    photo: {
+      subject: "Fotoğraflarınız hazır! 📸",
+      body: "Çekiminiz tamamlandı ve fotoğraflarınız galerinize yüklendi.",
+      button: "Fotoğraflarımı Gör",
+    },
+    video: {
+      subject: "Videonuz hazır! 🎬",
+      body: "Videonuz hazırlandı ve galerinize yüklendi.",
+      button: "Videomu İzle",
+    },
+    reels: {
+      subject: "Reels videonuz hazır! 🎞️",
+      body: "Reels videonuz hazırlandı ve galerinize yüklendi.",
+      button: "Reels Videomu İzle",
+    },
+    general: {
+      subject: "Dosyalarınız hazır! 🎉",
+      body: "Çekiminiz tamamlandı ve dosyalarınız galerinize yüklendi.",
+      button: "Galerime Git",
+    },
+    open: "Aşağıdaki butondan galerinize ulaşıp görüntüleyebilir ve indirebilirsiniz.",
+    moreLater: "Videolarınız birkaç gün içinde ayrıca hazır olacak; hazır olduğunda size yine e-posta ile haber vereceğiz.",
+  },
+  en: {
+    photo: {
+      subject: "Your photos are ready! 📸",
+      body: "Your shoot is complete and your photos have been uploaded to your gallery.",
+      button: "View My Photos",
+    },
+    video: {
+      subject: "Your video is ready! 🎬",
+      body: "Your video has been prepared and uploaded to your gallery.",
+      button: "Watch My Video",
+    },
+    reels: {
+      subject: "Your Reels video is ready! 🎞️",
+      body: "Your Reels video has been prepared and uploaded to your gallery.",
+      button: "Watch My Reels",
+    },
+    general: {
+      subject: "Your files are ready! 🎉",
+      body: "Your shoot is complete and your files have been uploaded to your gallery.",
+      button: "Open My Gallery",
+    },
+    open: "Use the button below to open your gallery, view and download your files.",
+    moreLater: "Your videos will be ready separately in a few days; we'll email you again when they are.",
+  },
+  ru: {
+    photo: {
+      subject: "Ваши фото готовы! 📸",
+      body: "Съёмка завершена, фото загружены в вашу галерею.",
+      button: "Смотреть мои фото",
+    },
+    video: {
+      subject: "Ваше видео готово! 🎬",
+      body: "Видео подготовлено и загружено в вашу галерею.",
+      button: "Смотреть видео",
+    },
+    reels: {
+      subject: "Ваше видео Reels готово! 🎞️",
+      body: "Видео Reels подготовлено и загружено в вашу галерею.",
+      button: "Смотреть Reels",
+    },
+    general: {
+      subject: "Ваши файлы готовы! 🎉",
+      body: "Съёмка завершена, файлы загружены в вашу галерею.",
+      button: "Открыть галерею",
+    },
+    open: "Нажмите кнопку ниже, чтобы открыть галерею, посмотреть и скачать файлы.",
+    moreLater: "Видео будут готовы отдельно через несколько дней — мы снова напишем вам на почту.",
+  },
+};
+
+// type: photo | video | reels | general. moreLater: fotoğraf mailinde "videolar ayrıca gelecek" satırı.
+export const sendDeliveryEmail = (to, name, setPasswordToken = null, locale, { type = "general", moreLater = false } = {}) => {
   const lang = normalizeLocale(locale);
   const t = TEXT[lang];
+  const d = DELIVERY_TEXT[lang];
+  const part = d[type] ?? d.general;
   const claimUrl = setPasswordUrl(setPasswordToken, lang);
   return sendSafe({
     to,
-    subject: `${t.delivery.subject} | RNG Sport`,
+    subject: `${part.subject} | RNG Sport`,
     html: layout(t, {
-      title: t.delivery.title,
+      title: part.subject,
       bodyHtml: `<p>${t.hello(name)}</p>
-        <p>${t.delivery.body} ${claimUrl ? t.delivery.bodyClaim : t.delivery.bodyOpen}</p>`,
-      buttonText: claimUrl ? t.delivery.buttonClaim : t.delivery.button,
+        <p>${part.body} ${claimUrl ? t.delivery.bodyClaim : d.open}</p>${
+          moreLater ? `
+        <p style="color:#71717a;">⏳ ${d.moreLater}</p>` : ""
+        }`,
+      buttonText: claimUrl ? t.delivery.buttonClaim : part.button,
       buttonUrl: claimUrl || siteUrl(lang, "/galerim"),
       footerNote: claimUrl ? t.delivery.footerClaim : t.delivery.footer(siteUrl(lang, "/giris")),
     }),
@@ -367,4 +450,156 @@ export const sendOrderPaidEmail = async (to, order, setPasswordToken = null) => 
       footerNote: `${t.order.number}: ${order.id}`,
     }),
   });
+};
+
+// ---------------------------------------------------------------------------
+// Mağaza (kişiye özel ürünler) mailleri — siparişin dilinde (shopOrder.locale)
+// ---------------------------------------------------------------------------
+const SHOP_TEXT = {
+  tr: {
+    paid: {
+      subject: "Siparişiniz alındı",
+      title: "Siparişiniz Alındı 🎉",
+      body: "Ödemeniz başarıyla alındı. Kişiye özel ürününüzün hazırlığına başlıyoruz; kargoya verdiğimizde size haber vereceğiz.",
+    },
+    shipped: {
+      subject: "Siparişiniz kargoya verildi",
+      title: "Siparişiniz Kargoda 📦",
+      body: "Kişiye özel ürününüz kargoya verildi.",
+    },
+    delivered: {
+      subject: "Siparişiniz teslim edildi",
+      title: "Siparişiniz Teslim Edildi",
+      body: "Siparişiniz teslim edildi olarak işaretlendi. Güzel günlerde kullanın!",
+    },
+    product: "Ürün",
+    selection: "Seçim",
+    pose: (n) => `Poz ${n}`,
+    apparatus: { top: "Top", cember: "Çember", kurdele: "Kurdele", labut: "Labut", ip: "İp", serbest: "Serbest" },
+    quantity: "Adet",
+    total: "Toplam",
+    personalization: "Kişiselleştirme",
+    address: "Teslimat adresi",
+    tracking: "Kargo bilgisi",
+    button: "Siparişimi Gör",
+    number: "Sipariş No",
+  },
+  en: {
+    paid: {
+      subject: "Your order has been received",
+      title: "Your Order Has Been Received 🎉",
+      body: "Your payment was successful. We are starting to prepare your personalised product and will let you know when it ships.",
+    },
+    shipped: {
+      subject: "Your order has shipped",
+      title: "Your Order Has Shipped 📦",
+      body: "Your personalised product has been handed over to the courier.",
+    },
+    delivered: {
+      subject: "Your order has been delivered",
+      title: "Your Order Has Been Delivered",
+      body: "Your order has been marked as delivered. Enjoy it!",
+    },
+    product: "Product",
+    selection: "Choice",
+    pose: (n) => `Pose ${n}`,
+    apparatus: { top: "Ball", cember: "Hoop", kurdele: "Ribbon", labut: "Clubs", ip: "Rope", serbest: "Free" },
+    quantity: "Quantity",
+    total: "Total",
+    personalization: "Personalisation",
+    address: "Delivery address",
+    tracking: "Shipping details",
+    button: "View My Order",
+    number: "Order No",
+  },
+  ru: {
+    paid: {
+      subject: "Ваш заказ принят",
+      title: "Ваш заказ принят 🎉",
+      body: "Оплата прошла успешно. Мы начинаем изготовление вашего именного изделия и сообщим, когда передадим его в доставку.",
+    },
+    shipped: {
+      subject: "Ваш заказ отправлен",
+      title: "Ваш заказ отправлен 📦",
+      body: "Ваше именное изделие передано в службу доставки.",
+    },
+    delivered: {
+      subject: "Ваш заказ доставлен",
+      title: "Ваш заказ доставлен",
+      body: "Ваш заказ отмечен как доставленный. Пусть он радует вас!",
+    },
+    product: "Товар",
+    selection: "Выбор",
+    pose: (n) => `Поза ${n}`,
+    apparatus: { top: "Мяч", cember: "Обруч", kurdele: "Лента", labut: "Булавы", ip: "Скакалка", serbest: "Без предмета" },
+    quantity: "Количество",
+    total: "Итого",
+    personalization: "Персонализация",
+    address: "Адрес доставки",
+    tracking: "Данные доставки",
+    button: "Посмотреть заказ",
+    number: "Номер заказа",
+  },
+};
+
+// Müşterinin yazdığı metinler maile HTML olarak gömülür — kaçışla
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+const shopRow = (label, value) =>
+  `<tr><td style="padding:6px 12px 6px 0;color:#71717a;vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td>
+     <td style="padding:6px 0;color:#18181b;">${escapeHtml(value)}</td></tr>`;
+
+const shopOrderDetails = (s, lang, order) => {
+  const labels = order.fieldLabels || {};
+  const personal = Object.entries(order.personalization || {})
+    .map(([key, value]) => shopRow(labels[key] || key, value))
+    .join("");
+  return `
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+      ${shopRow(s.product, order.productName)}
+      ${order.selection ? shopRow(s.selection, `${s.apparatus[order.selection.apparatus] || order.selection.apparatus} · ${s.pose(order.selection.poseNo)}${order.selection.poseLabel ? ` (${order.selection.poseLabel})` : ""}`) : ""}
+      ${shopRow(s.quantity, order.quantity)}
+      ${shopRow(s.total, `₺${Number(order.totalPrice).toLocaleString(NUMBER_LOCALES[lang])}`)}
+    </table>
+    ${personal ? `<p style="margin:16px 0 4px;font-weight:bold;color:#18181b;">${s.personalization}</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">${personal}</table>` : ""}
+    <p style="margin:16px 0 4px;font-weight:bold;color:#18181b;">${s.address}</p>
+    <p style="margin:0;font-size:14px;color:#3f3f46;">${escapeHtml(order.recipientName)} · ${escapeHtml(order.phone)}<br/>
+      ${escapeHtml(order.address)}<br/>${escapeHtml(order.district)} / ${escapeHtml(order.city)}</p>`;
+};
+
+const sendShopMail = (to, order, kind) => {
+  const lang = normalizeLocale(order.locale);
+  const t = TEXT[lang];
+  const s = SHOP_TEXT[lang];
+  const k = s[kind];
+  const tracking =
+    kind === "shipped" && order.trackingInfo
+      ? `<p style="margin:16px 0 4px;font-weight:bold;color:#18181b;">${s.tracking}</p>
+         <p style="margin:0;font-size:14px;">${escapeHtml(order.trackingInfo)}</p>`
+      : "";
+  return sendSafe({
+    to,
+    subject: `${k.subject} | RNG Sport`,
+    html: layout(t, {
+      title: k.title,
+      bodyHtml: `<p>${t.hello(escapeHtml(order.recipientName))}</p>
+        <p>${k.body}</p>
+        ${tracking}
+        ${shopOrderDetails(s, lang, order)}`,
+      buttonText: s.button,
+      buttonUrl: siteUrl(lang, `/urun-siparisi/${order.id}`),
+      footerNote: `${s.number}: ${order.id}`,
+    }),
+  });
+};
+
+export const sendShopOrderPaidEmail = (to, order) => sendShopMail(to, order, "paid");
+
+// Yalnızca "Kargoda" ve "Teslim edildi" geçişlerinde gönderilir
+export const sendShopOrderStatusEmail = (to, order) => {
+  if (order.status === "SHIPPED") return sendShopMail(to, order, "shipped");
+  if (order.status === "DELIVERED") return sendShopMail(to, order, "delivered");
+  return Promise.resolve();
 };

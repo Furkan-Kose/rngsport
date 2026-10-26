@@ -8,6 +8,7 @@ import {
   createReservation,
   updateReservation,
   deleteReservation,
+  deliverReservation,
   getReservationStats,
 } from "../controllers/reservation.controller.js";
 import { authMiddleware, requireAdmin, optionalAuth } from "../middleware/authMiddleware.js";
@@ -24,5 +25,6 @@ router.get("/:id", getReservation); // Bilinçli olarak public (cuid = capabilit
 router.post("/", optionalAuth, createReservation); // Misafir de rezervasyon yapabilir; girişliyse userId bağlanır
 router.delete("/:id", authMiddleware, requireAdmin, deleteReservation);
 router.put("/:id", authMiddleware, requireAdmin, updateReservation);
+router.post("/:id/deliver", authMiddleware, requireAdmin, deliverReservation); // Parça parça teslim + mail
 
 export default router;

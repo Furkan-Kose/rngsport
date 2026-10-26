@@ -19,6 +19,7 @@ const router = express.Router();
 // Müşteri
 router.get("/my", authMiddleware, getMyPhotos);
 router.get("/my/download-manifest", authMiddleware, getMyZipManifest);
+router.post("/my/download-manifest", authMiddleware, getMyZipManifest); // seçilenler: { ids }
 router.get("/my/download-all", authMiddleware, downloadAllMyPhotos);
 router.get("/my/:id/download", authMiddleware, downloadMyPhoto);
 

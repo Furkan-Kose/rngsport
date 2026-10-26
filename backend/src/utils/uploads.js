@@ -1,12 +1,12 @@
 import { ZipArchive } from "archiver";
 import { AppError } from "./errors.js";
 import { slugify } from "./slugify.js";
-import { deleteObject, getObjectStream, presignUpload, presignView } from "../lib/r2.js";
+import { deleteObject, deleteObjects, getObjectStream, presignUpload, presignView } from "../lib/r2.js";
 
 // Müşteri galerisi ve ödül töreni galerileri aynı yükleme kurallarını paylaşır.
 export const MAX_FILES_PER_BATCH = 100;
-const MAX_IMAGE_SIZE = 30 * 1024 * 1024; // 30MB
-const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
+const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_VIDEO_SIZE = 1024 * 1024 * 1024; // 1GB (R2 tek PUT sınırı 5GB)
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm"]);
 
@@ -37,10 +37,10 @@ export const validateUploadFile = (file) => {
     throw new AppError(`Sadece görsel veya video yüklenebilir: ${fileName}`, 400);
   }
   if (size && isImage && size > MAX_IMAGE_SIZE) {
-    throw new AppError(`Fotoğraf 30MB'ı aşamaz: ${fileName}`, 400);
+    throw new AppError(`Fotoğraf 50MB'ı aşamaz: ${fileName}`, 400);
   }
   if (size && isVideo && size > MAX_VIDEO_SIZE) {
-    throw new AppError(`Video 500MB'ı aşamaz: ${fileName}`, 400);
+    throw new AppError(`Video 1GB'ı aşamaz: ${fileName}`, 400);
   }
   const ext = getExtension(fileName);
   if (!ext) {
@@ -66,15 +66,34 @@ export const fileRecordFields = ({ fileName, size, contentType }) => {
 // büyük görünüm + "telefon için" indirme sürümü (preview). Orijinal hiç değişmez.
 // Key'ler orijinalin key'inden türetilir; confirm başka bir key kabul etmez (başka
 // klasöre yazılamasın diye). Önizlemesi olmayan eski kayıtlar orijinalle gösterilir.
+//
+// Klasör düzeni (2026-10-25'ten itibaren yeni yüklemeler): orijinal `…/orijinal/{uuid}.jpg`,
+// önizlemeler `…/onizleme/{uuid}-thumb.jpg` ve `-preview.jpg`. Eski düzende (orijinal klasörsüz)
+// yüklenmiş dosyanın önizlemesi de artık `…/onizleme/` altına üretilir. Var olan kayıtlar
+// etkilenmez: thumbKey/previewKey DB'de ayrı ayrı saklanıyor.
+export const ORIGINAL_DIR = "orijinal";
+export const PREVIEW_DIR = "onizleme";
+
 export const variantKeys = (r2Key) => {
-  const base = String(r2Key).replace(/\.[^./]+$/, "");
+  const key = String(r2Key);
+  const slash = key.lastIndexOf("/");
+  const dir = key.slice(0, slash + 1);
+  const name = key.slice(slash + 1).replace(/\.[^.]+$/, "");
+  const parent = dir.endsWith(`/${ORIGINAL_DIR}/`) ? dir.slice(0, -(ORIGINAL_DIR.length + 1)) : dir;
+  const base = `${parent}${PREVIEW_DIR}/${name}`;
   return { thumbKey: `${base}-thumb.jpg`, previewKey: `${base}-preview.jpg` };
 };
 
 const isImageType = (contentType) => String(contentType || "").startsWith("image/");
+const isVideoType = (contentType) => String(contentType || "").startsWith("video/");
 
-// presign yanıtına eklenir: görsellerde önizlemeler için de imzalı PUT URL'leri
+// presign yanıtına eklenir: görsellerde iki önizleme, videolarda yalnızca kapak resmi (thumb —
+// tarayıcı videodan bir kare alır). Videonun "küçük boyut" sürümü yok; indirme hep orijinal.
 export const presignVariants = async (key, contentType) => {
+  if (isVideoType(contentType)) {
+    const { thumbKey } = variantKeys(key);
+    return { thumbKey, thumbUploadUrl: await presignUpload(thumbKey, "image/jpeg") };
+  }
   if (!isImageType(contentType)) return {};
   const { thumbKey, previewKey } = variantKeys(key);
   const [thumbUploadUrl, previewUploadUrl] = await Promise.all([
@@ -89,9 +108,14 @@ export const presignVariants = async (key, contentType) => {
 export const variantRecordFields = (file, r2Key) => {
   if (!file?.thumbKey && !file?.previewKey) return {};
   const expected = variantKeys(r2Key);
-  if (file.thumbKey !== expected.thumbKey || file.previewKey !== expected.previewKey) {
+  if ((file.thumbKey && file.thumbKey !== expected.thumbKey) || (file.previewKey && file.previewKey !== expected.previewKey)) {
     throw new AppError("Geçersiz önizleme anahtarı", 400);
   }
+  // Video: yalnızca kapak resmi. Görsel: ikisi birlikte (biri eksikse hiç kaydedilmez).
+  if (isVideoType(file.contentType)) {
+    return file.thumbKey ? { thumbKey: expected.thumbKey } : {};
+  }
+  if (!file.thumbKey || !file.previewKey) return {};
   return {
     thumbKey: expected.thumbKey,
     previewKey: expected.previewKey,
@@ -107,6 +131,16 @@ export const mediaViewFields = async (photo) => {
     photo.previewKey ? presignView(photo.previewKey) : null,
   ]);
   return { url, thumbUrl, previewUrl, previewSize: photo.previewSize ?? null };
+};
+
+// "Seçilenleri indir": POST gövdesindeki id listesi (en fazla 2000). Yoksa null → tümü.
+export const MAX_SELECTED_IDS = 2000;
+export const parseSelectedIds = (body) => {
+  if (!Array.isArray(body?.ids)) return null;
+  const ids = [...new Set(body.ids.filter((id) => typeof id === "string" && id.length <= 50))];
+  if (ids.length === 0) throw new AppError("Seçili dosya yok", 400);
+  if (ids.length > MAX_SELECTED_IDS) throw new AppError(`En fazla ${MAX_SELECTED_IDS} dosya seçilebilir`, 400);
+  return ids;
 };
 
 // ?quality=preview → "telefon için" sürüm; diğer her değer orijinal
@@ -284,9 +318,21 @@ export const streamZip = async (res, photos, zipName, folderOf = () => null, qua
 
 export const zipFileName = (label, fallback) => `rngsport-${slugify(label) || fallback}.zip`;
 
-// Toplu silme (admin "Tüm fotoğrafları sil"): önce DB kayıtları — sayfa hemen boşalsın —
-// sonra R2 objeleri (orijinal + önizlemeler) arka planda. R2 silinemezse yalnızca log;
-// kayıtsız kalan obje sitede görünmez (DB tek doğruluk kaynağı).
+// Kayıtların R2 dosyalarını (orijinal + önizlemeler) toplu siler — yanıt dönmeden biter,
+// böylece sunucu yeniden başlasa da yarım kalmaz. Hata yalnızca loglanır: DB kaydı zaten
+// silinmiştir, kayıtsız dosya sitede görünmez (DB tek doğruluk kaynağı).
+export const deleteMediaFiles = async (photos, label = "Dosya") => {
+  const keys = photos.flatMap((p) => [p.r2Key, p.thumbKey, p.previewKey]).filter(Boolean);
+  if (keys.length === 0) return;
+  try {
+    const failed = await deleteObjects(keys);
+    if (failed.length) console.error(`[r2] ${label}: ${failed.length} dosya silinemedi, örn. ${failed[0]}`);
+  } catch (err) {
+    console.error(`[r2] ${label} toplu silme hatası (${keys.length} dosya):`, err.message);
+  }
+};
+
+// Toplu silme (admin "Tüm fotoğrafları sil"): önce DB kayıtları, sonra R2 (toplu, beklenir)
 export const deleteAllMedia = async (model, where) => {
   const photos = await model.findMany({
     where,
@@ -294,15 +340,6 @@ export const deleteAllMedia = async (model, where) => {
   });
   if (photos.length === 0) return 0;
   await model.deleteMany({ where: { id: { in: photos.map((p) => p.id) } } });
-
-  (async () => {
-    const keys = photos.flatMap((p) => [p.r2Key, p.thumbKey, p.previewKey]).filter(Boolean);
-    for (const key of keys) {
-      await deleteObject(key).catch((err) =>
-        console.error(`[r2] Dosya silinemedi (${key}):`, err.message)
-      );
-    }
-  })();
-
+  await deleteMediaFiles(photos);
   return photos.length;
 };

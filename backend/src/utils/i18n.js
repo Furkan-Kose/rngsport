@@ -182,6 +182,16 @@ const MESSAGES = {
     ru: "Эту бронь уже нельзя изменить. Для изменений свяжитесь с нами.",
   },
   "Sipariş bulunamadı": { en: "Order not found", ru: "Заказ не найден" },
+  "Seçili dosya yok": { en: "No files selected", ru: "Файлы не выбраны" },
+  "Lütfen alet ve poz seçin": { en: "Please choose an apparatus and a pose", ru: "Пожалуйста, выберите предмет и позу" },
+  "Seçilen poz artık mevcut değil, lütfen başka bir poz seçin": { en: "The selected pose is no longer available, please choose another one", ru: "Выбранная поза больше недоступна, выберите другую" },
+  "Bu ürün şu an satışta değil": { en: "This product is not on sale right now", ru: "Этот товар сейчас не продаётся" },
+  "Ürün bulunamadı": { en: "Product not found", ru: "Товар не найден" },
+  "Alıcı adı soyadı gerekli": { en: "Recipient's full name is required", ru: "Укажите имя и фамилию получателя" },
+  "İl ve ilçe gerekli": { en: "Province and district are required", ru: "Укажите город и район" },
+  "Açık adres en az 10 karakter olmalı": { en: "The full address must be at least 10 characters", ru: "Полный адрес должен содержать не менее 10 символов" },
+  "Ödeme için hesabınızda e-posta adresi olmalı": { en: "Your account needs an email address to pay", ru: "Для оплаты в аккаунте должен быть указан e-mail" },
+  "Ödeme formu oluşturulamadı": { en: "The payment form could not be created", ru: "Не удалось создать форму оплаты" },
   "Sipariş oluşturuldu": { en: "Order created", ru: "Заказ создан" },
 
   // Ödeme
@@ -217,6 +227,14 @@ const MESSAGES = {
 
 // Değişken içeren mesajlar: [kalıp, (eşleşme) => { en, ru }]
 const PATTERNS = [
+  [
+    /^En fazla (\d+) dosya seçilebilir$/,
+    ([, n]) => ({ en: `You can select up to ${n} files`, ru: `Можно выбрать не более ${n} файлов` }),
+  ],
+  [
+    /^Zorunlu alan eksik: (.+)$/,
+    ([, field]) => ({ en: `Required field missing: ${field}`, ru: `Не заполнено обязательное поле: ${field}` }),
+  ],
   [
     /^(.+) için zaten bir rezervasyonunuz var\. Profilinizden düzenleyebilirsiniz\.$/,
     ([, name]) => ({

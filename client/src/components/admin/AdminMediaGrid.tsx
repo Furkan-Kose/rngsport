@@ -25,7 +25,7 @@ const AdminMediaGrid = ({ items, deletingId, onDelete }: AdminMediaGridProps) =>
         key={item.id}
         className="relative group aspect-square rounded-xl overflow-hidden bg-gray-800 border border-gray-700"
       >
-        {isVideo(item) ? (
+        {isVideo(item) && !item.thumbUrl ? (
           <video src={item.url} preload="metadata" muted className="w-full h-full object-cover" />
         ) : (
           <img src={item.thumbUrl || item.url} alt={item.fileName} loading="lazy" className="w-full h-full object-cover" />

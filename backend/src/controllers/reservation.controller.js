@@ -20,9 +20,9 @@ import {
   ownRecordsWhere,
   syncProfileGaps,
   issueSetPasswordToken,
-  issueSetPasswordTokenIfUnclaimed,
 } from "../utils/customerAccount.js";
-import { sendDeliveryEmail, sendReservationCreatedEmail } from "../lib/mail.js";
+import { sendReservationCreatedEmail } from "../lib/mail.js";
+import { deliverRecord, generalDeliveryOnStatus, notifyDelivery } from "../utils/delivery.js";
 import { ROLES } from "../utils/roles.js";
 import {
   applyDiscount,
@@ -284,6 +284,7 @@ export const getMyReservations = async (req, res) => {
       discountAmount: r.discountAmount,
       totalPrice: r.totalPrice,
       status: r.status,
+      deliveries: r.deliveries ?? null,
       createdAt: r.createdAt,
       items: r.items.map((item) => ({
         package: { id: item.packageId, name: item.packageName, category: item.category },
@@ -360,6 +361,7 @@ export const updateReservation = async (req, res) => {
     where: { id },
     select: {
       status: true,
+      deliveries: true,
       discountPercent: true,
       customerEmail: true,
       athleteName: true,
@@ -378,18 +380,15 @@ export const updateReservation = async (req, res) => {
     data.userId = account.userId;
   }
 
-  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget).
-  // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.
+  // Durum seçicisinden DELIVERED'a ilk geçiş = GENEL teslim ("dosyalarınız hazır" maili).
+  // Parça parça teslim (foto/video/reels) POST /:id/deliver ile yapılır.
   // Durum değiştiyse sadakat puanı da senkronlanır (ödendi → puan, iptal → geri al).
+  const general =
+    status === "DELIVERED" && existing.status !== "DELIVERED" ? generalDeliveryOnStatus(existing) : null;
+  if (general) Object.assign(data, general.data);
   const notifyDelivered = (reservation) => {
     if (status) syncPointsForRecord("reservation", reservation);
-    if (status === "DELIVERED" && existing.status !== "DELIVERED" && reservation.customerEmail) {
-      issueSetPasswordTokenIfUnclaimed(reservation.userId)
-        .then((token) =>
-          sendDeliveryEmail(reservation.customerEmail, reservation.athleteName, token, reservation.locale)
-        )
-        .catch((err) => console.error("[mail] Teslimat maili hatası:", err));
-    }
+    if (general?.notify) notifyDelivery(reservation, "general");
   };
 
   // Items gönderilmediyse sadece basit güncelleme
@@ -430,6 +429,20 @@ export const updateReservation = async (req, res) => {
   notifyDelivered(reservation);
 
   res.json({ message: "Rezervasyon güncellendi", reservation });
+};
+
+// Admin: bir parçayı teslim et (photo / video / reels / general) + o parçanın maili
+export const deliverReservation = async (req, res) => {
+  const { record, mailed, already } = await deliverRecord("reservation", req.params.id, {
+    type: req.body?.type,
+    resend: req.body?.resend === true,
+  });
+  res.json({
+    message: mailed ? "Teslimat kaydedildi, mail gönderildi" : "Teslimat kaydedildi",
+    reservation: record,
+    mailed,
+    already,
+  });
 };
 
 export const deleteReservation = async (req, res) => {

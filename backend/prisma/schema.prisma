@@ -29,6 +29,7 @@ model Order {
   shootEndedAt    DateTime? // Çekimin gerçek bitiş saati
   userId          String? // Girişli kullanıcı sipariş verdiyse bağlanır
   locale          String      @default("tr") // Siparişin verildiği dil — mailler bu dilde gider
+  deliveries      Json? // Parça parça teslim: { photo, video, reels, general } → ISO tarih (mail bir kez gider)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -90,6 +91,7 @@ model User {
   orders       Order[]
   reservations Reservation[]
   points       PointTransaction[]
+  shopOrders   ShopOrder[]
 
   @@map("users")
 }
@@ -159,6 +161,7 @@ model Reservation {
   shootEndedAt    DateTime?
   userId          String? // Girişli kullanıcı rezervasyon yaptıysa bağlanır
   locale          String            @default("tr") // Rezervasyonun yapıldığı dil — mailler bu dilde gider
+  deliveries      Json? // Parça parça teslim: { photo, video, reels, general } → ISO tarih (mail bir kez gider)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -327,4 +330,80 @@ model LoyaltyTier {
   updatedAt       DateTime @updatedAt
 
   @@map("loyalty_tiers")
+}
+
+// --- Mağaza: kişiye özel ürünler (paket siparişlerinden tamamen ayrı) ---------------
+
+model ShopProduct {
+  id           String   @id @default(cuid())
+  slug         String   @unique // URL: /urunler/{slug}; mevcut iki ürünün tanıtım metni data/products.ts'te slug ile eşleşir
+  name         String
+  tagline      String?
+  summary      String? // Kartlardaki kısa açıklama
+  description  String? // Detay sayfası metni (paragraflar boş satırla ayrılır)
+  price        Float? // null = fiyat girilmemiş → satın alınamaz
+  image        String? // R2 "urunler/{uuid}.{ext}" ya da eski "/products/*.jpeg"
+  customFields Json? // Kişiselleştirme alanları: [{ key, label, required, maxLength }]
+  poseOptions  Json? // Alet → poz seçimi: { enabled, apparatuses: [{ slug, enabled, poses: [{ no, image, label }] }] }
+  translations Json? // { en: { name, tagline, summary, description, fields: { key: label } }, ru: {...} }
+  isActive     Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders ShopOrder[]
+
+  @@map("shop_products")
+}
+
+model ShopOrder {
+  id              String          @id @default(cuid())
+  userId          String? // Hesap silinse de sipariş kaydı kalır (SetNull)
+  productId       String?
+  // Satış anındaki ürün bilgisi (ürün sonradan değişse/silinse de sipariş bozulmasın)
+  productName     String
+  productSlug     String
+  unitPrice       Float
+  quantity        Int             @default(1)
+  totalPrice      Float
+  personalization Json // { alanKey: değer } — ileride fotoğraf anahtarları da buraya
+  fieldLabels     Json? // Sipariş anındaki alan adları { alanKey: "Sporcu adı" }
+  selection       Json? // Seçilen alet + poz: { apparatus, poseNo, poseLabel, poseImage } (sipariş anındaki kopya)
+  // Teslimat
+  recipientName   String
+  phone           String
+  city            String
+  district        String
+  address         String
+  postalCode      String?
+  customerNote    String?
+  // Admin
+  trackingInfo    String? // Kargo firması + takip no (müşteri görür)
+  adminNote       String? // Yalnızca admin görür
+  status          ShopOrderStatus @default(PENDING)
+  paymentId       String?
+  conversationId  String?
+  paidAt          DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  locale          String          @default("tr")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user    User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  product ShopProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@map("shop_orders")
+}
+
+enum ShopOrderStatus {
+  PENDING // Ödeme bekleniyor
+  FAILED // Ödeme başarısız
+  CONFIRMED // Onaylandı (ödeme alındı)
+  IN_PRODUCTION // Hazırlanıyor
+  SHIPPED // Kargoda
+  DELIVERED // Teslim edildi
+  CANCELLED // İptal
 }

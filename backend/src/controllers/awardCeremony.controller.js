@@ -22,12 +22,14 @@ import {
   missingPreviewItems,
   savePreviews,
   deleteAllMedia,
+  deleteMediaFiles,
+  ORIGINAL_DIR,
+  parseSelectedIds,
 } from "../utils/uploads.js";
 import {
   presignUpload,
   presignView,
   presignDownload,
-  deleteObject,
 } from "../lib/r2.js";
 
 // Ödül töreni galerileri HERKESE AÇIK: giriş gerekmez. Bucket yine private kalır —
@@ -175,10 +177,11 @@ export const downloadCeremonyPhoto = async (req, res) => {
 };
 
 // Toplu indirilecek dosyalar
-const findCeremonyZipPhotos = async (slug) => {
+// ids: seçilenler (POST). Yalnızca bu törenin dosyaları dönebilir.
+const findCeremonyZipPhotos = async (slug, ids = null) => {
   const ceremony = await findCeremony({ slug });
   const photos = await prisma.awardPhoto.findMany({
-    where: { ceremonyId: ceremony.id },
+    where: { ceremonyId: ceremony.id, ...(ids && { id: { in: ids } }) },
     orderBy: { createdAt: "asc" },
   });
   if (photos.length === 0) {
@@ -189,7 +192,7 @@ const findCeremonyZipPhotos = async (slug) => {
 
 // Public: tarayıcıda zip için dosya listesi (asıl yol — dosyalar doğrudan R2'den iner)
 export const getCeremonyZipManifest = async (req, res) => {
-  const { photos, zipName } = await findCeremonyZipPhotos(req.params.slug);
+  const { photos, zipName } = await findCeremonyZipPhotos(req.params.slug, parseSelectedIds(req.body));
   res.json(await zipManifest(photos, zipName, undefined, parseQuality(req.query.quality)));
 };
 
@@ -259,8 +262,8 @@ export const updateCeremony = async (req, res) => {
   res.json({ message: "Ödül töreni güncellendi", ceremony: formatCeremony(ceremony) });
 };
 
-// Admin: tören sil. DB kayıtları cascade ile gider; R2 objeleri arka planda temizlenir
-// (yüzlerce dosya olabilir — response'u bekletmesin).
+// Admin: tören sil. DB kayıtları cascade ile gider; R2 objeleri toplu silinir (1000'er,
+// birkaç saniye) — arka plan döngüsü sunucu yeniden başlayınca yarıda kalıyordu.
 export const deleteCeremony = async (req, res) => {
   const photos = await prisma.awardPhoto.findMany({
     where: { ceremonyId: req.params.id },
@@ -271,14 +274,7 @@ export const deleteCeremony = async (req, res) => {
     .delete({ where: { id: req.params.id } })
     .catch(rethrowPrismaError(CEREMONY_NOT_FOUND));
 
-  (async () => {
-    const keys = photos.flatMap((p) => [p.r2Key, p.thumbKey, p.previewKey]).filter(Boolean);
-    for (const key of keys) {
-      await deleteObject(key).catch((err) =>
-        console.error(`[r2] Tören dosyası silinemedi (${key}):`, err.message)
-      );
-    }
-  })();
+  await deleteMediaFiles(photos, "Tören");
 
   res.json({ message: "Ödül töreni silindi" });
 };
@@ -293,7 +289,8 @@ export const presignCeremonyUploads = async (req, res) => {
   const results = await Promise.all(
     files.map(async (file) => {
       const ext = validateUploadFile(file);
-      const key = `${prefix}${crypto.randomUUID()}.${ext}`;
+      // Orijinal `…/orijinal/`, önizlemeleri `…/onizleme/` (bkz. utils/uploads.js variantKeys)
+      const key = `${prefix}${ORIGINAL_DIR}/${crypto.randomUUID()}.${ext}`;
       return {
         key,
         fileName: file.fileName,

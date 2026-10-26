@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { ProductCard } from "../components/Products";
-import { products } from "../data/products";
+import { useShowcase } from "../hooks/useShowcase";
 
 const ProductsPage = () => {
   const { t } = useTranslation();
+  const { items: products, onSale } = useShowcase();
   return (
     <div className="min-h-screen">
       <SEO
@@ -18,7 +19,7 @@ const ProductsPage = () => {
       <section className="relative py-32 pb-44 overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="/products/figur.jpeg"
+            src="/products/product.jpeg"
             alt={t("pages.products.heroAlt")}
             className="w-full h-full object-cover"
           />
@@ -57,7 +58,7 @@ const ProductsPage = () => {
 
       <section className="py-20 bg-zinc-950">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-3xl mx-auto">
+          <div className={`grid grid-cols-1 gap-8 items-stretch mx-auto ${products.length > 1 ? "md:grid-cols-2 max-w-3xl" : "max-w-sm"}`}>
             {products.map((product, i) => (
               <Reveal key={product.slug} delay={i * 0.08} className="h-full">
                 <ProductCard product={product} />
@@ -67,7 +68,7 @@ const ProductsPage = () => {
 
           <Reveal delay={0.2}>
             <p className="text-center text-sm text-zinc-500 mt-10 max-w-xl mx-auto">
-              {t("pages.products.notYet")}
+              {onSale.length > 0 ? t("pages.shop.listNote") : t("pages.products.notYet")}
             </p>
           </Reveal>
         </div>

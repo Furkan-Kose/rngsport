@@ -22,7 +22,16 @@
     "confirmDelete": "Удалить бронь?",
     "delete": "Удалить",
     "cancel": "Отмена",
-    "edit": "Изменить"
+    "edit": "Изменить",
+    "delivery": {
+      "photoDone": "Фото переданы",
+      "videoDone": "Видео передано",
+      "reelsDone": "Видео Reels передано",
+      "generalDone": "Файлы переданы",
+      "photoPending": "Фото готовятся",
+      "videoPending": "Видео готовится",
+      "reelsPending": "Видео Reels готовится"
+    }
   },
   "password": {
     "title": "Сменить пароль",

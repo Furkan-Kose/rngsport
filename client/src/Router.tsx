@@ -11,6 +11,9 @@ import GalleryPage from "./pages/GalleryPage";
 import PackagesPage from "./pages/PackagesPage";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
+import ShopCheckoutPage from "./pages/ShopCheckoutPage";
+import ShopOrderPage from "./pages/ShopOrderPage";
+import LoginRequired from "./components/LoginRequired";
 import CartPage from "./pages/CartPage";
 import ReservationPage from "./pages/ReservationPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
@@ -48,6 +51,8 @@ const TournamentsPage = lazy(() => import("./pages/admin/TournamentsPage"));
 const AdminAwardCeremoniesPage = lazy(() => import("./pages/admin/AwardCeremoniesPage"));
 const AwardCeremonyGalleryPage = lazy(() => import("./pages/admin/AwardCeremonyGalleryPage"));
 const LoyaltyPage = lazy(() => import("./pages/admin/LoyaltyPage"));
+const ShopProductsPage = lazy(() => import("./pages/admin/ShopProductsPage"));
+const ShopOrdersPage = lazy(() => import("./pages/admin/ShopOrdersPage"));
 
 // Admin parçası yüklenirken (lazy) gösterilen boş koyu ekran
 const adminFallback = <div className="min-h-screen bg-gray-900" />;
@@ -72,6 +77,22 @@ const publicRoutes = (lang: Lang) => {
           { path: "paketler", element: <PackagesPage /> },
           { path: "urunler", element: <ProductsPage /> },
           { path: "urunler/:slug", element: <ProductDetailPage /> },
+          {
+            path: "urunler/:slug/siparis",
+            element: (
+              <LoginRequired>
+                <ShopCheckoutPage />
+              </LoginRequired>
+            ),
+          },
+          {
+            path: "urun-siparisi/:id",
+            element: (
+              <LoginRequired>
+                <ShopOrderPage />
+              </LoginRequired>
+            ),
+          },
           { path: "sepet", element: <CartPage /> },
           { path: "rezervasyon", element: <ReservationPage /> },
           { path: "siparis-basarili", element: <OrderSuccessPage /> },
@@ -171,6 +192,14 @@ export const router = createBrowserRouter([
       {
         path: "/admin/loyalty",
         element: <LoyaltyPage />,
+      },
+      {
+        path: "/admin/shop/products",
+        element: <ShopProductsPage />,
+      },
+      {
+        path: "/admin/shop/orders",
+        element: <ShopOrdersPage />,
       },
     ],
   },

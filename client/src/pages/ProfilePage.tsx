@@ -26,6 +26,8 @@ import LoyaltyCard from "../components/LoyaltyCard";
 import { useMyLoyalty } from "../hooks/useMyLoyalty";
 import { isCustomerEditable } from "../lib/myReservations";
 import PriorityBadge from '../components/PriorityBadge';
+import MyShopOrders from '../components/shop/MyShopOrders';
+import { deliveryContents, type Deliveries } from '../lib/delivery';
 
 interface MyItem {
   package: { id: string; name: string; category: string };
@@ -41,6 +43,7 @@ interface MyRecord {
   clubName: string;
   totalPrice: number;
   status: string;
+  deliveries?: Deliveries;
   createdAt: string;
   items: MyItem[];
 }
@@ -62,6 +65,31 @@ const StatusBadge = ({ status }: { status: string }) => {
     <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${className}`}>
       {STATUS_CLASSES[status] ? t(`common.status.${status}`) : status}
     </span>
+  );
+};
+
+// Parça parça teslim: "✓ Fotoğraflar teslim edildi · 26 Ekim", "⏳ Video hazırlanıyor"
+const DeliveryLines = ({ record }: { record: MyRecord }) => {
+  const { t } = useTranslation();
+  const done = record.deliveries ?? {};
+  if (Object.keys(done).length === 0) return null; // eski kayıtlar: sadece durum etiketi
+  const has = deliveryContents(record.items.map((i) => ({ packageId: i.package.id, category: i.package.category })));
+  const when = (iso: string) => formatDate(iso, { day: "numeric", month: "long" });
+  const lines: { key: string; done: boolean; text: string }[] = [];
+  for (const type of ["photo", "video", "reels"] as const) {
+    const at = done[type];
+    if (at) lines.push({ key: type, done: true, text: `${t(`account.profile.delivery.${type}Done`)} · ${when(at)}` });
+    else if (has[type] && !done.general) lines.push({ key: type, done: false, text: t(`account.profile.delivery.${type}Pending`) });
+  }
+  if (done.general) lines.push({ key: "general", done: true, text: `${t("account.profile.delivery.generalDone")} · ${when(done.general)}` });
+  return (
+    <div className="mt-2 space-y-0.5">
+      {lines.map((line) => (
+        <p key={line.key} className={`text-xs ${line.done ? "text-teal-400" : "text-zinc-500"}`}>
+          {line.done ? "✓" : "⏳"} {line.text}
+        </p>
+      ))}
+    </div>
   );
 };
 
@@ -244,6 +272,7 @@ const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListPro
                 </span>
               ))}
             </div>
+            <DeliveryLines record={r} />
             <p className="text-xs text-zinc-600 mt-2">
               {formatDate(r.createdAt, { day: "numeric", month: "long", year: "numeric" })}
             </p>
@@ -471,6 +500,7 @@ const ProfilePage = () => {
             status={orders.status}
             onRetry={orders.reload}
           />
+          <MyShopOrders />
         </motion.div>
       </div>
     </div>

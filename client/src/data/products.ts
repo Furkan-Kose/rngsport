@@ -34,17 +34,20 @@ export type Product = {
   /** Alt bilgi şeridi: "Kişiye özel üretim • 3D tasarım • ..." */
   meta: string;
   comingSoonNote: string;
+  /** Fiyat rozetinde fiyatın önünde: "Kısa bir süreliğine" */
+  priceNote?: string;
 };
 
-export const products: Product[] = [
+const ALL_PRODUCTS: Product[] = [
   {
     slug: "sporcu-figuru",
     number: "01",
     name: "Kişiye Özel Sporcu Figürü",
-    tagline: "Kendi pozun. Kendi ismin. Kendi figürün.",
+    tagline: "Senin Pozun, Senin İsmin, Senin Figürün",
     cardSummary:
-      "Sporcunun kendi pozundan yola çıkılarak hazırlanan, isim plakalı üç boyutlu figür.",
-    image: "/products/figur.jpeg",
+      "Sporcunun kendine özgü pozunu ve ismini taşıyan, tamamen ona özel tasarlanmış 3D hatıra figürü.",
+    priceNote: "Kısa bir süreliğine",
+    image: "/products/product.jpeg",
     imageAlt: "RNG Sport kişiye özel sporcu figürü",
     intro: [
       "Bir yarışma fotoğrafı, unutulmayan bir poz ya da sporcuyu en iyi anlatan o hareket…",
@@ -62,14 +65,13 @@ export const products: Product[] = [
           "Saç modeli ve karakteristik detayları",
           "Cimnastik kostümü",
           "Sporcu ismi",
-          "Stand üzerindeki yazı",
           "Organizasyona özel detaylar",
         ],
       },
       {
         title: "Bir fotoğraftan fazlası",
         body: [
-          "Yarışmalar biter, madalyalar birikir, fotoğraflar arşivde kalır.",
+          "Yarışmalar biter, fotoğraflar arşivde kalır.",
           "Bu figür ise sporcunun o dönemini üç boyutlu bir hatıraya dönüştürür. Odasında, kupa rafında veya çalışma masasının üzerinde ona ait küçük bir anı olarak kalır.",
         ],
       },
@@ -131,6 +133,14 @@ export const products: Product[] = [
   },
 ];
 
+/**
+ * Satıştan/vitrinden kaldırılan ürünler (2026-10: sadece Sporcu Figürü satılıyor).
+ * Metinleri yukarıda duruyor; geri açmak için slug'ı buradan çıkarmak yeterli.
+ */
+const RETIRED_SLUGS = new Set(["isikli-cimnastik-harfi"]);
+
+export const products: Product[] = ALL_PRODUCTS.filter((p) => !RETIRED_SLUGS.has(p.slug));
+
 export const getProduct = (slug?: string) =>
   products.find((product) => product.slug === slug);
 
@@ -139,15 +149,16 @@ export const getProduct = (slug?: string) =>
 // ---------------------------------------------------------------------------
 type ProductText = Pick<
   Product,
-  "name" | "tagline" | "cardSummary" | "imageAlt" | "intro" | "sections" | "meta" | "comingSoonNote"
+  "name" | "tagline" | "cardSummary" | "imageAlt" | "intro" | "sections" | "meta" | "comingSoonNote" | "priceNote"
 >;
 
 const TRANSLATIONS: Record<"en" | "ru", Record<string, ProductText>> = {
   en: {
     "sporcu-figuru": {
       name: "Personalised Athlete Figure",
-      tagline: "Your pose. Your name. Your figure.",
-      cardSummary: "A three-dimensional figure with a name plate, created from the athlete's own pose.",
+      tagline: "Your Pose, Your Name, Your Figure",
+      cardSummary: "A 3D keepsake figure designed entirely for the athlete, carrying her own unique pose and name.",
+      priceNote: "For a limited time",
       imageAlt: "RNG Sport personalised athlete figure",
       intro: [
         "A competition photo, an unforgettable pose, or the move that captures the athlete best…",
@@ -163,14 +174,13 @@ const TRANSLATIONS: Record<"en" | "ru", Record<string, ProductText>> = {
             "Hairstyle and characteristic details",
             "Gymnastics costume",
             "The athlete's name",
-            "Text on the base",
             "Event-specific details",
           ],
         },
         {
           title: "More than a photo",
           body: [
-            "Competitions end, medals pile up, photos stay in the archive.",
+            "Competitions end, photos stay in the archive.",
             "This figure turns that period of the athlete's life into a three-dimensional keepsake — a small memory of her in her room, on the trophy shelf or on her desk.",
           ],
         },
@@ -228,8 +238,9 @@ const TRANSLATIONS: Record<"en" | "ru", Record<string, ProductText>> = {
   ru: {
     "sporcu-figuru": {
       name: "Именная фигурка спортсменки",
-      tagline: "Твоя поза. Твоё имя. Твоя фигурка.",
-      cardSummary: "Объёмная фигурка с именной табличкой, созданная по собственной позе спортсменки.",
+      tagline: "Твоя поза, твоё имя, твоя фигурка",
+      cardSummary: "Объёмная фигурка-память с неповторимой позой и именем спортсменки, созданная полностью для неё.",
+      priceNote: "Только сейчас",
       imageAlt: "Именная фигурка спортсменки RNG Sport",
       intro: [
         "Фото с соревнований, незабываемая поза или движение, которое лучше всего передаёт характер спортсменки…",
@@ -245,14 +256,13 @@ const TRANSLATIONS: Record<"en" | "ru", Record<string, ProductText>> = {
             "Причёска и характерные детали",
             "Гимнастический купальник",
             "Имя спортсменки",
-            "Надпись на подставке",
             "Детали конкретного турнира",
           ],
         },
         {
           title: "Больше, чем фотография",
           body: [
-            "Соревнования заканчиваются, медали копятся, фото остаются в архиве.",
+            "Соревнования заканчиваются, фото остаются в архиве.",
             "А эта фигурка превращает тот период жизни спортсменки в объёмное воспоминание — в её комнате, на полке с кубками или на рабочем столе.",
           ],
         },

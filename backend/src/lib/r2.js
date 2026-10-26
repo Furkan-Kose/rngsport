@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AppError } from "../utils/errors.js";
@@ -105,6 +106,26 @@ export const presignDownload = (key, fileName) =>
 
 export const deleteObject = (key) =>
   withR2(() => r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key })));
+
+// Toplu silme: tek istekte 1000 obje (S3 DeleteObjects sınırı). Tek tek arka plan döngüsü,
+// sunucu yeniden başlayınca yarıda kalıyor ve R2'de yetim dosya bırakıyordu (2026-10: 18 GB).
+// Silinemeyen key'leri döner (çağıran loglar); yapılandırma/erişim hatası fırlatır.
+export const deleteObjects = async (keys) => {
+  const failed = [];
+  for (let i = 0; i < keys.length; i += 1000) {
+    const batch = keys.slice(i, i + 1000);
+    const result = await withR2(() =>
+      r2.send(
+        new DeleteObjectsCommand({
+          Bucket: BUCKET,
+          Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true },
+        })
+      )
+    );
+    for (const err of result.Errors ?? []) failed.push(err.Key);
+  }
+  return failed;
+};
 
 // Toplu zip indirme için objeyi Node stream olarak döner
 export const getObjectStream = async (key) => {

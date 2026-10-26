@@ -22,7 +22,16 @@
     "confirmDelete": "Rezervasyon silinsin mi?",
     "delete": "Sil",
     "cancel": "Vazgeç",
-    "edit": "Düzenle"
+    "edit": "Düzenle",
+    "delivery": {
+      "photoDone": "Fotoğraflar teslim edildi",
+      "videoDone": "Video teslim edildi",
+      "reelsDone": "Reels videosu teslim edildi",
+      "generalDone": "Dosyalar teslim edildi",
+      "photoPending": "Fotoğraflar hazırlanıyor",
+      "videoPending": "Video hazırlanıyor",
+      "reelsPending": "Reels videosu hazırlanıyor"
+    }
   },
   "password": {
     "title": "Şifre Değiştir",

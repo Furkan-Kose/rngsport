@@ -11,6 +11,8 @@ import { ListMatchLegend, ListMatchWarning } from '../../components/admin/Shooti
 import { listMatchTint, type ListMatchFields } from '../../lib/listMatch';
 
 import PriorityBadge from '../../components/PriorityBadge';
+import DeliveryPanel, { DeliveryIcons } from '../../components/admin/DeliveryPanel';
+import type { Deliveries } from '../../lib/delivery';
 
 interface OrderItem {
   id: string;
@@ -37,6 +39,7 @@ interface Order extends ListMatchFields {
   discountAmount: number;
   totalPrice: number;
   status: string;
+  deliveries?: Deliveries;
   paymentId: string | null;
   createdAt: string;
   items: OrderItem[];
@@ -134,6 +137,12 @@ const OrdersPage = () => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       fetchOrders(newPage);
     }
+  };
+
+  // Teslimat bölümünden gelen durum + teslimat tarihleri
+  const applyDelivery = (orderId: string, changes: { status: string; deliveries: Deliveries }) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...changes } : o)));
+    setSelectedOrder((prev) => (prev?.id === orderId ? { ...prev, ...changes } : prev));
   };
 
   const updateOrderStatus = async (orderId: string, status: string) => {
@@ -424,7 +433,7 @@ const OrdersPage = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-white font-semibold">{formatPrice(order.totalPrice)}</p>
-                      <div className="mt-1.5"><StatusBadge status={order.status} /></div>
+                      <div className="mt-1.5 flex items-center justify-end gap-1.5"><DeliveryIcons deliveries={order.deliveries} /><StatusBadge status={order.status} /></div>
                     </div>
                   </div>
                   <p className="text-gray-500 text-xs mt-2">{formatDate(order.createdAt)}</p>
@@ -458,7 +467,7 @@ const OrdersPage = () => {
                       <td className="px-6 py-4 text-gray-300">{order.clubName}</td>
                       <td className="px-6 py-4 text-gray-300">{order.customerPhone}</td>
                       <td className="px-6 py-4 text-white font-medium">{formatPrice(order.totalPrice)}</td>
-                      <td className="px-6 py-4"><StatusBadge status={order.status} /></td>
+                      <td className="px-6 py-4"><div className="flex items-center gap-1.5"><StatusBadge status={order.status} /><DeliveryIcons deliveries={order.deliveries} /></div></td>
                       <td className="px-6 py-4 text-gray-400 text-sm">{formatDate(order.createdAt)}</td>
                       <td className="px-6 py-4">
                         <button
@@ -694,6 +703,14 @@ const OrdersPage = () => {
                   </>
                 )}
               </div>
+
+              {!editForm && (
+                <DeliveryPanel
+                  kind="orders"
+                  record={selectedOrder}
+                  onUpdated={(changes) => applyDelivery(selectedOrder.id, changes)}
+                />
+              )}
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-700">

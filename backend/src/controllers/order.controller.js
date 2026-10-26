@@ -21,9 +21,8 @@ import {
   ownRecordsWhere,
   syncProfileGaps,
   claimStatusFor,
-  issueSetPasswordTokenIfUnclaimed,
 } from "../utils/customerAccount.js";
-import { sendDeliveryEmail } from "../lib/mail.js";
+import { deliverRecord, generalDeliveryOnStatus, notifyDelivery } from "../utils/delivery.js";
 import {
   createWithDiscount,
   discountAccountFor,
@@ -45,6 +44,7 @@ const formatOrderForResponse = (order) => ({
   discountAmount: order.discountAmount,
   totalPrice: order.totalPrice,
   status: order.status,
+  deliveries: order.deliveries ?? null,
   createdAt: order.createdAt,
   items: order.items.map((item) => ({
     package: {
@@ -205,6 +205,7 @@ export const updateOrder = async (req, res) => {
     where: { id },
     select: {
       status: true,
+      deliveries: true,
       customerEmail: true,
       athleteName: true,
       clubName: true,
@@ -239,6 +240,11 @@ export const updateOrder = async (req, res) => {
     data.userId = account.userId;
   }
 
+  // Durum seçicisinden DELIVERED'a ilk geçiş = GENEL teslim (parça teslimi: POST /:id/deliver)
+  const general =
+    status === "DELIVERED" && existing.status !== "DELIVERED" ? generalDeliveryOnStatus(existing) : null;
+  if (general) Object.assign(data, general.data);
+
   const order = await prisma
     .$transaction(async (tx) => {
       for (const u of apparatusUpdates) {
@@ -253,15 +259,24 @@ export const updateOrder = async (req, res) => {
   // Sadakat: ödendi/teslim → puan; iptal → geri al
   if (status) syncPointsForRecord("order", order);
 
-  // DELIVERED'a ilk geçişte müşteriye "fotoğraflarınız hazır" maili (fire-and-forget).
-  // Hesap hâlâ şifresizse mail doğrudan şifre belirleme linkiyle gider.
-  if (status === "DELIVERED" && existing.status !== "DELIVERED" && order.customerEmail) {
-    issueSetPasswordTokenIfUnclaimed(order.userId)
-      .then((token) => sendDeliveryEmail(order.customerEmail, order.athleteName, token, order.locale))
-      .catch((err) => console.error("[mail] Teslimat maili hatası:", err));
-  }
+  // Genel teslim maili (fire-and-forget; şifresiz hesaba şifre belirleme linkiyle)
+  if (general?.notify) notifyDelivery(order, "general");
 
   res.json({ message: "Sipariş güncellendi", order });
+};
+
+// Admin: bir parçayı teslim et (photo / video / reels / general) + o parçanın maili
+export const deliverOrder = async (req, res) => {
+  const { record, mailed, already } = await deliverRecord("order", req.params.id, {
+    type: req.body?.type,
+    resend: req.body?.resend === true,
+  });
+  res.json({
+    message: mailed ? "Teslimat kaydedildi, mail gönderildi" : "Teslimat kaydedildi",
+    order: record,
+    mailed,
+    already,
+  });
 };
 
 export const deleteOrder = async (req, res) => {

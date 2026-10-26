@@ -1,5 +1,5 @@
 import express from "express";
-import { createOrder, getAllOrders, getOrder, getMyOrders, deleteOrder, updateOrder, getOrderStats } from "../controllers/order.controller.js";
+import { createOrder, getAllOrders, getOrder, getMyOrders, deleteOrder, updateOrder, getOrderStats, deliverOrder } from "../controllers/order.controller.js";
 import { authMiddleware, requireAdmin, optionalAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.get("/my", authMiddleware, getMyOrders); // /:id'den ÖNCE kayıtlı olma
 router.get("/:id", getOrder); // Bilinçli olarak public: OrderSuccessPage misafir siparişinde kullanıyor (cuid = capability URL)
 router.put("/:id", authMiddleware, requireAdmin, updateOrder);
 router.patch("/:id", authMiddleware, requireAdmin, updateOrder); // Admin panel PATCH kullanıyor
+router.post("/:id/deliver", authMiddleware, requireAdmin, deliverOrder); // Parça parça teslim + mail
 router.delete("/:id", authMiddleware, requireAdmin, deleteOrder);
 
 export default router;

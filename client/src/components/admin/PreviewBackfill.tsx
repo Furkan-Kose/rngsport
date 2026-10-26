@@ -34,7 +34,7 @@ const PreviewBackfill = ({ missing, fetchBatch, save, onDone }: PreviewBackfillP
     const response = await fetch(file.url);
     if (!response.ok) throw new Error(`İndirilemedi: ${file.fileName}`);
     const variants = await uploadImageVariants(await response.blob(), file);
-    return variants ? { id: file.id, previewSize: variants.previewSize } : null;
+    return variants ? { id: file.id, previewSize: variants.previewSize ?? 0 } : null;
   };
 
   const run = async () => {

@@ -13,7 +13,10 @@ import DownloadAllButtons from "../components/DownloadAllButtons";
 import { withQuality, type DownloadSizes, type MediaItem, type MediaQuality } from "../lib/media";
 import { triggerDownload } from "../lib/download";
 import { useZipDownload } from "../hooks/useZipDownload";
-import { isMobileDevice } from "../lib/zipDownload";
+import { canShareFiles } from "../lib/device";
+import { DownloadHint, SaveToPhotosModal, SelectionBar } from "../components/MediaSelection";
+import { useMediaSelection } from "../hooks/useMediaSelection";
+import { CheckSquare } from "lucide-react";
 import type { AwardCeremony, AwardPhoto, Pagination } from "../lib/awardCeremonies";
 
 const AwardCeremonyDetailPage = () => {
@@ -27,7 +30,8 @@ const AwardCeremonyDetailPage = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadSizes, setDownloadSizes] = useState<DownloadSizes | null>(null);
-  const [zipQuality, setZipQuality] = useState<MediaQuality | null>(null);
+  const [saveItems, setSaveItems] = useState<MediaItem[] | null>(null);
+  const selection = useMediaSelection();
   const { t } = useTranslation();
 
   const fetchPage = useCallback(
@@ -69,13 +73,22 @@ const AwardCeremonyDetailPage = () => {
   // Toplu indirme: zip tarayıcıda, dosyalar doğrudan R2'den (bkz. lib/zipDownload)
   const zip = useZipDownload();
   const handleDownloadAll = async (quality: MediaQuality) => {
-    setZipQuality(quality);
     await zip.start(
       withQuality(`/api/award-ceremonies/${slug}/download-manifest`, quality),
       withQuality(`/api/award-ceremonies/${slug}/download-all`, quality),
     );
-    setZipQuality(null);
   };
+
+  // Seçilenler: manifest POST ile yalnızca bu id'ler (sunucu zip'i yok — Railway trafiği)
+  const handleZipSelected = (ids: string[], quality: MediaQuality) =>
+    zip.start(withQuality(`/api/award-ceremonies/${slug}/download-manifest`, quality), undefined, ids);
+
+  // Taze imzalı indirme linki (galeriye kaydet için dosya buradan çekilir)
+  const getUrl = useCallback(
+    async (item: MediaItem, quality: MediaQuality) =>
+      (await api.get(withQuality(`/api/award-ceremonies/${slug}/photos/${item.id}/download`, quality))).data.url as string,
+    [slug]
+  );
 
   const handleDownload = async (item: MediaItem, quality: MediaQuality) => {
     setDownloadingId(item.id);
@@ -95,7 +108,7 @@ const AwardCeremonyDetailPage = () => {
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
 
   return (
-    <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+    <div className={`min-h-screen bg-zinc-950 pt-28 ${selection.active ? "pb-56" : "pb-16"}`}>
       <SEO
         title={ceremony?.title || t("pages.awards.detailFallbackTitle")}
         description={ceremony?.description || t("pages.awards.detailDescription")}
@@ -157,24 +170,28 @@ const AwardCeremonyDetailPage = () => {
                 </div>
               </div>
               {photos.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                {!selection.active && (
+                <button
+                onClick={selection.start}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
+              >
+                <CheckSquare className="w-4 h-4" />
+                {t("pages.media.select.start")}
+              </button>
+                )}
                 <DownloadAllButtons
                   sizes={downloadSizes}
                   progress={zip.progress}
-                  runningQuality={zipQuality}
+                  
                   onStart={handleDownloadAll}
                   primaryClassName="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold transition-all duration-300"
                 />
+                </div>
               )}
             </div>
 
-            {photos.length > 0 && isMobileDevice() && (
-              <p className="text-xs text-zinc-500 mb-4">
-                {t("pages.media.mobileHint")}
-              </p>
-            )}
-            {downloadSizes?.hasPreview && (
-              <p className="text-xs text-zinc-500 mb-4">{t("pages.media.qualityHint")}</p>
-            )}
+            {photos.length > 0 && <DownloadHint />}
 
             {photos.length === 0 ? (
               <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-12 text-center">
@@ -191,6 +208,9 @@ const AwardCeremonyDetailPage = () => {
                   onOpen={setLightboxIndex}
                   onDownload={handleDownload}
                   downloadingId={downloadingId}
+                  selecting={selection.active}
+                  selectedIds={selection.selected}
+                  onToggleSelect={selection.toggle}
                 />
                 {hasMore && (
                   <div className="flex justify-center mt-8">
@@ -216,7 +236,33 @@ const AwardCeremonyDetailPage = () => {
         onIndexChange={setLightboxIndex}
         onDownload={handleDownload}
         downloadingId={downloadingId}
+        onSaveToGallery={canShareFiles() ? (item) => setSaveItems([item]) : undefined}
       />
+
+      {selection.active && (
+        <SelectionBar
+          items={photos}
+          selectedIds={selection.selected}
+          onSelectAll={() => selection.selectMany(photos.map((p) => p.id))}
+          onClear={selection.clear}
+          onExit={selection.stop}
+          onZip={handleZipSelected}
+          zipRunning={zip.isRunning}
+          zipProgress={zip.progress}
+          getUrl={getUrl}
+          onDownloadSingle={handleDownload}
+          hasMore={hasMore}
+        />
+      )}
+      {saveItems && (
+        <SaveToPhotosModal
+          items={saveItems}
+          quality="original"
+          getUrl={getUrl}
+          onDownloadSingle={handleDownload}
+          onClose={() => setSaveItems(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1,9 +1,11 @@
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
-import { ArrowRight, Clock, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, ShoppingBag, Sparkles } from "lucide-react";
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
-import { localizeProduct, products, type Product } from "../data/products";
+import { useShowcase } from "../hooks/useShowcase";
+import { formatTL } from "../lib/loyalty";
+import type { ShowcaseItem } from "../lib/shop";
 
 /** "Çok Yakında" rozeti — Tournaments.tsx'teki amber rozet kalıbı */
 export const ComingSoonBadge = () => {
@@ -16,10 +18,19 @@ export const ComingSoonBadge = () => {
   );
 };
 
-/** Ana sayfa bölümü ve /urunler listeleme sayfası aynı kartı kullanır */
-export const ProductCard = ({ product: source }: { product: Product }) => {
-  const { t, i18n } = useTranslation();
-  const product = localizeProduct(source, i18n.language);
+/** Satıştaki ürünün fiyat rozeti */
+export const PriceBadge = ({ price, note }: { price: number; note?: string }) => (
+  // Dolgulu: açık renkli ürün görsellerinin üstünde de okunsun
+  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-600 border border-emerald-400/60 text-white text-xs font-bold shadow-lg shadow-black/30">
+    <ShoppingBag className="w-3 h-3" />
+    {note && <span className="font-medium opacity-90">{note} ·</span>}
+    {formatTL(price)}
+  </span>
+);
+
+/** Ana sayfa bölümü, /urunler listeleme sayfası ve Galerim aynı kartı kullanır */
+export const ProductCard = ({ product }: { product: ShowcaseItem }) => {
+  const { t } = useTranslation();
   return (
   <LocalizedLink
     to={`/urunler/${product.slug}`}
@@ -34,7 +45,7 @@ export const ProductCard = ({ product: source }: { product: Product }) => {
       />
       <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
       <div className="absolute top-3 left-3">
-        <ComingSoonBadge />
+        {product.purchasable && product.price ? <PriceBadge price={product.price} note={product.staticProduct?.priceNote} /> : <ComingSoonBadge />}
       </div>
       <span className="absolute bottom-3 left-4 text-5xl font-bold text-white/15 leading-none select-none">
         {product.number}
@@ -45,12 +56,12 @@ export const ProductCard = ({ product: source }: { product: Product }) => {
       <h3 className="text-lg font-semibold text-white group-hover:text-emerald-400 transition-colors">
         {product.name}
       </h3>
-      <p className="text-sm text-emerald-400/80 mt-1">{product.tagline}</p>
+      {product.tagline && <p className="text-sm text-emerald-400/80 mt-1">{product.tagline}</p>}
       <p className="text-sm text-zinc-400 mt-3 leading-relaxed flex-1">
-        {product.cardSummary}
+        {product.summary}
       </p>
       <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-        {t("home.products.view")}
+        {product.purchasable ? t("pages.shop.buyNow") : t("home.products.view")}
         <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
       </span>
     </div>
@@ -66,6 +77,7 @@ export const ProductCard = ({ product: source }: { product: Product }) => {
  */
 const Products = () => {
   const { t } = useTranslation();
+  const { items, onSale } = useShowcase();
   return (
     <section id="urunler" className="relative py-24 bg-zinc-950">
       <div className="container mx-auto px-4">
@@ -87,13 +99,13 @@ const Products = () => {
             </p>
             <p className="inline-flex items-center gap-2 text-emerald-400 font-semibold tracking-wide">
               <Sparkles className="w-4 h-4" />
-              {t("home.products.comingSoonLine")}
+              {onSale.length > 0 ? t("pages.shop.onSaleLine") : t("home.products.comingSoonLine")}
             </p>
           </div>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-3xl mx-auto">
-          {products.map((product, i) => (
+        <div className={`grid grid-cols-1 gap-8 items-stretch mx-auto ${items.length > 1 ? "md:grid-cols-2 max-w-3xl" : "max-w-sm"}`}>
+          {items.map((product, i) => (
             <Reveal key={product.slug} delay={i * 0.08} className="h-full">
               <ProductCard product={product} />
             </Reveal>

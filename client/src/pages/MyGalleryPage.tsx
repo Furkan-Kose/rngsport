@@ -17,7 +17,11 @@ import { withQuality, type DownloadSizes, type MediaItem, type MediaQuality } fr
 import MediaGrid from "../components/MediaGrid";
 import { triggerDownload } from "../lib/download";
 import { useZipDownload } from "../hooks/useZipDownload";
-import { isMobileDevice } from "../lib/zipDownload";
+import { canShareFiles } from "../lib/device";
+import { DownloadHint, SaveToPhotosModal, SelectionBar } from "../components/MediaSelection";
+import { useMediaSelection } from "../hooks/useMediaSelection";
+import { CheckSquare } from "lucide-react";
+import GalleryShopPromo from "../components/shop/GalleryShopPromo";
 
 interface GalleryPhoto {
   id: string;
@@ -52,7 +56,8 @@ const MyGalleryPage = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadSizes, setDownloadSizes] = useState<DownloadSizes | null>(null);
-  const [zipQuality, setZipQuality] = useState<MediaQuality | null>(null);
+  const [saveItems, setSaveItems] = useState<MediaItem[] | null>(null);
+  const selection = useMediaSelection();
   const { t } = useTranslation();
 
   const fetchPhotos = useCallback(
@@ -94,12 +99,31 @@ const MyGalleryPage = () => {
   const zip = useZipDownload();
   const handleDownloadAll = async (quality: MediaQuality) => {
     const query = activeAlbum ? `?${new URLSearchParams({ album: activeAlbum })}` : "";
-    setZipQuality(quality);
     await zip.start(
       withQuality(`/api/gallery/my/download-manifest${query}`, quality),
       withQuality(`/api/gallery/my/download-all${query}`, quality),
     );
-    setZipQuality(null);
+  };
+
+  // Seçilenler: manifest POST ile yalnızca bu id'ler (sunucu zip'i yok — Railway trafiği)
+  const handleZipSelected = (ids: string[], quality: MediaQuality) =>
+    zip.start(withQuality("/api/gallery/my/download-manifest", quality), undefined, ids);
+
+  // Taze imzalı indirme linki (galeriye kaydet için dosya buradan çekilir)
+  const getUrl = useCallback(
+    async (item: MediaItem, quality: MediaQuality) =>
+      (await api.get(withQuality(`/api/gallery/my/${item.id}/download`, quality))).data.url as string,
+    []
+  );
+
+  // Filtre değişince seçim sıfırlanır (seçilenler görünmeyen dosyalarda kalmasın)
+  const changeAlbum = (album: string | null) => {
+    selection.clear();
+    setActiveAlbum(album);
+  };
+  const changeType = (type: TypeFilter) => {
+    selection.clear();
+    setTypeFilter(type);
   };
 
   const handleDownload = async (photo: GalleryPhoto, quality: MediaQuality) => {
@@ -118,7 +142,7 @@ const MyGalleryPage = () => {
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
 
   return (
-    <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+    <div className={`min-h-screen bg-zinc-950 pt-28 ${selection.active ? "pb-56" : "pb-16"}`}>
       <SEO title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -143,32 +167,38 @@ const MyGalleryPage = () => {
               </div>
             </div>
             {photos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+              {!selection.active && (
+              <button
+                onClick={selection.start}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
+              >
+                <CheckSquare className="w-4 h-4" />
+                {t("pages.media.select.start")}
+              </button>
+              )}
               <DownloadAllButtons
                 sizes={downloadSizes}
                 album={activeAlbum !== null}
                 progress={zip.progress}
-                runningQuality={zipQuality}
+                
                 onStart={handleDownloadAll}
                 primaryClassName="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
               />
+              </div>
             )}
           </div>
 
-          {photos.length > 0 && isMobileDevice() && (
-              <p className="text-xs text-zinc-500 mb-4 -mt-4">
-                {t("pages.media.mobileHint")}
-              </p>
-            )}
-          {downloadSizes?.hasPreview && (
-            <p className="text-xs text-zinc-500 mb-4 -mt-2">{t("pages.media.qualityHint")}</p>
-          )}
+          {photos.length > 0 && <DownloadHint />}
+
+          <GalleryShopPromo />
 
           {/* Filtreler: yarışma/albüm + tür */}
           <div className="flex flex-wrap items-center gap-2 mb-6">
             {albums.length > 0 && (
               <>
                 <button
-                  onClick={() => setActiveAlbum(null)}
+                  onClick={() => changeAlbum(null)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-300 ${
                     activeAlbum === null
                       ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
@@ -180,7 +210,7 @@ const MyGalleryPage = () => {
                 {albums.map((album) => (
                   <button
                     key={album}
-                    onClick={() => setActiveAlbum(album)}
+                    onClick={() => changeAlbum(album)}
                     className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-300 ${
                       activeAlbum === album
                         ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
@@ -202,7 +232,7 @@ const MyGalleryPage = () => {
             ).map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
-                onClick={() => setTypeFilter(value)}
+                onClick={() => changeType(value)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-300 ${
                   typeFilter === value
                     ? "bg-teal-500/20 border-teal-500/50 text-teal-300"
@@ -237,6 +267,9 @@ const MyGalleryPage = () => {
                 onOpen={setLightboxIndex}
                 onDownload={(item, quality) => handleDownload(item as GalleryPhoto, quality)}
                 downloadingId={downloadingId}
+                selecting={selection.active}
+                selectedIds={selection.selected}
+                onToggleSelect={selection.toggle}
               />
 
               {hasMore && (
@@ -262,7 +295,33 @@ const MyGalleryPage = () => {
         onIndexChange={setLightboxIndex}
         onDownload={(item: MediaItem, quality: MediaQuality) => handleDownload(item as GalleryPhoto, quality)}
         downloadingId={downloadingId}
+        onSaveToGallery={canShareFiles() ? (item) => setSaveItems([item]) : undefined}
       />
+
+      {selection.active && (
+        <SelectionBar
+          items={photos}
+          selectedIds={selection.selected}
+          onSelectAll={() => selection.selectMany(photos.map((p) => p.id))}
+          onClear={selection.clear}
+          onExit={selection.stop}
+          onZip={handleZipSelected}
+          zipRunning={zip.isRunning}
+          zipProgress={zip.progress}
+          getUrl={getUrl}
+          onDownloadSingle={(item, quality) => handleDownload(item as GalleryPhoto, quality)}
+          hasMore={hasMore}
+        />
+      )}
+      {saveItems && (
+        <SaveToPhotosModal
+          items={saveItems}
+          quality="original"
+          getUrl={getUrl}
+          onDownloadSingle={(item, quality) => handleDownload(item as GalleryPhoto, quality)}
+          onClose={() => setSaveItems(null)}
+        />
+      )}
     </div>
   );
 };

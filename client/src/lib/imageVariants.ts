@@ -5,6 +5,8 @@ import axios from "axios";
 // - preview: büyük görünüm + "telefon için" indirme sürümü
 // Orijinal dosyaya dokunulmaz; o ayrı yüklenir ve "orijinal kalite" olarak iner.
 const THUMB_EDGE = 480;
+// Video kapak resmi büyük görünümde de (poster) kullanılır — biraz daha büyük
+const VIDEO_POSTER_EDGE = 960;
 // Telefon ekranında tam ekran net görünsün (yeni telefonlar ~2500-2800 px), dosya yine küçük
 const PREVIEW_EDGE = 2560;
 const THUMB_QUALITY = 0.8;
@@ -76,7 +78,48 @@ export const createImageVariants = (source: Blob): Promise<ImageVariants> =>
     }
   });
 
-// presign yanıtındaki önizleme yükleme bilgileri (yalnızca görsellerde gelir)
+/**
+ * Videodan kapak resmi (1. saniye ya da sürenin %10'u). Tarayıcının oynatamadığı codec'te
+ * (ör. Windows Chrome'da HEVC .mov) hata verir; çağıran kapak resmisiz devam eder.
+ */
+export const captureVideoPoster = (source: Blob): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(source);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    const cleanup = () => {
+      clearTimeout(timer);
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(url);
+    };
+    const fail = (err: Error) => {
+      cleanup();
+      reject(err);
+    };
+    const timer = setTimeout(() => fail(new Error("Video karesi alınamadı (zaman aşımı)")), 20000);
+    video.onerror = () => fail(new Error("Video açılamadı"));
+    video.onloadedmetadata = () => {
+      const duration = Number.isFinite(video.duration) ? video.duration : 2;
+      video.currentTime = Math.min(1, duration / 10);
+    };
+    video.onseeked = async () => {
+      try {
+        if (!video.videoWidth) throw new Error("Video boyutu okunamadı");
+        const { width, height } = scaledSize(video.videoWidth, video.videoHeight, VIDEO_POSTER_EDGE);
+        const poster = await toJpeg(video, width, height, THUMB_QUALITY);
+        cleanup();
+        resolve(poster);
+      } catch (err) {
+        fail(err as Error);
+      }
+    };
+    video.src = url;
+  });
+
+// presign yanıtındaki önizleme yükleme bilgileri (görsellerde ikisi, videoda yalnızca thumb)
 export interface VariantTargets {
   thumbKey?: string;
   thumbUploadUrl?: string;
@@ -86,9 +129,22 @@ export interface VariantTargets {
 
 export interface UploadedVariants {
   thumbKey: string;
-  previewKey: string;
-  previewSize: number;
+  previewKey?: string;
+  previewSize?: number;
 }
+
+/** Video kapak resmini üretip yükler; olmazsa null (video kapaksız kaydedilir) */
+export const uploadVideoPoster = async (source: Blob, targets: VariantTargets): Promise<UploadedVariants | null> => {
+  if (!targets.thumbKey || !targets.thumbUploadUrl) return null;
+  try {
+    const poster = await withDecodeSlot(() => captureVideoPoster(source));
+    await axios.put(targets.thumbUploadUrl, poster, { headers: { "Content-Type": "image/jpeg" } });
+    return { thumbKey: targets.thumbKey };
+  } catch (error) {
+    console.warn("Video kapak resmi oluşturulamadı:", error);
+    return null;
+  }
+};
 
 // Önizlemeleri üretip R2'ye yükler. Üretilemezse null: dosya önizlemesiz kaydedilir,
 // sitede orijinaliyle görünür (yükleme bu yüzden asla başarısız olmaz).

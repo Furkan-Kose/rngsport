@@ -21,6 +21,8 @@ import {
   missingPreviewItems,
   savePreviews,
   deleteAllMedia,
+  ORIGINAL_DIR,
+  parseSelectedIds,
 } from "../utils/uploads.js";
 import { presignUpload, presignDownload } from "../lib/r2.js";
 
@@ -34,8 +36,9 @@ const sanitizeAlbum = (value) => {
 const buildUserPrefix = (user) =>
   `users/${slugify(user.name) || "kullanici"}_${user.id}/`;
 
+// Orijinal `…/{albüm}/orijinal/`, önizlemeleri `…/{albüm}/onizleme/` (bkz. utils/uploads.js variantKeys)
 const buildUploadKey = (user, album, ext) =>
-  `${buildUserPrefix(user)}${slugify(album) || "genel"}/${crypto.randomUUID()}.${ext}`;
+  `${buildUserPrefix(user)}${slugify(album) || "genel"}/${ORIGINAL_DIR}/${crypto.randomUUID()}.${ext}`;
 
 // Fotoğrafları presigned URL'lerle birlikte, sayfalı döner (getMyPhotos + admin listesi ortak)
 const listPhotosForUser = async (userId, query) => {
@@ -95,10 +98,12 @@ export const getMyPhotos = async (req, res) => {
 };
 
 // Toplu indirilecek dosyalar (tüm galeri veya bir albüm)
+// Seçili dosyalar (POST ids) da yalnızca kullanıcının kendi galerisinden gelir
 const findMyZipPhotos = async (req) => {
   const album = req.query.album ? String(req.query.album).slice(0, 100) : undefined;
+  const ids = parseSelectedIds(req.body);
   const photos = await prisma.galleryPhoto.findMany({
-    where: { userId: req.user.id, ...(album && { album }) },
+    where: { userId: req.user.id, ...(album && { album }), ...(ids && { id: { in: ids } }) },
     orderBy: { createdAt: "asc" },
   });
   if (photos.length === 0) {

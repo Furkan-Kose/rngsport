@@ -2,7 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Loader2, Upload, X } from 'lucide-react';
-import { uploadImageVariants, type UploadedVariants, type VariantTargets } from '../../lib/imageVariants';
+import { uploadImageVariants, uploadVideoPoster, type UploadedVariants, type VariantTargets } from '../../lib/imageVariants';
 import { formatFileSize } from '../../lib/media';
 
 // Görsellerde önizleme yükleme linkleri de gelir (bkz. lib/imageVariants)
@@ -53,8 +53,13 @@ const uploadWithPool = async (
         await axios.put(item.uploadUrl, file, {
           headers: { 'Content-Type': file.type },
         });
-        // Önizlemeler yerel dosyadan üretilir; üretilemezse dosya önizlemesiz kaydedilir
-        const variants = file.type.startsWith('image/') ? await uploadImageVariants(file, item) : null;
+        // Önizlemeler yerel dosyadan üretilir (görsel: 2 sürüm, video: kapak resmi);
+        // üretilemezse dosya önizlemesiz kaydedilir
+        const variants = file.type.startsWith('image/')
+          ? await uploadImageVariants(file, item)
+          : file.type.startsWith('video/')
+            ? await uploadVideoPoster(file, item)
+            : null;
         succeeded.push({
           key: item.key,
           fileName: item.fileName,
@@ -168,7 +173,7 @@ const MediaUploader = ({ presign, confirm, onUploaded, renderFields }: MediaUplo
         {renderFields?.(isUploading)}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Dosyalar (foto: jpg/png/webp ≤30MB · video: mp4/mov/webm ≤500MB · sayı sınırı yok)
+            Dosyalar (foto: jpg/png/webp ≤50MB · video: mp4/mov/webm ≤1GB · sayı sınırı yok)
           </label>
           <input
             ref={fileInputRef}

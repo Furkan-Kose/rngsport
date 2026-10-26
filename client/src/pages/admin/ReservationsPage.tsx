@@ -10,6 +10,8 @@ import { ListMatchLegend, ListMatchWarning } from '../../components/admin/Shooti
 import { listMatchTint, type ListMatchFields } from '../../lib/listMatch';
 
 import PriorityBadge from '../../components/PriorityBadge';
+import DeliveryPanel, { DeliveryIcons } from '../../components/admin/DeliveryPanel';
+import type { Deliveries } from '../../lib/delivery';
 
 interface ReservationItem {
   packageId: string;
@@ -35,6 +37,7 @@ interface Reservation extends ListMatchFields {
   discountAmount: number;
   totalPrice: number;
   status: string;
+  deliveries?: Deliveries;
   createdAt: string;
   items: ReservationItem[];
 }
@@ -131,6 +134,12 @@ const ReservationsPage = () => {
     } catch (error) {
       console.error('Update reservation error:', error);
     }
+  };
+
+  // Teslimat bölümünden gelen durum + teslimat tarihleri
+  const applyDelivery = (reservationId: string, changes: { status: string; deliveries: Deliveries }) => {
+    setReservations((prev) => prev.map((r) => (r.id === reservationId ? { ...r, ...changes } : r)));
+    setSelectedReservation((prev) => (prev?.id === reservationId ? { ...prev, ...changes } : prev));
   };
 
   const deleteReservation = async (reservationId: string) => {
@@ -384,7 +393,7 @@ const ReservationsPage = () => {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-white font-semibold">{formatPrice(reservation.totalPrice)}</p>
-                      <div className="mt-1.5"><StatusBadge status={reservation.status} /></div>
+                      <div className="mt-1.5 flex items-center justify-end gap-1.5"><DeliveryIcons deliveries={reservation.deliveries} /><StatusBadge status={reservation.status} /></div>
                     </div>
                   </div>
                   <p className="text-gray-500 text-xs mt-2">{formatDate(reservation.createdAt)}</p>
@@ -438,7 +447,7 @@ const ReservationsPage = () => {
                       <td className="px-6 py-4 text-gray-300">{reservation.clubName}</td>
                       <td className="px-6 py-4 text-gray-300">{reservation.customerPhone}</td>
                       <td className="px-6 py-4 text-white font-medium">{formatPrice(reservation.totalPrice)}</td>
-                      <td className="px-6 py-4"><StatusBadge status={reservation.status} /></td>
+                      <td className="px-6 py-4"><div className="flex items-center gap-1.5"><StatusBadge status={reservation.status} /><DeliveryIcons deliveries={reservation.deliveries} /></div></td>
                       <td className="px-6 py-4 text-gray-400 text-sm">{formatDate(reservation.createdAt)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -578,6 +587,12 @@ const ReservationsPage = () => {
                   </span>
                 </div>
               </div>
+
+              <DeliveryPanel
+                kind="reservations"
+                record={selectedReservation}
+                onUpdated={(changes) => applyDelivery(selectedReservation.id, changes)}
+              />
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-700">
