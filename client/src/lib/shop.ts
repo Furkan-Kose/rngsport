@@ -47,6 +47,8 @@ export interface ShopProduct {
   description: string | null;
   price: number | null;
   image: string | null;
+  /** Detay galerisi: kapak + ek fotoğraflar (sırasıyla) */
+  images?: string[];
   customFields: ShopField[];
   poseOptions: ShopPoseOptions | null;
   purchasable: boolean;

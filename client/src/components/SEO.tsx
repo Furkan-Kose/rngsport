@@ -9,6 +9,8 @@ interface SEOProps {
   keywords?: string;
   image?: string;
   type?: string;
+  /** Arama motorları indekslemesin + Referer gönderilmesin (paylaşım linkleri) */
+  noindex?: boolean;
 }
 
 const SITE_NAME = "RNG Sport";
@@ -28,6 +30,7 @@ const SEO = ({
   keywords,
   image = DEFAULT_IMAGE,
   type = "website",
+  noindex = false,
 }: SEOProps) => {
   const { t } = useTranslation();
   const lang = useLang();
@@ -51,6 +54,8 @@ const SEO = ({
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
       <meta name="keywords" content={kw} />
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
+      {noindex && <meta name="referrer" content="no-referrer" />}
       <link rel="canonical" href={url} />
       {LANGUAGES.map((l) => (
         <link key={l} rel="alternate" hrefLang={l} href={urlFor(l)} />

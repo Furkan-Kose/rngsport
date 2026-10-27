@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Loader2, MessageCircle, PackageX, ShoppingBag, Truck 
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { ComingSoonBadge, PriceBadge } from "../components/Products";
+import ProductImageCarousel from "../components/shop/ProductImageCarousel";
 import { getProduct, localizeProduct, notifyMeUrlFor } from "../data/products";
 import api from "../lib/api";
 import { formatTL } from "../lib/loyalty";
@@ -103,10 +104,9 @@ const ProductDetailPage = () => {
                   aria-hidden
                   className="absolute -inset-4 bg-emerald-500/10 rounded-3xl blur-2xl"
                 />
-                <img
-                  src={image}
+                <ProductImageCarousel
+                  images={shop?.images?.length ? shop.images : [image]}
                   alt={imageAlt}
-                  className="relative w-full rounded-2xl shadow-2xl"
                 />
               </div>
             </Reveal>

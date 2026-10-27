@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Eye, EyeOff, ImagePlus, Loader2, Pencil, Plus, Save, ShoppingBag, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, ImagePlus, Loader2, Pencil, Plus, Save, ShoppingBag, Star, Trash2, X } from 'lucide-react';
 import api from '../../lib/api';
 import { formatTL } from '../../lib/loyalty';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
@@ -56,6 +56,8 @@ interface AdminShopProduct {
   price: number | null;
   image: string | null;
   imageUrl: string | null;
+  images?: string[];
+  imageUrls?: (string | null)[];
   customFields: FieldDef[];
   poseOptions: PoseOptions;
   translations: Record<string, Record<string, unknown>>;
@@ -73,12 +75,16 @@ interface FormState {
   price: string;
   image: string;
   imageUrl: string;
+  /** Detay galerisinde kapaktan sonra gelen fotoğraflar (key + önizleme) */
+  extraImages: { key: string; url: string }[];
   isActive: boolean;
   sortOrder: number;
   customFields: FieldDef[];
   poseOptions: PoseOptions;
   translations: Translations;
 }
+
+const MAX_EXTRA_IMAGES = 10; // backend shop.controller.js ile aynı
 
 const EMPTY_FORM: FormState = {
   name: '',
@@ -89,6 +95,7 @@ const EMPTY_FORM: FormState = {
   price: '',
   image: '',
   imageUrl: '',
+  extraImages: [],
   isActive: false,
   sortOrder: 0,
   customFields: [],
@@ -190,6 +197,7 @@ const ShopProductsPage = () => {
       price: p.price != null ? String(p.price) : '',
       image: p.image ?? '',
       imageUrl: p.imageUrl ?? '',
+      extraImages: (p.images ?? []).map((key, i) => ({ key, url: p.imageUrls?.[i] ?? key })),
       isActive: p.isActive,
       sortOrder: p.sortOrder,
       customFields: p.customFields,
@@ -239,6 +247,51 @@ const ShopProductsPage = () => {
   const handleImage = (file: File | undefined) =>
     withUpload(file, ({ key, previewUrl }) => setForm((f) => ({ ...f, image: key, imageUrl: previewUrl })));
 
+  // Ek fotoğraflar: birden çok dosya sırayla yüklenir (en fazla 10)
+  const handleExtraImages = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const room = MAX_EXTRA_IMAGES - form.extraImages.length;
+    const list = Array.from(files).slice(0, Math.max(0, room));
+    if (list.length < files.length) toast.warning(`En fazla ${MAX_EXTRA_IMAGES} ek fotoğraf eklenebilir`);
+    setUploading(true);
+    try {
+      for (const file of list) {
+        const { key, previewUrl } = await uploadImage(file);
+        setForm((f) => ({ ...f, extraImages: [...f.extraImages, { key, url: previewUrl }] }));
+      }
+    } catch (err) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || 'Görsel yüklenemedi');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const moveExtra = (index: number, dir: -1 | 1) =>
+    setForm((f) => {
+      const next = [...f.extraImages];
+      const j = index + dir;
+      if (j < 0 || j >= next.length) return f;
+      [next[index], next[j]] = [next[j], next[index]];
+      return { ...f, extraImages: next };
+    });
+
+  const removeExtra = (index: number) =>
+    setForm((f) => ({ ...f, extraImages: f.extraImages.filter((_, i) => i !== index) }));
+
+  // Ek fotoğrafı kapak yap: eski kapak ek fotoğrafların başına geçer
+  const makeCover = (index: number) =>
+    setForm((f) => {
+      const chosen = f.extraImages[index];
+      const rest = f.extraImages.filter((_, i) => i !== index);
+      return {
+        ...f,
+        image: chosen.key,
+        imageUrl: chosen.url,
+        extraImages: f.image ? [{ key: f.image, url: f.imageUrl }, ...rest] : rest,
+      };
+    });
+
   const updatePose = (slug: string, no: number, patch: Partial<PoseSlot>) =>
     setForm((f) => ({
       ...f,
@@ -271,6 +324,7 @@ const ShopProductsPage = () => {
         description: form.description,
         price: form.price.trim() === '' ? null : Number(form.price.replace(',', '.')),
         image: form.image || null,
+        images: form.extraImages.map((x) => x.key),
         isActive: form.isActive,
         sortOrder: Number(form.sortOrder) || 0,
         customFields: form.customFields.filter((f) => f.label.trim()),
@@ -464,7 +518,7 @@ const ShopProductsPage = () => {
 
               {/* Görsel */}
               <div>
-                <label className={labelClass}>Görsel</label>
+                <label className={labelClass}>Kapak görseli (kartlarda ve galerinin ilk fotoğrafı)</label>
                 <div className="flex items-center gap-4">
                   {form.imageUrl ? (
                     <img src={form.imageUrl} alt="" className="w-24 h-28 object-cover rounded-lg border border-gray-600" />
@@ -483,6 +537,53 @@ const ShopProductsPage = () => {
                     />
                   </label>
                 </div>
+              </div>
+
+              {/* Ek fotoğraflar: detay sayfasında kapaktan sonra kaydırmalı */}
+              <div>
+                <label className={labelClass}>
+                  Ek fotoğraflar <span className="text-gray-500 font-normal">({form.extraImages.length}/{MAX_EXTRA_IMAGES} · detay sayfasında kaydırmalı galeri)</span>
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {form.extraImages.map((img, i) => (
+                    <div key={img.key} className="relative w-24">
+                      <img src={img.url} alt="" className="w-24 h-28 object-cover rounded-lg border border-gray-600" />
+                      <span className="absolute top-1 left-1 text-[10px] px-1.5 rounded bg-black/70 text-white">{i + 2}</span>
+                      <div className="flex justify-between mt-1">
+                        <button type="button" title="Sola al" onClick={() => moveExtra(i, -1)} disabled={i === 0} className="p-1 text-gray-400 hover:text-white disabled:opacity-30">
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button type="button" title="Kapak yap" onClick={() => makeCover(i)} className="p-1 text-gray-400 hover:text-amber-400">
+                          <Star className="w-4 h-4" />
+                        </button>
+                        <button type="button" title="Kaldır" onClick={() => removeExtra(i)} className="p-1 text-gray-400 hover:text-red-400">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button type="button" title="Sağa al" onClick={() => moveExtra(i, 1)} disabled={i === form.extraImages.length - 1} className="p-1 text-gray-400 hover:text-white disabled:opacity-30">
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {form.extraImages.length < MAX_EXTRA_IMAGES && (
+                    <label className="w-24 h-28 rounded-lg border border-dashed border-gray-600 hover:border-amber-500 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-amber-400 text-xs cursor-pointer">
+                      {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+                      {uploading ? 'Yükleniyor' : 'Ekle'}
+                      <input
+                        type="file"
+                        multiple
+                        accept=".webp,.jpg,.jpeg,.png,image/webp,image/jpeg,image/png"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          handleExtraImages(e.target.files);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Birden fazla dosyayı aynı anda seçebilirsiniz. Okla sırayı değiştirin, ★ ile kapak yapın. Kaydet'e basınca geçerli olur.</p>
               </div>
 
               {/* Kişiselleştirme alanları */}

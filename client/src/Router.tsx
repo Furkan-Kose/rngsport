@@ -27,6 +27,7 @@ import ProfilePage from "./pages/ProfilePage";
 import MyGalleryPage from "./pages/MyGalleryPage";
 import AwardCeremoniesPage from "./pages/AwardCeremoniesPage";
 import AwardCeremonyDetailPage from "./pages/AwardCeremonyDetailPage";
+import SharedGalleryPage from "./pages/SharedGalleryPage";
 
 import { SHOOTING_LIST_ROLES } from "./lib/roles";
 
@@ -53,6 +54,7 @@ const AwardCeremonyGalleryPage = lazy(() => import("./pages/admin/AwardCeremonyG
 const LoyaltyPage = lazy(() => import("./pages/admin/LoyaltyPage"));
 const ShopProductsPage = lazy(() => import("./pages/admin/ShopProductsPage"));
 const ShopOrdersPage = lazy(() => import("./pages/admin/ShopOrdersPage"));
+const FeedbackPage = lazy(() => import("./pages/admin/FeedbackPage"));
 
 // Admin parçası yüklenirken (lazy) gösterilen boş koyu ekran
 const adminFallback = <div className="min-h-screen bg-gray-900" />;
@@ -74,6 +76,7 @@ const publicRoutes = (lang: Lang) => {
           { path: "galeri", element: <GalleryPage /> },
           { path: "odul-torenleri", element: <AwardCeremoniesPage /> },
           { path: "odul-torenleri/:slug", element: <AwardCeremonyDetailPage /> },
+          { path: "paylasim/:token", element: <SharedGalleryPage /> },
           { path: "paketler", element: <PackagesPage /> },
           { path: "urunler", element: <ProductsPage /> },
           { path: "urunler/:slug", element: <ProductDetailPage /> },
@@ -200,6 +203,10 @@ export const router = createBrowserRouter([
       {
         path: "/admin/shop/orders",
         element: <ShopOrdersPage />,
+      },
+      {
+        path: "/admin/feedback",
+        element: <FeedbackPage />,
       },
     ],
   },

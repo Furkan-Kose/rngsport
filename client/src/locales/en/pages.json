@@ -310,5 +310,47 @@
       "cta": "View products",
       "later": "Maybe later"
     }
+  },
+  "feedback": {
+    "title": "Share your feedback",
+    "subtitle": "Your thoughts on your photos, the shoot and the website mean a lot to us.",
+    "ratingLabel": "Your rating (optional)",
+    "placeholder": "Write your feedback, a suggestion or a problem you ran into…",
+    "send": "Send",
+    "sending": "Sending…",
+    "thanks": "Thank you for your feedback!",
+    "thanksText": "Your message has reached our team.",
+    "another": "Write another",
+    "error": "Could not send, please try again.",
+    "star_one": "{{count}} star",
+    "star_other": "{{count}} stars"
+  },
+  "share": {
+    "button": "Share",
+    "buttonActive": "Sharing on",
+    "title": "Share gallery",
+    "scopeAll": "Whole gallery",
+    "scopeAlbum": "Album: {{album}}",
+    "intro": "Anyone with this link can view and download the photos and videos in this gallery without signing in. They cannot access your account, details or orders. The link closes automatically after 30 days, and you can turn it off at any time.",
+    "create": "Create share link",
+    "validUntil": "Link open until {{date}}",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "copy": "Copy link",
+    "copied": "Copied!",
+    "shareNative": "Share…",
+    "whatsapp": "Send on WhatsApp",
+    "whatsappText": "Our RNG Sport gallery: {{url}}",
+    "revoke": "Turn off sharing",
+    "revokeConfirm": "If you turn off the link, nobody who has it will be able to open the gallery. Are you sure?",
+    "revokeYes": "Yes, turn off",
+    "cancel": "Cancel",
+    "close": "Close",
+    "error": "Something went wrong, please try again.",
+    "seoTitle": "Shared Gallery",
+    "sharedTitle": "Shared Gallery",
+    "invalidTitle": "Invalid link",
+    "invalidText": "This share link may have expired or been turned off by its owner.",
+    "goHome": "Go to homepage"
   }
 }

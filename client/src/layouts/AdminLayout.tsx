@@ -101,6 +101,16 @@ const AdminLayout = () => {
       ),
     },
     {
+      name: 'Görüşler',
+      path: '/admin/feedback',
+      roles: [ROLES.ADMIN],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.9A7.5 7.5 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+      ),
+    },
+    {
       name: 'Turnuvalar',
       path: '/admin/tournaments',
       roles: [ROLES.ADMIN],

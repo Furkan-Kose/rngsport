@@ -305,5 +305,45 @@
       "cta": "Ürünleri incele",
       "later": "Daha sonra"
     }
+  },
+  "feedback": {
+    "title": "Görüşlerinizi bildirin",
+    "subtitle": "Fotoğraflarınız, çekim ve site hakkında düşünceleriniz bizim için çok değerli.",
+    "ratingLabel": "Puanınız (isteğe bağlı)",
+    "placeholder": "Görüşünüzü, önerinizi veya yaşadığınız bir sorunu yazın…",
+    "send": "Gönder",
+    "sending": "Gönderiliyor…",
+    "thanks": "Görüşünüz için teşekkürler!",
+    "thanksText": "Mesajınız ekibimize ulaştı.",
+    "another": "Yeni bir görüş yaz",
+    "error": "Gönderilemedi, lütfen tekrar deneyin.",
+    "star": "{{count}} yıldız"
+  },
+  "share": {
+    "button": "Paylaş",
+    "buttonActive": "Paylaşım açık",
+    "title": "Galeriyi paylaş",
+    "scopeAll": "Tüm galeri",
+    "scopeAlbum": "Albüm: {{album}}",
+    "intro": "Bu linke sahip herkes, giriş yapmadan bu galerideki fotoğraf ve videoları görebilir ve indirebilir. Hesabınıza, bilgilerinize ve siparişlerinize erişemez. Link 30 gün sonra kendiliğinden kapanır; istediğiniz an kapatabilirsiniz.",
+    "create": "Paylaşım linki oluştur",
+    "validUntil": "Link {{date}} tarihine kadar açık",
+    "daysLeft": "{{count}} gün kaldı",
+    "copy": "Linki kopyala",
+    "copied": "Kopyalandı!",
+    "shareNative": "Paylaş…",
+    "whatsapp": "WhatsApp'ta gönder",
+    "whatsappText": "RNG Sport galerimiz: {{url}}",
+    "revoke": "Paylaşımı kapat",
+    "revokeConfirm": "Linki kapatırsanız, linke sahip olan hiç kimse galeriyi açamaz. Emin misiniz?",
+    "revokeYes": "Evet, kapat",
+    "cancel": "Vazgeç",
+    "close": "Kapat",
+    "error": "İşlem yapılamadı, lütfen tekrar deneyin.",
+    "seoTitle": "Paylaşılan Galeri",
+    "sharedTitle": "Paylaşılan Galeri",
+    "invalidTitle": "Link geçersiz",
+    "invalidText": "Bu paylaşım linkinin süresi dolmuş ya da sahibi tarafından kapatılmış olabilir.",
+    "goHome": "Ana sayfaya git"
   }
 }

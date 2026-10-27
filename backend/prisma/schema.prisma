@@ -87,11 +87,13 @@ model User {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  photos       GalleryPhoto[]
-  orders       Order[]
-  reservations Reservation[]
-  points       PointTransaction[]
-  shopOrders   ShopOrder[]
+  photos        GalleryPhoto[]
+  orders        Order[]
+  reservations  Reservation[]
+  points        PointTransaction[]
+  shopOrders    ShopOrder[]
+  feedbacks     Feedback[]
+  galleryShares GalleryShare[]
 
   @@map("users")
 }
@@ -197,6 +199,41 @@ enum ReservationStatus {
   PAID
   CANCELLED
   DELIVERED
+}
+
+// Galeri paylaşım linki: /paylasim/:token — girişsiz, salt okunur (görüntüle + indir).
+// Kapsam başına (tüm galeri = album null, ya da tek albüm) en fazla BİR aktif link;
+// tekrar "Paylaş" mevcut linki döndürür. 30 gün sonra kendiliğinden kapanır, sahibi iptal edebilir.
+model GalleryShare {
+  id        String    @id @default(cuid())
+  token     String    @unique // 32 karakter rastgele (base64url) — tahmin edilemez
+  userId    String
+  album     String? // null = tüm galeri
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("gallery_shares")
+}
+
+// Galerim'in altındaki "Görüşlerinizi bildirin" formu; admin /admin/feedback'te okur
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String?
+  rating    Int? // 1-5 yıldız (isteğe bağlı)
+  message   String
+  page      String   @default("galerim") // Formun bulunduğu sayfa
+  locale    String   @default("tr")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("feedbacks")
 }
 
 model Tournament {
@@ -342,7 +379,8 @@ model ShopProduct {
   summary      String? // Kartlardaki kısa açıklama
   description  String? // Detay sayfası metni (paragraflar boş satırla ayrılır)
   price        Float? // null = fiyat girilmemiş → satın alınamaz
-  image        String? // R2 "urunler/{uuid}.{ext}" ya da eski "/products/*.jpeg"
+  image        String? // Kapak (kartlar, siparişler): R2 "urunler/{uuid}.{ext}" ya da eski "/products/*.jpeg"
+  images       String[] @default([]) // Detay sayfası kaydırmalı galerisinde kapaktan SONRA gelen ek fotoğraflar (en fazla 10)
   customFields Json? // Kişiselleştirme alanları: [{ key, label, required, maxLength }]
   poseOptions  Json? // Alet → poz seçimi: { enabled, apparatuses: [{ slug, enabled, poses: [{ no, image, label }] }] }
   translations Json? // { en: { name, tagline, summary, description, fields: { key: label } }, ru: {...} }

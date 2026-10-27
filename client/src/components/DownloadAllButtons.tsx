@@ -12,6 +12,8 @@ interface DownloadAllButtonsProps {
   progress: { done: number; total: number } | null;
   onStart: (quality: MediaQuality) => void;
   primaryClassName: string;
+  /** false: sunucu zip'i yok (paylaşım linki) — telefondaki "arka planda iner" onayı anlamsız */
+  serverFallback?: boolean;
 }
 
 // "Tümünü indir": TEK buton. Önizleme varsa açılan küçük menüde Orijinal / Küçük boyut
@@ -23,6 +25,7 @@ const DownloadAllButtons = ({
   progress,
   onStart,
   primaryClassName,
+  serverFallback = true,
 }: DownloadAllButtonsProps) => {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,7 +48,7 @@ const DownloadAllButtons = ({
   const choose = (q: MediaQuality) => {
     setMenuOpen(false);
     // Telefonda tarayıcıya sığmayan indirme telefonun indirme yöneticisinde sürer: önce bilgilendir
-    if (isMobileDevice() && sizeOf(q) > memoryZipLimit()) setConfirm(q);
+    if (serverFallback && isMobileDevice() && sizeOf(q) > memoryZipLimit()) setConfirm(q);
     else onStart(q);
   };
 

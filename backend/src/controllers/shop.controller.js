@@ -144,6 +144,8 @@ const formatPublicProduct = (raw, locale) => {
     description: p.description,
     price: p.price,
     image: resolveImage(p.image),
+    // Detay galerisi: kapak + ek fotoğraflar (sırasıyla)
+    images: [p.image, ...(p.images ?? [])].filter(Boolean).map(resolveImage),
     customFields: fieldsFor(raw, locale),
     poseOptions: usesPoses(raw)
       ? {
@@ -163,6 +165,8 @@ const formatAdminProduct = (p) => {
   return {
     ...p,
     imageUrl: resolveImage(p.image),
+    images: p.images ?? [],
+    imageUrls: (p.images ?? []).map(resolveImage),
     customFields: Array.isArray(p.customFields) ? p.customFields : [],
     translations: p.translations ?? {},
     poseOptions: {
@@ -525,6 +529,18 @@ const parsePrice = (value) => {
   return Math.round(price * 100) / 100;
 };
 
+// Ek fotoğraflar: yalnızca bizim R2 anahtarlarımız ya da eski /products/* yolları; tekrarsız, en fazla 10
+const MAX_EXTRA_IMAGES = 10;
+const sanitizeExtraImages = (input) => {
+  if (!Array.isArray(input)) throw new AppError("Geçersiz fotoğraf listesi", 400);
+  const valid = input.filter(
+    (k) => isProductImageKey(k) || (typeof k === "string" && /^\/products\/[\w.-]+\.(jpe?g|png|webp)$/i.test(k))
+  );
+  const unique = [...new Set(valid)];
+  if (unique.length > MAX_EXTRA_IMAGES) throw new AppError("En fazla 10 ek fotoğraf eklenebilir", 400);
+  return unique;
+};
+
 const productData = (body, { partial }) => {
   const data = {};
   if (!partial || body.name !== undefined) {
@@ -543,6 +559,7 @@ const productData = (body, { partial }) => {
   if (body.description !== undefined) data.description = text(body.description, 10000);
   if (body.price !== undefined) data.price = parsePrice(body.price);
   if (body.image !== undefined) data.image = text(body.image, 500);
+  if (body.images !== undefined) data.images = sanitizeExtraImages(body.images);
   if (body.isActive !== undefined) data.isActive = Boolean(body.isActive);
   if (body.sortOrder !== undefined) data.sortOrder = parseInt(body.sortOrder) || 0;
   if (body.customFields !== undefined) data.customFields = sanitizeCustomFields(body.customFields);
@@ -577,6 +594,12 @@ const cleanupImage = (oldImage, newImage) => {
   }
 };
 
+// Listeden çıkarılan ek fotoğraflar R2'den silinir (kapak olarak hâlâ kullanılan hariç)
+const cleanupExtraImages = (oldList = [], newList = [], cover = null) => {
+  const keep = new Set([...newList, cover]);
+  for (const key of oldList) if (!keep.has(key)) cleanupImage(key, null);
+};
+
 export const createProduct = async (req, res) => {
   const data = productData(req.body ?? {}, { partial: false });
   const customFields = data.customFields ?? [];
@@ -600,7 +623,10 @@ export const updateProduct = async (req, res) => {
   const product = await prisma.shopProduct
     .update({ where: { id: existing.id }, data })
     .catch(rethrowPrismaError(PRODUCT_NOT_FOUND));
-  if (data.image !== undefined) cleanupImage(existing.image, product.image);
+  if (data.image !== undefined && !(product.images ?? []).includes(existing.image)) {
+    cleanupImage(existing.image, product.image);
+  }
+  if (data.images !== undefined) cleanupExtraImages(existing.images, product.images, product.image);
   if (data.poseOptions !== undefined) {
     cleanupPoseImages(existing.poseOptions, product.poseOptions).catch((err) =>
       console.error("[r2] Poz görseli temizliği:", err.message)
@@ -622,6 +648,7 @@ export const deleteProduct = async (req, res) => {
   }
   await prisma.shopProduct.delete({ where: { id: product.id } });
   cleanupImage(product.image, null);
+  cleanupExtraImages(product.images, [], null);
   cleanupPoseImages(product.poseOptions, null).catch(() => {});
   res.json({ message: "Ürün silindi", deactivated: false });
 };

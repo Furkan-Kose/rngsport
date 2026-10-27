@@ -41,10 +41,11 @@ const buildUploadKey = (user, album, ext) =>
   `${buildUserPrefix(user)}${slugify(album) || "genel"}/${ORIGINAL_DIR}/${crypto.randomUUID()}.${ext}`;
 
 // Fotoğrafları presigned URL'lerle birlikte, sayfalı döner (getMyPhotos + admin listesi ortak)
-const listPhotosForUser = async (userId, query) => {
+// fixedAlbum: paylaşım linki tek albüme aitse sorgudaki albüm yok sayılır
+const listPhotosForUser = async (userId, query, { fixedAlbum = null } = {}) => {
   const page = Math.max(1, parseInt(query.page) || 1);
   const limit = Math.min(200, Math.max(1, parseInt(query.limit) || 60));
-  const album = query.album ? String(query.album).slice(0, 100) : undefined;
+  const album = fixedAlbum ?? (query.album ? String(query.album).slice(0, 100) : undefined);
   // type=image|video → contentType prefix'ine göre filtre
   const type = ["image", "video"].includes(query.type) ? query.type : undefined;
 
@@ -62,12 +63,14 @@ const listPhotosForUser = async (userId, query) => {
       take: limit,
     }),
     prisma.galleryPhoto.count({ where }),
-    prisma.galleryPhoto.findMany({
-      where: { userId, album: { not: null } },
-      select: { album: true },
-      distinct: ["album"],
-      orderBy: { album: "asc" },
-    }),
+    fixedAlbum
+      ? [{ album: fixedAlbum }]
+      : prisma.galleryPhoto.findMany({
+          where: { userId, album: { not: null } },
+          select: { album: true },
+          distinct: ["album"],
+          orderBy: { album: "asc" },
+        }),
     downloadSizes(prisma.galleryPhoto, { userId, ...(album && { album }) }),
   ]);
 
@@ -141,6 +144,99 @@ export const downloadMyPhoto = async (req, res) => {
     throw new AppError("Bu fotoğrafa erişim yetkiniz yok", 403);
   }
 
+  const target = downloadTarget(photo, parseQuality(req.query.quality));
+  res.json({ url: await presignDownload(target.key, target.fileName) });
+};
+
+// ---------------------------------------------------------------------------
+// Paylaşım linki (/paylasim/:token). Ziyaretçi yalnızca linkin kapsamındaki dosyaları
+// görür ve indirir: hesap bilgisi, profil, siparişler ASLA dönmez. Sunucu zip'i
+// (download-all) bilerek YOK — toplu indirme tarayıcıda, doğrudan R2'den (Railway trafiği yok).
+// ---------------------------------------------------------------------------
+const SHARE_DAYS = 30;
+const SHARE_INVALID = "Paylaşım linki geçersiz veya süresi dolmuş";
+const activeShareWhere = () => ({ revokedAt: null, expiresAt: { gt: new Date() } });
+const shareAlbum = (value) => (value ? String(value).slice(0, 100) : null);
+const shareView = (s) => ({ id: s.id, token: s.token, album: s.album, createdAt: s.createdAt, expiresAt: s.expiresAt });
+
+// Müşteri: aktif paylaşım linkleri (galeride "Paylaşım açık" göstermek için)
+export const getMyShares = async (req, res) => {
+  const shares = await prisma.galleryShare.findMany({
+    where: { userId: req.user.id, ...activeShareWhere() },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json({ data: shares.map(shareView) });
+};
+
+// Müşteri: paylaş — bu kapsamda aktif link varsa AYNISI döner, yoksa 30 günlük yeni link
+export const createMyShare = async (req, res) => {
+  const album = shareAlbum(req.body?.album);
+  const existing = await prisma.galleryShare.findFirst({
+    where: { userId: req.user.id, album, ...activeShareWhere() },
+    orderBy: { createdAt: "desc" },
+  });
+  if (existing) return res.json({ share: shareView(existing), created: false });
+
+  const count = await prisma.galleryPhoto.count({ where: { userId: req.user.id, ...(album && { album }) } });
+  if (count === 0) throw new AppError("Paylaşılacak dosya yok", 400);
+
+  const share = await prisma.galleryShare.create({
+    data: {
+      token: crypto.randomBytes(24).toString("base64url"),
+      userId: req.user.id,
+      album,
+      expiresAt: new Date(Date.now() + SHARE_DAYS * 24 * 60 * 60 * 1000),
+    },
+  });
+  res.status(201).json({ message: "Paylaşım linki oluşturuldu", share: shareView(share), created: true });
+};
+
+// Müşteri: paylaşımı kapat (link hemen çalışmaz olur)
+export const revokeMyShare = async (req, res) => {
+  const { count } = await prisma.galleryShare.updateMany({
+    where: { id: req.params.id, userId: req.user.id, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  if (count === 0) throw new AppError("Paylaşım bulunamadı", 404);
+  res.json({ message: "Paylaşım kapatıldı" });
+};
+
+const findActiveShare = async (token) => {
+  if (typeof token !== "string" || token.length < 20 || token.length > 64) throw new AppError(SHARE_INVALID, 404);
+  const share = await prisma.galleryShare.findUnique({ where: { token } });
+  if (!share || share.revokedAt || share.expiresAt <= new Date()) throw new AppError(SHARE_INVALID, 404);
+  return share;
+};
+
+// Linkin kapsamı: sahibinin galerisi, link tek albümse yalnızca o albüm
+const shareScope = (share) => ({ userId: share.userId, ...(share.album && { album: share.album }) });
+
+// Public: paylaşılan galeri (sayfalı)
+export const getSharedGallery = async (req, res) => {
+  const share = await findActiveShare(req.params.token);
+  const list = await listPhotosForUser(share.userId, req.query, { fixedAlbum: share.album });
+  res.json({ ...list, share: { album: share.album, expiresAt: share.expiresAt } });
+};
+
+// Public: tarayıcıda zip için dosya listesi (tümü / albüm / seçilenler)
+export const getSharedZipManifest = async (req, res) => {
+  const share = await findActiveShare(req.params.token);
+  const album = share.album ?? (req.query.album ? String(req.query.album).slice(0, 100) : undefined);
+  const ids = parseSelectedIds(req.body);
+  const photos = await prisma.galleryPhoto.findMany({
+    where: { ...shareScope(share), ...(album && { album }), ...(ids && { id: { in: ids } }) },
+    orderBy: { createdAt: "asc" },
+  });
+  if (photos.length === 0) throw new AppError("İndirilecek dosya bulunamadı", 404);
+  const zipName = album ? zipFileName(album, "galeri") : "rngsport-galeri.zip";
+  res.json(await zipManifest(photos, zipName, (photo) => photo.album, parseQuality(req.query.quality)));
+};
+
+// Public: tek dosya indirme linki (yalnızca linkin kapsamındaki dosya)
+export const downloadSharedPhoto = async (req, res) => {
+  const share = await findActiveShare(req.params.token);
+  const photo = await prisma.galleryPhoto.findFirst({ where: { id: req.params.id, ...shareScope(share) } });
+  if (!photo) throw new AppError("Fotoğraf bulunamadı", 404);
   const target = downloadTarget(photo, parseQuality(req.query.quality));
   res.json({ url: await presignDownload(target.key, target.fileName) });
 };

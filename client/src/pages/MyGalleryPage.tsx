@@ -20,8 +20,13 @@ import { useZipDownload } from "../hooks/useZipDownload";
 import { canShareFiles } from "../lib/device";
 import { DownloadHint, SaveToPhotosModal, SelectionBar } from "../components/MediaSelection";
 import { useMediaSelection } from "../hooks/useMediaSelection";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Link2Off } from "lucide-react";
 import GalleryShopPromo from "../components/shop/GalleryShopPromo";
+import FeedbackForm from "../components/FeedbackForm";
+import ShareGalleryButton, { ActiveSharesLine } from "../components/ShareGalleryButton";
+import { useGalleryShares } from "../hooks/useGalleryShares";
+import LocalizedLink from "../components/LocalizedLink";
+import { formatDate } from "../lib/format";
 
 interface GalleryPhoto {
   id: string;
@@ -45,7 +50,17 @@ interface Pagination {
 
 type TypeFilter = "all" | "image" | "video";
 
-const MyGalleryPage = () => {
+/**
+ * shareToken verilirse paylaşılan galeri (/paylasim/:token): girişsiz, salt okunur.
+ * Uçlar /api/gallery/shared/:token/* — sahibin hesabına dair hiçbir şey dönmez; toplu indirme
+ * yalnızca tarayıcıda (sunucu zip'i yok → Railway trafiği yok). Mağaza ve görüş formu gösterilmez.
+ */
+const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
+  const isShared = !!shareToken;
+  const base = isShared ? `/api/gallery/shared/${encodeURIComponent(shareToken)}` : "/api/gallery/my";
+  const [sharedInfo, setSharedInfo] = useState<{ album: string | null; expiresAt: string } | null>(null);
+  const [invalidLink, setInvalidLink] = useState(false);
+  const { shares, setShares } = useGalleryShares(!isShared);
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [albums, setAlbums] = useState<string[]>([]);
   const [activeAlbum, setActiveAlbum] = useState<string | null>(null);
@@ -66,12 +81,17 @@ const MyGalleryPage = () => {
         const params = new URLSearchParams({ page: String(page), limit: "60" });
         if (album) params.set("album", album);
         if (type !== "all") params.set("type", type);
-        const { data } = await api.get(`/api/gallery/my?${params}`);
+        const { data } = await api.get(`${base}?${params}`);
         setPhotos((prev) => (append ? [...prev, ...data.data] : data.data));
         setAlbums(data.albums || []);
         setPagination(data.pagination);
         setDownloadSizes(data.downloadSizes ?? null);
+        if (data.share) setSharedInfo(data.share);
       } catch (error) {
+        if (isShared && (error as { response?: { status?: number } }).response?.status === 404) {
+          setInvalidLink(true);
+          return;
+        }
         console.error("Galeri yüklenemedi:", error);
         toast.error(t("pages.media.loadError"));
       } finally {
@@ -81,7 +101,7 @@ const MyGalleryPage = () => {
     },
     // t yalnızca hata bildiriminde
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [base]
   );
 
   useEffect(() => {
@@ -100,20 +120,21 @@ const MyGalleryPage = () => {
   const handleDownloadAll = async (quality: MediaQuality) => {
     const query = activeAlbum ? `?${new URLSearchParams({ album: activeAlbum })}` : "";
     await zip.start(
-      withQuality(`/api/gallery/my/download-manifest${query}`, quality),
-      withQuality(`/api/gallery/my/download-all${query}`, quality),
+      withQuality(`${base}/download-manifest${query}`, quality),
+      // Paylaşılan galeride sunucu zip'i yok: tarayıcının kaldıramayacağı boyutta uyarı çıkar
+      isShared ? undefined : withQuality(`/api/gallery/my/download-all${query}`, quality),
     );
   };
 
   // Seçilenler: manifest POST ile yalnızca bu id'ler (sunucu zip'i yok — Railway trafiği)
   const handleZipSelected = (ids: string[], quality: MediaQuality) =>
-    zip.start(withQuality("/api/gallery/my/download-manifest", quality), undefined, ids);
+    zip.start(withQuality(`${base}/download-manifest`, quality), undefined, ids);
 
   // Taze imzalı indirme linki (galeriye kaydet için dosya buradan çekilir)
   const getUrl = useCallback(
     async (item: MediaItem, quality: MediaQuality) =>
-      (await api.get(withQuality(`/api/gallery/my/${item.id}/download`, quality))).data.url as string,
-    []
+      (await api.get(withQuality(`${base}/${item.id}/download`, quality))).data.url as string,
+    [base]
   );
 
   // Filtre değişince seçim sıfırlanır (seçilenler görünmeyen dosyalarda kalmasın)
@@ -129,7 +150,7 @@ const MyGalleryPage = () => {
   const handleDownload = async (photo: GalleryPhoto, quality: MediaQuality) => {
     setDownloadingId(photo.id);
     try {
-      const { data } = await api.get(withQuality(`/api/gallery/my/${photo.id}/download`, quality));
+      const { data } = await api.get(withQuality(`${base}/${photo.id}/download`, quality));
       triggerDownload(data.url, photo.fileName);
     } catch (error) {
       console.error("İndirme hatası:", error);
@@ -141,9 +162,31 @@ const MyGalleryPage = () => {
 
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
 
+  if (invalidLink) {
+    return (
+      <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+        <SEO title={t("pages.share.seoTitle")} noindex />
+        <div className="container mx-auto px-4 max-w-lg text-center">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-10">
+            <Link2Off className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+            <h1 className="text-xl font-semibold text-white mb-2">{t("pages.share.invalidTitle")}</h1>
+            <p className="text-sm text-zinc-400 mb-6">{t("pages.share.invalidText")}</p>
+            <LocalizedLink to="/" className="inline-flex px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold">
+              {t("pages.share.goHome")}
+            </LocalizedLink>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen bg-zinc-950 pt-28 ${selection.active ? "pb-56" : "pb-16"}`}>
-      <SEO title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
+      {isShared ? (
+        <SEO title={t("pages.share.seoTitle")} noindex />
+      ) : (
+        <SEO title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
+      )}
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -160,9 +203,14 @@ const MyGalleryPage = () => {
                 <Images className="w-7 h-7 text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gradient-brand">{t("pages.myGallery.title")}</h1>
+                <h1 className="text-3xl font-bold text-gradient-brand">
+                  {isShared ? t("pages.share.sharedTitle") : t("pages.myGallery.title")}
+                </h1>
                 <p className="text-zinc-500 text-sm">
                   {pagination ? t("pages.media.files", { count: pagination.total }) : t("pages.myGallery.subtitle")}
+                  {isShared && sharedInfo && (
+                    <> · {t("pages.share.validUntil", { date: formatDate(sharedInfo.expiresAt, { day: "numeric", month: "long" }) })}</>
+                  )}
                 </p>
               </div>
             </div>
@@ -177,7 +225,16 @@ const MyGalleryPage = () => {
                 {t("pages.media.select.start")}
               </button>
               )}
+              {!isShared && (
+                <ShareGalleryButton
+                  album={activeAlbum}
+                  shares={shares}
+                  setShares={setShares}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
+                />
+              )}
               <DownloadAllButtons
+                serverFallback={!isShared}
                 sizes={downloadSizes}
                 album={activeAlbum !== null}
                 progress={zip.progress}
@@ -189,13 +246,15 @@ const MyGalleryPage = () => {
             )}
           </div>
 
+          {!isShared && <ActiveSharesLine shares={shares} />}
+
           {photos.length > 0 && <DownloadHint />}
 
-          <GalleryShopPromo />
+          {!isShared && <GalleryShopPromo />}
 
           {/* Filtreler: yarışma/albüm + tür */}
           <div className="flex flex-wrap items-center gap-2 mb-6">
-            {albums.length > 0 && (
+            {albums.length > 0 && !(isShared && sharedInfo?.album) && (
               <>
                 <button
                   onClick={() => changeAlbum(null)}
@@ -287,6 +346,8 @@ const MyGalleryPage = () => {
             </>
           )}
         </motion.div>
+
+        {!isShared && <FeedbackForm page="galerim" />}
       </div>
 
       <MediaLightbox
