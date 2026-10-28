@@ -6,6 +6,7 @@ import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid from '../../components/admin/AdminMediaGrid';
 import PreviewBackfill from '../../components/admin/PreviewBackfill';
+import DownloadHistory from '../../components/admin/DownloadHistory';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 
 interface UserInfo {
@@ -207,6 +208,8 @@ const UserGalleryPage = () => {
         }}
         onDone={() => fetchPhotos(1, activeAlbum, false)}
       />
+
+      {userId && <DownloadHistory userId={userId} />}
 
       {/* Albüm filtreleri */}
       {albums.length > 0 && (

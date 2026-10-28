@@ -130,10 +130,11 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
   const handleZipSelected = (ids: string[], quality: MediaQuality) =>
     zip.start(withQuality(`${base}/download-manifest`, quality), undefined, ids);
 
-  // Taze imzalı indirme linki (galeriye kaydet için dosya buradan çekilir)
+  // Taze imzalı indirme linki (galeriye kaydet için dosya buradan çekilir).
+  // purpose=save: admin indirme geçmişinde "Galeriye kaydedildi" olarak görünsün
   const getUrl = useCallback(
     async (item: MediaItem, quality: MediaQuality) =>
-      (await api.get(withQuality(`${base}/${item.id}/download`, quality))).data.url as string,
+      (await api.get(withQuality(`${base}/${item.id}/download?purpose=save`, quality))).data.url as string,
     [base]
   );
 

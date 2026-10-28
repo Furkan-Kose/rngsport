@@ -94,6 +94,7 @@ model User {
   shopOrders    ShopOrder[]
   feedbacks     Feedback[]
   galleryShares GalleryShare[]
+  galleryDownloads GalleryDownload[]
 
   @@map("users")
 }
@@ -217,6 +218,29 @@ model GalleryShare {
 
   @@index([userId])
   @@map("gallery_shares")
+}
+
+// İndirme kaydı: müşteri (veya paylaşım linki ziyaretçisi) indirme linki aldığında yazılır.
+// "İndirme başladı" demektir — dosyalar doğrudan R2'den indiği için bitişi bilinmez.
+// IP/cihaz tutulmaz; kimin indirdiği hesaptan (userId) anlaşılır.
+model GalleryDownload {
+  id        String   @id @default(cuid())
+  userId    String // galeri sahibi
+  shareId   String? // paylaşım linkinden geldiyse (FK değil)
+  kind      String // single | save | zip | server-zip
+  selected  Boolean  @default(false) // "Seç" modu (zip/kaydet)
+  album     String?
+  photoId   String? // tek dosya
+  fileName  String? // tek dosya
+  fileCount Int      @default(1)
+  totalSize Float? // bayt; zip 2 GB'ı aşabilir
+  quality   String   @default("original") // original | preview
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("gallery_downloads")
 }
 
 // Galerim'in altındaki "Görüşlerinizi bildirin" formu; admin /admin/feedback'te okur

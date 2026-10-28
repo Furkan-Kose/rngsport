@@ -95,6 +95,61 @@ const listPhotosForUser = async (userId, query, { fixedAlbum = null } = {}) => {
   };
 };
 
+// ---------------------------------------------------------------------------
+// İndirme kaydı (admin "kim indirdi" görsün). Beklemeden yazılır: hata indirmeyi bozmaz.
+// Aynı kapsam 10 dk içinde tekrar istenirse (imzalı link süresi doldu, yeniden deneme,
+// galeriye kaydetme turları) yeni satır açılmaz. Admin'in kendi indirmesi sayılmaz.
+// ---------------------------------------------------------------------------
+const DOWNLOAD_DEDUPE_MS = 10 * 60 * 1000;
+
+const logDownload = (entry) => {
+  const data = { selected: false, album: null, photoId: null, fileName: null, shareId: null, fileCount: 1, ...entry };
+  prisma.galleryDownload
+    .findFirst({
+      where: {
+        userId: data.userId,
+        shareId: data.shareId,
+        kind: data.kind,
+        selected: data.selected,
+        album: data.album,
+        photoId: data.photoId,
+        quality: data.quality,
+        fileCount: data.fileCount,
+        createdAt: { gt: new Date(Date.now() - DOWNLOAD_DEDUPE_MS) },
+      },
+      select: { id: true },
+    })
+    .then((recent) => recent || prisma.galleryDownload.create({ data }))
+    .catch((err) => console.error("İndirme kaydı yazılamadı:", err.message));
+};
+
+const zipLog = (photos, manifestOrNull, { userId, shareId = null, album, selected, quality, kind }) =>
+  logDownload({
+    userId,
+    shareId,
+    kind,
+    selected,
+    album: album ?? null,
+    fileCount: photos.length,
+    totalSize: manifestOrNull?.totalSize ?? photos.reduce((sum, p) => sum + (p.size || 0), 0),
+    quality,
+  });
+
+// ?purpose=save → telefonda "Galeriye kaydet" (tek dosya linkiyle çalışır)
+const singleKind = (query) => (query.purpose === "save" ? "save" : "single");
+
+const singleLog = (photo, target, req, shareId = null) =>
+  logDownload({
+    userId: photo.userId,
+    shareId,
+    kind: singleKind(req.query),
+    album: photo.album,
+    photoId: photo.id,
+    fileName: photo.fileName,
+    totalSize: target.size,
+    quality: parseQuality(req.query.quality),
+  });
+
 // Girişli kullanıcının kendi galerisi
 export const getMyPhotos = async (req, res) => {
   res.json(await listPhotosForUser(req.user.id, req.query));
@@ -113,22 +168,29 @@ const findMyZipPhotos = async (req) => {
     throw new AppError("İndirilecek dosya bulunamadı", 404);
   }
   const zipName = album ? zipFileName(album, "galeri") : "rngsport-galerim.zip";
-  return { photos, zipName };
+  return { photos, zipName, album, selected: !!ids };
 };
 
 // Tarayıcıda zip için dosya listesi (asıl yol — dosyalar doğrudan R2'den iner)
 export const getMyZipManifest = async (req, res) => {
-  const { photos, zipName } = await findMyZipPhotos(req);
+  const { photos, zipName, album, selected } = await findMyZipPhotos(req);
+  const quality = parseQuality(req.query.quality);
   // Albümler zip içinde klasör olur
-  res.json(
-    await zipManifest(photos, zipName, (photo) => photo.album, parseQuality(req.query.quality))
-  );
+  const manifest = await zipManifest(photos, zipName, (photo) => photo.album, quality);
+  if (req.user.role !== "admin") {
+    zipLog(photos, manifest, { userId: req.user.id, album, selected, quality, kind: "zip" });
+  }
+  res.json(manifest);
 };
 
 // Sunucuda zip (yedek yol: tarayıcının kaldıramayacağı kadar büyük galeriler)
 export const downloadAllMyPhotos = async (req, res) => {
-  const { photos, zipName } = await findMyZipPhotos(req);
-  await streamZip(res, photos, zipName, (photo) => photo.album, parseQuality(req.query.quality));
+  const { photos, zipName, album, selected } = await findMyZipPhotos(req);
+  const quality = parseQuality(req.query.quality);
+  if (req.user.role !== "admin") {
+    zipLog(photos, null, { userId: req.user.id, album, selected, quality, kind: "server-zip" });
+  }
+  await streamZip(res, photos, zipName, (photo) => photo.album, quality);
 };
 
 // Tek fotoğraf için indirme URL'i (sahiplik kontrolü)
@@ -145,7 +207,9 @@ export const downloadMyPhoto = async (req, res) => {
   }
 
   const target = downloadTarget(photo, parseQuality(req.query.quality));
-  res.json({ url: await presignDownload(target.key, target.fileName) });
+  const url = await presignDownload(target.key, target.fileName);
+  if (photo.userId === req.user.id) singleLog(photo, target, req);
+  res.json({ url });
 };
 
 // ---------------------------------------------------------------------------
@@ -229,7 +293,10 @@ export const getSharedZipManifest = async (req, res) => {
   });
   if (photos.length === 0) throw new AppError("İndirilecek dosya bulunamadı", 404);
   const zipName = album ? zipFileName(album, "galeri") : "rngsport-galeri.zip";
-  res.json(await zipManifest(photos, zipName, (photo) => photo.album, parseQuality(req.query.quality)));
+  const quality = parseQuality(req.query.quality);
+  const manifest = await zipManifest(photos, zipName, (photo) => photo.album, quality);
+  zipLog(photos, manifest, { userId: share.userId, shareId: share.id, album, selected: !!ids, quality, kind: "zip" });
+  res.json(manifest);
 };
 
 // Public: tek dosya indirme linki (yalnızca linkin kapsamındaki dosya)
@@ -238,7 +305,9 @@ export const downloadSharedPhoto = async (req, res) => {
   const photo = await prisma.galleryPhoto.findFirst({ where: { id: req.params.id, ...shareScope(share) } });
   if (!photo) throw new AppError("Fotoğraf bulunamadı", 404);
   const target = downloadTarget(photo, parseQuality(req.query.quality));
-  res.json({ url: await presignDownload(target.key, target.fileName) });
+  const url = await presignDownload(target.key, target.fileName);
+  singleLog(photo, target, req, share.id);
+  res.json({ url });
 };
 
 // Admin: toplu yükleme için imzalı PUT URL'leri üretir
@@ -313,6 +382,18 @@ export const getUserPhotosAdmin = async (req, res) => {
     prisma.galleryPhoto.count({ where: { userId: req.params.userId, ...missingPreviewWhere } }),
   ]);
   res.json({ ...list, missingPreviews });
+};
+
+// Admin: müşterinin indirme geçmişi (son 200) + özet
+export const getUserDownloadsAdmin = async (req, res) => {
+  const userId = req.params.userId;
+  const [rows, total, viaShare, last] = await Promise.all([
+    prisma.galleryDownload.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 200 }),
+    prisma.galleryDownload.count({ where: { userId } }),
+    prisma.galleryDownload.count({ where: { userId, shareId: { not: null } } }),
+    prisma.galleryDownload.findFirst({ where: { userId }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+  ]);
+  res.json({ data: rows, summary: { total, viaShare, lastDownloadAt: last?.createdAt ?? null } });
 };
 
 // Admin: fotoğraf sil (önce R2, sonra DB — R2 silinemezse DB kaydı kalır)

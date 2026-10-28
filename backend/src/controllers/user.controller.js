@@ -73,6 +73,8 @@ export const getAllUsers = async (req, res) => {
       select: {
         ...customerSelect,
         _count: { select: { photos: true, reservations: true, orders: true } },
+        // "Son indirme" sütunu (galeri indirme kaydı)
+        galleryDownloads: { select: { createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
@@ -82,7 +84,10 @@ export const getAllUsers = async (req, res) => {
   ]);
 
   res.json({
-    data: users.map(formatCustomer),
+    data: users.map(({ galleryDownloads, ...user }) => ({
+      ...formatCustomer(user),
+      lastDownloadAt: galleryDownloads[0]?.createdAt ?? null,
+    })),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
 };

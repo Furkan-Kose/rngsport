@@ -23,6 +23,7 @@ interface UserRow extends CustomerUser {
     reservations: number;
     orders: number;
   };
+  lastDownloadAt: string | null;
 }
 
 interface Pagination {
@@ -252,6 +253,7 @@ const UsersPage = () => {
                   <th className="px-4 py-3 font-medium">E-posta</th>
                   <th className="px-4 py-3 font-medium hidden md:table-cell">Telefon</th>
                   <th className="px-4 py-3 font-medium text-center">Fotoğraf</th>
+                  <th className="px-4 py-3 font-medium hidden md:table-cell">Son İndirme</th>
                   <th className="px-4 py-3 font-medium text-center hidden lg:table-cell">Rezervasyon</th>
                   <th className="px-4 py-3 font-medium hidden lg:table-cell">Kayıt Tarihi</th>
                   <th className="px-4 py-3 font-medium text-right">İşlem</th>
@@ -292,6 +294,15 @@ const UsersPage = () => {
                       <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
                         {user._count.photos}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm hidden md:table-cell">
+                      {user.lastDownloadAt ? (
+                        <span className="text-gray-300">{formatDate(user.lastDownloadAt)}</span>
+                      ) : user._count.photos > 0 ? (
+                        <span className="text-red-400/80">İndirmedi</span>
+                      ) : (
+                        <span className="text-gray-600">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-300 text-sm hidden lg:table-cell">
                       {user._count.reservations + user._count.orders}
