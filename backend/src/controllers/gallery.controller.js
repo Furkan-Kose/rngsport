@@ -23,8 +23,10 @@ import {
   deleteAllMedia,
   ORIGINAL_DIR,
   parseSelectedIds,
+  variantKeys,
+  deleteMediaFiles,
 } from "../utils/uploads.js";
-import { presignUpload, presignDownload } from "../lib/r2.js";
+import { presignUpload, presignDownload, copyObject } from "../lib/r2.js";
 
 const sanitizeAlbum = (value) => {
   const trimmed = value ? String(value).trim().slice(0, 100) : "";
@@ -64,11 +66,11 @@ const listPhotosForUser = async (userId, query, { fixedAlbum = null } = {}) => {
     }),
     prisma.galleryPhoto.count({ where }),
     fixedAlbum
-      ? [{ album: fixedAlbum }]
-      : prisma.galleryPhoto.findMany({
+      ? [{ album: fixedAlbum, _count: { _all: null } }]
+      : prisma.galleryPhoto.groupBy({
+          by: ["album"],
           where: { userId, album: { not: null } },
-          select: { album: true },
-          distinct: ["album"],
+          _count: { _all: true },
           orderBy: { album: "asc" },
         }),
     downloadSizes(prisma.galleryPhoto, { userId, ...(album && { album }) }),
@@ -90,6 +92,8 @@ const listPhotosForUser = async (userId, query, { fixedAlbum = null } = {}) => {
   return {
     data,
     albums: albums.map((a) => a.album),
+    // Albüm sekmelerinde dosya sayısı (admin)
+    albumCounts: Object.fromEntries(albums.filter((a) => a._count._all != null).map((a) => [a.album, a._count._all])),
     downloadSizes: sizes,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
@@ -394,6 +398,107 @@ export const getUserDownloadsAdmin = async (req, res) => {
     prisma.galleryDownload.findFirst({ where: { userId }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
   ]);
   res.json({ data: rows, summary: { total, viaShare, lastDownloadAt: last?.createdAt ?? null } });
+};
+
+// ---------------------------------------------------------------------------
+// Admin: albüm yönetimi — seçilenleri taşı, albüm adını düzelt, toplu sil.
+// Taşıma R2'ye de yansır: dosya yeni yarışma klasörüne KOPYALANIR (Cloudflare içinde),
+// DB anahtarları güncellenir, en son eski kopya silinir. Yarıda kalırsa dosya kaybolmaz
+// (en kötü eski yerde fazladan kopya kalır). Uzun işler istemciden 25'erli parçalarla gelir.
+// ---------------------------------------------------------------------------
+const MOVE_BATCH = 25;
+const MOVE_CONCURRENCY = 5;
+
+// Yeni yerde aynı dosya adı (uuid) korunur: …/{albüm-slug}/orijinal/{uuid}.ext
+const movedKeys = (user, album, photo) => {
+  const baseName = photo.r2Key.slice(photo.r2Key.lastIndexOf("/") + 1);
+  const r2Key = `${buildUserPrefix(user)}${slugify(album) || "genel"}/${ORIGINAL_DIR}/${baseName}`;
+  const variants = variantKeys(r2Key);
+  return {
+    r2Key,
+    thumbKey: photo.thumbKey ? variants.thumbKey : null,
+    previewKey: photo.previewKey ? variants.previewKey : null,
+  };
+};
+
+const movePhoto = async (user, album, photo) => {
+  const next = movedKeys(user, album, photo);
+  if (next.r2Key === photo.r2Key) {
+    // Aynı klasör (ör. yalnızca büyük/küçük harf farkı): sadece etiket değişir
+    await prisma.galleryPhoto.update({ where: { id: photo.id }, data: { album } });
+    return;
+  }
+  const pairs = [
+    [photo.r2Key, next.r2Key],
+    [photo.thumbKey, next.thumbKey],
+    [photo.previewKey, next.previewKey],
+  ].filter(([from, to]) => from && to && from !== to);
+  await Promise.all(pairs.map(([from, to]) => copyObject(from, to)));
+  await prisma.galleryPhoto.update({ where: { id: photo.id }, data: { album, ...next } });
+  await deleteMediaFiles([photo], "Taşınan dosyanın eski kopyası");
+};
+
+// Admin: seçilenleri ({ ids }) ya da bir albümün tamamını ({ fromAlbum }) başka albüme taşır.
+// Her çağrıda en fazla 25 dosya; { moved, failed, remaining } döner, istemci remaining 0 olana dek çağırır.
+export const moveUserPhotos = async (req, res) => {
+  const userId = req.params.userId;
+  const album = sanitizeAlbum(req.body?.album);
+  const fromAlbum = req.body?.fromAlbum !== undefined ? sanitizeAlbum(req.body.fromAlbum) : undefined;
+  const ids = fromAlbum === undefined ? parseSelectedIds(req.body) : null;
+  if (!ids && fromAlbum === undefined) throw new AppError("Taşınacak dosya seçilmedi", 400);
+  if (ids && ids.length > MOVE_BATCH) throw new AppError(`Tek seferde en fazla ${MOVE_BATCH} dosya taşınabilir`, 400);
+  if (fromAlbum !== undefined && fromAlbum === album) throw new AppError("Yeni albüm adı eskisiyle aynı", 400);
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true } });
+  if (!user) throw new AppError("Kullanıcı bulunamadı", 404);
+
+  const scope = ids ? { userId, id: { in: ids } } : { userId, album: fromAlbum };
+  const photos = await prisma.galleryPhoto.findMany({
+    where: scope,
+    orderBy: { createdAt: "asc" },
+    take: MOVE_BATCH,
+  });
+
+  let moved = 0;
+  let failed = 0;
+  let index = 0;
+  const worker = async () => {
+    while (index < photos.length) {
+      const photo = photos[index++];
+      try {
+        await movePhoto(user, album, photo);
+        moved += 1;
+      } catch (err) {
+        failed += 1;
+        console.error(`[gallery] Taşınamadı (${photo.id}):`, err.message);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(MOVE_CONCURRENCY, photos.length) }, worker));
+
+  const remaining = ids ? 0 : await prisma.galleryPhoto.count({ where: scope });
+  res.json({ moved, failed, remaining });
+};
+
+// Admin: seçilen dosyaları toplu sil (yalnızca bu kullanıcının dosyaları)
+export const deleteSelectedUserPhotos = async (req, res) => {
+  const ids = parseSelectedIds(req.body);
+  if (!ids) throw new AppError("Seçili dosya yok", 400);
+  const count = await deleteAllMedia(prisma.galleryPhoto, { userId: req.params.userId, id: { in: ids } });
+  if (count === 0) throw new AppError("Fotoğraf bulunamadı", 404);
+  res.json({ message: "Fotoğraflar silindi", count });
+};
+
+// Admin: albüm seçici için tüm müşterilerdeki albüm adları (en son yükleneni önce)
+export const getRecentAlbums = async (_req, res) => {
+  const groups = await prisma.galleryPhoto.groupBy({
+    by: ["album"],
+    where: { album: { not: null } },
+    _max: { createdAt: true },
+    orderBy: { _max: { createdAt: "desc" } },
+    take: 30,
+  });
+  res.json({ data: groups.map((g) => g.album) });
 };
 
 // Admin: fotoğraf sil (önce R2, sonra DB — R2 silinemezse DB kaydı kalır)

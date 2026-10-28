@@ -123,6 +123,8 @@ const AwardCeremonyGalleryPage = () => {
         confirm={async (files) => {
           await api.post(`/api/award-ceremonies/${id}/confirm`, { files });
         }}
+        label={`Ödül töreni — ${ceremony?.title || ''}`}
+        target={`ceremony:${id}`}
         onUploaded={() => fetchPhotos(1, false)}
       />
 

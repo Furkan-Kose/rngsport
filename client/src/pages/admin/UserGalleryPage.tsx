@@ -1,12 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Images, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckSquare, FolderInput, Images, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid from '../../components/admin/AdminMediaGrid';
 import PreviewBackfill from '../../components/admin/PreviewBackfill';
 import DownloadHistory from '../../components/admin/DownloadHistory';
+import AlbumInput from '../../components/admin/AlbumInput';
+import AlbumNameModal from '../../components/admin/AlbumNameModal';
+import { canonicalAlbum } from '../../lib/albums';
+
+// Taşıma sunucuda 25'erli parçalarla yapılır (R2'de kopyala → kaydı güncelle → eskisini sil)
+const MOVE_CHUNK = 25;
+const DELETE_CHUNK = 2000;
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 
 interface UserInfo {
@@ -48,6 +55,16 @@ const UserGalleryPage = () => {
   const [missingPreviews, setMissingPreviews] = useState(0);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [albumCounts, setAlbumCounts] = useState<Record<string, number>>({});
+  const [recentAlbums, setRecentAlbums] = useState<string[]>([]);
+  // Seç → Albüme taşı / Sil
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [renameFrom, setRenameFrom] = useState<string | null>(null);
+  const [moveProgress, setMoveProgress] = useState<{ done: number; total: number } | null>(null);
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+  const [isDeletingSelected, setIsDeletingSelected] = useState(false);
 
   const fetchUser = useCallback(async () => {
     try {
@@ -66,6 +83,7 @@ const UserGalleryPage = () => {
         const { data } = await api.get(`/api/gallery/admin/user/${userId}?${params}`);
         setPhotos((prev) => (append ? [...prev, ...data.data] : data.data));
         setAlbums(data.albums || []);
+        setAlbumCounts(data.albumCounts || {});
         setPagination(data.pagination);
         setMissingPreviews(data.missingPreviews ?? 0);
       } catch (error) {
@@ -81,6 +99,140 @@ const UserGalleryPage = () => {
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
+
+  // Albüm seçici önerileri: tüm müşterilerdeki son yarışma adları
+  useEffect(() => {
+    api
+      .get('/api/gallery/admin/albums')
+      .then(({ data }) => setRecentAlbums(data.data || []))
+      .catch(() => setRecentAlbums([]));
+  }, []);
+
+  // Önce bu müşterinin albümleri, sonra diğer son yarışmalar
+  const albumOptions = useMemo(
+    () => [...albums, ...recentAlbums.filter((a) => !albums.includes(a))],
+    [albums, recentAlbums]
+  );
+
+  // Bir albüm sekmesi açıkken yükleme o albüme gider
+  useEffect(() => {
+    setAlbumInput(activeAlbum ?? '');
+  }, [activeAlbum]);
+
+  // Taşıma/ad değişikliğiyle boşalan albümün sekmesi kapanır
+  useEffect(() => {
+    if (activeAlbum && !isLoading && !albums.includes(activeAlbum)) setActiveAlbum(null);
+  }, [albums, activeAlbum, isLoading]);
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const refresh = () => {
+    fetchUser();
+    fetchPhotos(1, activeAlbum, false);
+  };
+
+  // Seçilenleri albüme taşı (R2'de de yeni klasöre)
+  const handleMoveSelected = async (rawAlbum: string) => {
+    const album = canonicalAlbum(rawAlbum, albumOptions);
+    const ids = [...selectedIds];
+    let moved = 0;
+    let failed = 0;
+    setMoveProgress({ done: 0, total: ids.length });
+    try {
+      for (let i = 0; i < ids.length; i += MOVE_CHUNK) {
+        const { data } = await api.post(`/api/gallery/admin/user/${userId}/photos/move`, {
+          ids: ids.slice(i, i + MOVE_CHUNK),
+          album: album || null,
+        });
+        moved += data.moved;
+        failed += data.failed;
+        setMoveProgress({ done: Math.min(i + MOVE_CHUNK, ids.length), total: ids.length });
+      }
+      toast.success(`${moved} dosya ${album ? `"${album}" albümüne` : 'genel klasöre'} taşındı`);
+      if (failed) toast.error(`${failed} dosya taşınamadı, tekrar deneyin`);
+      setMoveOpen(false);
+      exitSelectMode();
+    } catch (error) {
+      console.error('Taşıma hatası:', error);
+      toast.error(moved ? `Taşıma yarıda kaldı (${moved} dosya taşındı)` : 'Dosyalar taşınamadı');
+    } finally {
+      setMoveProgress(null);
+      refresh();
+    }
+  };
+
+  // Albüm adını düzelt: o albümün tüm dosyaları yeni ada (ve R2'de yeni klasöre) geçer
+  const handleRenameAlbum = async (rawAlbum: string) => {
+    if (renameFrom === null) return;
+    const album = canonicalAlbum(rawAlbum, albumOptions.filter((a) => a !== renameFrom));
+    if (album === renameFrom) {
+      setRenameFrom(null);
+      return;
+    }
+    const total = albumCounts[renameFrom] ?? 0;
+    let moved = 0;
+    setMoveProgress({ done: 0, total });
+    try {
+      for (;;) {
+        const { data } = await api.post(`/api/gallery/admin/user/${userId}/photos/move`, {
+          fromAlbum: renameFrom,
+          album: album || null,
+        });
+        moved += data.moved;
+        setMoveProgress({ done: moved, total });
+        // İlerleme yoksa (ör. R2 hatası) sonsuz döngüye girme
+        if (data.remaining === 0 || data.moved === 0) {
+          if (data.remaining > 0) toast.error(`${data.remaining} dosya taşınamadı, tekrar deneyin`);
+          break;
+        }
+      }
+      toast.success(album ? `Albüm "${album}" olarak güncellendi` : 'Albüm kaldırıldı, dosyalar genel klasörde');
+      setRenameFrom(null);
+      // Sekme değişince liste kendiliğinden yeni albümle yüklenir (eski albümü ayrıca çekme)
+      fetchUser();
+      setActiveAlbum(album || null);
+    } catch (error) {
+      console.error('Albüm adı hatası:', error);
+      toast.error(moved ? `Yarıda kaldı (${moved} dosya taşındı)` : 'Albüm adı değiştirilemedi');
+      refresh();
+    } finally {
+      setMoveProgress(null);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const ids = [...selectedIds];
+    setIsDeletingSelected(true);
+    try {
+      let count = 0;
+      for (let i = 0; i < ids.length; i += DELETE_CHUNK) {
+        const { data } = await api.post(`/api/gallery/admin/user/${userId}/photos/delete`, {
+          ids: ids.slice(i, i + DELETE_CHUNK),
+        });
+        count += data.count;
+      }
+      toast.success(`${count} dosya silindi`);
+      setConfirmDeleteSelected(false);
+      exitSelectMode();
+    } catch (error) {
+      console.error('Seçilenleri silme hatası:', error);
+      toast.error('Dosyalar silinemedi');
+    } finally {
+      setIsDeletingSelected(false);
+      refresh();
+    }
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -128,6 +280,8 @@ const UserGalleryPage = () => {
   };
 
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
+  // Yazım farkı yeni albüm açmasın: mevcut adın yazımı kullanılır
+  const uploadAlbum = canonicalAlbum(albumInput, albumOptions);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -165,7 +319,7 @@ const UserGalleryPage = () => {
         presign={async (files) => {
           const { data } = await api.post('/api/gallery/admin/presign', {
             userId,
-            album: albumInput.trim() || undefined,
+            album: uploadAlbum || undefined,
             files,
           });
           return data.files;
@@ -173,29 +327,22 @@ const UserGalleryPage = () => {
         confirm={async (files) => {
           await api.post('/api/gallery/admin/confirm', {
             userId,
-            album: albumInput.trim() || undefined,
+            album: uploadAlbum || undefined,
             files,
           });
         }}
-        onUploaded={() => {
-          setAlbumInput('');
-          fetchUser();
-          fetchPhotos(1, activeAlbum, false);
-        }}
-        renderFields={(isUploading) => (
+        label={`${user?.name || 'Müşteri'} — ${uploadAlbum || 'genel'}`}
+        target={`user:${userId}`}
+        onUploaded={refresh}
+        renderFields={() => (
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Yarışma / Albüm Adı (opsiyonel — R2'de klasör olur)
+              Yarışma / Albüm (R2'de klasör olur)
             </label>
-            <input
-              type="text"
-              value={albumInput}
-              onChange={(e) => setAlbumInput(e.target.value)}
-              placeholder="Örn: İstanbul Kupası 2026"
-              maxLength={100}
-              disabled={isUploading}
-              className="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all disabled:opacity-50"
-            />
+            <AlbumInput value={albumInput} onChange={setAlbumInput} options={albumOptions} />
+            <p className="text-xs text-gray-500 mt-1.5">
+              Kutuya tıklayınca mevcut albümler ve son yarışmalar listelenir. Boş bırakılırsa "genel".
+            </p>
           </div>
         )}
       />
@@ -222,20 +369,31 @@ const UserGalleryPage = () => {
                 : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:text-gray-300'
             }`}
           >
-            Tümü
+            Tümü <span className="opacity-70">({user?._count.photos ?? 0})</span>
           </button>
           {albums.map((album) => (
-            <button
-              key={album}
-              onClick={() => setActiveAlbum(album)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                activeAlbum === album
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
-                  : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              {album}
-            </button>
+            <span key={album} className="inline-flex items-center">
+              <button
+                onClick={() => setActiveAlbum(album)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                  activeAlbum === album
+                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                    : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:text-gray-300'
+                }`}
+              >
+                {album} <span className="opacity-70">({albumCounts[album] ?? 0})</span>
+              </button>
+              {activeAlbum === album && (
+                <button
+                  type="button"
+                  onClick={() => setRenameFrom(album)}
+                  className="ml-1 p-1.5 rounded-lg text-gray-400 hover:text-amber-400 hover:bg-gray-800"
+                  title="Albüm adını düzelt"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </span>
           ))}
         </div>
       )}
@@ -252,10 +410,59 @@ const UserGalleryPage = () => {
         </div>
       ) : (
         <>
+          {/* Seç → Albüme taşı / Sil */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {!selectMode ? (
+              <button
+                type="button"
+                onClick={() => setSelectMode(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-700 bg-gray-800/50 text-gray-300 hover:text-white"
+              >
+                <CheckSquare className="w-4 h-4" /> Seç (taşı / sil)
+              </button>
+            ) : (
+              <>
+                <span className="text-sm text-white font-medium mr-1">{selectedIds.size} seçili</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set(photos.map((p) => p.id)))}
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-700 bg-gray-800/50 text-gray-300 hover:text-white"
+                >
+                  Görünenlerin tümü ({photos.length})
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedIds.size === 0}
+                  onClick={() => setMoveOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-40"
+                >
+                  <FolderInput className="w-4 h-4" /> Albüme taşı
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedIds.size === 0}
+                  onClick={() => setConfirmDeleteSelected(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-red-500/40 text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+                >
+                  <Trash2 className="w-4 h-4" /> Sil
+                </button>
+                <button
+                  type="button"
+                  onClick={exitSelectMode}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" /> İptal
+                </button>
+              </>
+            )}
+          </div>
+
           <AdminMediaGrid
             items={photos}
             deletingId={deletingId}
             onDelete={(item) => handleDelete(item as GalleryPhoto)}
+            selectedIds={selectMode ? selectedIds : undefined}
+            onToggleSelect={selectMode ? (item) => toggleSelect(item.id) : undefined}
           />
 
           {hasMore && (
@@ -296,6 +503,47 @@ const UserGalleryPage = () => {
         onConfirm={handleDeleteAll}
         onCancel={() => setConfirmDeleteAll(false)}
       />
+
+      <ConfirmDeleteModal
+        open={confirmDeleteSelected}
+        title="Seçilen dosyalar silinsin mi?"
+        message={
+          <>
+            <strong>{selectedIds.size}</strong> dosya (önizlemeleriyle birlikte) kalıcı olarak silinecek. Bu işlem
+            geri alınamaz.
+          </>
+        }
+        confirmLabel="Evet, Sil"
+        isDeleting={isDeletingSelected}
+        onConfirm={handleDeleteSelected}
+        onCancel={() => setConfirmDeleteSelected(false)}
+      />
+
+      {moveOpen && (
+        <AlbumNameModal
+          title={`${selectedIds.size} dosyayı albüme taşı`}
+          description="Dosyalar Cloudflare'de de yeni yarışma klasörüne taşınır."
+          initialValue={activeAlbum ?? ''}
+          options={albumOptions}
+          confirmLabel="Taşı"
+          progress={moveProgress}
+          onSubmit={handleMoveSelected}
+          onCancel={() => setMoveOpen(false)}
+        />
+      )}
+
+      {renameFrom !== null && (
+        <AlbumNameModal
+          title="Albüm adını düzelt"
+          description={`"${renameFrom}" albümündeki ${albumCounts[renameFrom] ?? 0} dosya yeni ada ve Cloudflare'de yeni klasöre taşınır. Mevcut bir albümün adını yazarsanız iki albüm birleşir.`}
+          initialValue={renameFrom}
+          options={albumOptions.filter((a) => a !== renameFrom)}
+          confirmLabel="Kaydet"
+          progress={moveProgress}
+          onSubmit={handleRenameAlbum}
+          onCancel={() => setRenameFrom(null)}
+        />
+      )}
     </div>
   );
 };

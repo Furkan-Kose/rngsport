@@ -26,9 +26,11 @@ interface Stats {
   totalRevenue: number;
   // Rezervasyon stats
   totalReservations: number;
-  confirmedReservations: number;
+  confirmedReservations: number; // yalnızca Onaylandı (henüz tahsil edilmedi)
+  paidReservations: number; // Ödendi + Teslim edildi
   pendingReservations: number;
-  reservationRevenue: number;
+  confirmedRevenue: number;
+  paidRevenue: number;
 }
 
 const DashboardPage = () => {
@@ -39,8 +41,10 @@ const DashboardPage = () => {
     totalRevenue: 0,
     totalReservations: 0,
     confirmedReservations: 0,
+    paidReservations: 0,
     pendingReservations: 0,
-    reservationRevenue: 0,
+    confirmedRevenue: 0,
+    paidRevenue: 0,
   });
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [recentReservations, setRecentReservations] = useState<Reservation[]>([]);
@@ -66,9 +70,11 @@ const DashboardPage = () => {
         pendingOrders: orderStats.pending,
         totalRevenue: orderStats.revenue,
         totalReservations: reservationStats.total,
-        confirmedReservations: reservationStats.confirmed + reservationStats.paid,
+        confirmedReservations: reservationStats.confirmed,
+        paidReservations: reservationStats.paid,
         pendingReservations: reservationStats.pending,
-        reservationRevenue: reservationStats.revenue,
+        confirmedRevenue: reservationStats.confirmedRevenue ?? 0,
+        paidRevenue: reservationStats.paidRevenue ?? 0,
       });
       setRecentOrders(orderStats.recentOrders);
       setRecentReservations(reservationStats.recentReservations);
@@ -227,20 +233,6 @@ const DashboardPage = () => {
 
           <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-blue-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Onaylanan</p>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats.confirmedReservations}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
               <div className="p-2 sm:p-3 bg-yellow-500/20 rounded-lg shrink-0">
                 <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -253,6 +245,23 @@ const DashboardPage = () => {
             </div>
           </div>
 
+          {/* Onaylandı: para henüz alınmadı */}
+          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2 sm:p-3 bg-blue-500/20 rounded-lg shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Onaylandı · {stats.confirmedReservations}</p>
+                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.confirmedRevenue)}</p>
+                <p className="text-[11px] sm:text-xs text-blue-300/80 truncate">tahsil edilecek</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Ödendi: teslim edilenler dahil */}
           <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="p-2 sm:p-3 bg-green-500/20 rounded-lg shrink-0">
@@ -261,8 +270,9 @@ const DashboardPage = () => {
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Nakit Gelir</p>
-                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.reservationRevenue)}</p>
+                <p className="text-xs sm:text-sm text-gray-400 truncate">Ödendi · {stats.paidReservations}</p>
+                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.paidRevenue)}</p>
+                <p className="text-[11px] sm:text-xs text-green-300/80 truncate">tahsil edildi · teslim edilenler dahil</p>
               </div>
             </div>
           </div>

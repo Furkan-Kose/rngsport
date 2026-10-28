@@ -18,6 +18,9 @@ import {
   getSharedZipManifest,
   downloadSharedPhoto,
   getUserDownloadsAdmin,
+  moveUserPhotos,
+  deleteSelectedUserPhotos,
+  getRecentAlbums,
 } from "../controllers/gallery.controller.js";
 import { authMiddleware, requireAdmin } from "../middleware/authMiddleware.js";
 
@@ -45,6 +48,9 @@ router.post("/admin/presign", authMiddleware, requireAdmin, presignPhotoUploads)
 router.post("/admin/confirm", authMiddleware, requireAdmin, confirmPhotoUploads);
 router.get("/admin/user/:userId", authMiddleware, requireAdmin, getUserPhotosAdmin);
 router.get("/admin/user/:userId/downloads", authMiddleware, requireAdmin, getUserDownloadsAdmin);
+router.get("/admin/albums", authMiddleware, requireAdmin, getRecentAlbums);
+router.post("/admin/user/:userId/photos/move", authMiddleware, requireAdmin, moveUserPhotos);
+router.post("/admin/user/:userId/photos/delete", authMiddleware, requireAdmin, deleteSelectedUserPhotos);
 router.delete("/admin/photo/:id", authMiddleware, requireAdmin, deletePhoto);
 router.get("/admin/user/:userId/missing-previews", authMiddleware, requireAdmin, getMissingPreviews);
 router.post("/admin/user/:userId/previews", authMiddleware, requireAdmin, saveMissingPreviews);

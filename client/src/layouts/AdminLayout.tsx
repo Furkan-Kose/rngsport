@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { Outlet, NavLink, Link, useNavigate, useLocation } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, SHOOTING_LIST_ROLES, roleLabel } from "../lib/roles";
+import UploadTray from "../components/admin/UploadTray";
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
@@ -300,6 +301,7 @@ const AdminLayout = () => {
           </Suspense>
         </div>
       </main>
+      <UploadTray />
     </div>
   );
 };

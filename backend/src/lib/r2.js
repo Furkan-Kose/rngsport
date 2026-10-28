@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
+  CopyObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AppError } from "../utils/errors.js";
@@ -103,6 +104,12 @@ export const presignDownload = (key, fileName) =>
       { expiresIn: 5 * 60 }
     )
   );
+
+// Sunucu tarafı kopya (Cloudflare içinde; bayt Railway'den geçmez). Albüm taşımada kullanılır.
+// Tek istekte 5 GB'a kadar — galerideki en büyük dosya 1 GB.
+const copySource = (key) => `${BUCKET}/${String(key).split("/").map(encodeURIComponent).join("/")}`;
+export const copyObject = (fromKey, toKey) =>
+  withR2(() => r2.send(new CopyObjectCommand({ Bucket: BUCKET, CopySource: copySource(fromKey), Key: toKey })));
 
 export const deleteObject = (key) =>
   withR2(() => r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key })));
