@@ -115,7 +115,8 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
         {t("pages.shop.checkout.steps.poseTitle", { apparatus: apparatus ? t(`common.apparatus.${apparatus}`) : "" })}
       </h2>
       <p className="text-sm text-zinc-400 mb-6">{t("pages.shop.checkout.steps.poseHint")}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Pozlar yan yana, ölçülü boyda (mobilde 2, büyük ekranda 3 sütun) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-w-2xl">
         {current?.poses.map((pose) => {
           const selected = poseNo === pose.no;
           return (
@@ -129,8 +130,8 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
                 <div className="aspect-3/4 bg-zinc-800">
                   <img src={pose.image} alt={pose.label ?? ""} loading="lazy" className="w-full h-full object-cover" />
                 </div>
-                <div className="p-3 flex items-center justify-between gap-2">
-                  <span className="font-semibold text-white">
+                <div className="p-2.5 sm:p-3 flex items-center justify-between gap-2">
+                  <span className="font-semibold text-white text-sm sm:text-base">
                     {t("pages.shop.checkout.steps.poseN", { n: pose.no })}
                     {pose.label && <span className="text-zinc-400 font-normal"> · {pose.label}</span>}
                   </span>

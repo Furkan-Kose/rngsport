@@ -99,10 +99,11 @@ const ProductDetailPage = () => {
           {/* Üst blok: görsel + başlık */}
           <div className="grid md:grid-cols-2 gap-10 lg:gap-14 items-center mb-16">
             <Reveal>
-              <div className="relative">
+              {/* Mobilde görsel ekranı kaplamasın: dar ve ortalı; masaüstünde sütun genişliğinde */}
+              <div className="relative max-w-xs sm:max-w-sm mx-auto md:max-w-none">
                 <div
                   aria-hidden
-                  className="absolute -inset-4 bg-emerald-500/10 rounded-3xl blur-2xl"
+                  className="absolute -inset-2 md:-inset-4 bg-emerald-500/10 rounded-3xl blur-2xl"
                 />
                 <ProductImageCarousel
                   images={shop?.images?.length ? shop.images : [image]}

@@ -54,13 +54,32 @@ type TypeFilter = "all" | "image" | "video";
  * shareToken verilirse paylaşılan galeri (/paylasim/:token): girişsiz, salt okunur.
  * Uçlar /api/gallery/shared/:token/* — sahibin hesabına dair hiçbir şey dönmez; toplu indirme
  * yalnızca tarayıcıda (sunucu zip'i yok → Railway trafiği yok). Mağaza ve görüş formu gösterilmez.
+ *
+ * previewUserId verilirse admin "müşteri gözüyle gör" önizlemesi: müşterinin galerisi aynı
+ * görünümle, salt okunur (/api/gallery/admin/user/:id/*). Paylaş, görüş formu ve mağaza
+ * popup'ı yok; indirmeler müşterinin indirme geçmişine yazılmaz.
  */
-const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
+const MyGalleryPage = ({
+  shareToken,
+  previewUserId,
+  previewName,
+}: {
+  shareToken?: string;
+  previewUserId?: string;
+  previewName?: string;
+}) => {
   const isShared = !!shareToken;
-  const base = isShared ? `/api/gallery/shared/${encodeURIComponent(shareToken)}` : "/api/gallery/my";
+  const isPreview = !!previewUserId;
+  // Müşteri adına işlem yapılan parçalar (paylaş, görüş) yalnızca müşterinin kendi sayfasında
+  const isOwnGallery = !isShared && !isPreview;
+  const base = isShared
+    ? `/api/gallery/shared/${encodeURIComponent(shareToken)}`
+    : isPreview
+      ? `/api/gallery/admin/user/${encodeURIComponent(previewUserId)}`
+      : "/api/gallery/my";
   const [sharedInfo, setSharedInfo] = useState<{ album: string | null; expiresAt: string } | null>(null);
   const [invalidLink, setInvalidLink] = useState(false);
-  const { shares, setShares } = useGalleryShares(!isShared);
+  const { shares, setShares } = useGalleryShares(isOwnGallery);
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [albums, setAlbums] = useState<string[]>([]);
   const [activeAlbum, setActiveAlbum] = useState<string | null>(null);
@@ -122,7 +141,7 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
     await zip.start(
       withQuality(`${base}/download-manifest${query}`, quality),
       // Paylaşılan galeride sunucu zip'i yok: tarayıcının kaldıramayacağı boyutta uyarı çıkar
-      isShared ? undefined : withQuality(`/api/gallery/my/download-all${query}`, quality),
+      isOwnGallery ? withQuality(`/api/gallery/my/download-all${query}`, quality) : undefined,
     );
   };
 
@@ -183,8 +202,8 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
 
   return (
     <div className={`min-h-screen bg-zinc-950 pt-28 ${selection.active ? "pb-56" : "pb-16"}`}>
-      {isShared ? (
-        <SEO title={t("pages.share.seoTitle")} noindex />
+      {isShared || isPreview ? (
+        <SEO title={isPreview ? "Müşteri görünümü" : t("pages.share.seoTitle")} noindex />
       ) : (
         <SEO title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
       )}
@@ -192,6 +211,20 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="container mx-auto px-4 relative z-10">
+        {isPreview && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <span>
+              👁 Önizleme — <strong className="text-amber-100">{previewName || "Müşteri"}</strong> galerisini
+              müşterinin gördüğü gibi görüyorsunuz. Paylaş ve görüş formu burada gizli.
+            </span>
+            <a
+              href={`/admin/users/${previewUserId}/galeri`}
+              className="shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 font-semibold text-zinc-950 hover:bg-amber-400"
+            >
+              Panele dön
+            </a>
+          </div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -226,7 +259,7 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
                 {t("pages.media.select.start")}
               </button>
               )}
-              {!isShared && (
+              {isOwnGallery && (
                 <ShareGalleryButton
                   album={activeAlbum}
                   shares={shares}
@@ -235,7 +268,7 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
                 />
               )}
               <DownloadAllButtons
-                serverFallback={!isShared}
+                serverFallback={isOwnGallery}
                 sizes={downloadSizes}
                 album={activeAlbum !== null}
                 progress={zip.progress}
@@ -247,11 +280,11 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
             )}
           </div>
 
-          {!isShared && <ActiveSharesLine shares={shares} />}
+          {isOwnGallery && <ActiveSharesLine shares={shares} />}
 
           {photos.length > 0 && <DownloadHint />}
 
-          {!isShared && <GalleryShopPromo />}
+          {!isShared && <GalleryShopPromo withPopup={!isPreview} />}
 
           {/* Filtreler: yarışma/albüm + tür */}
           <div className="flex flex-wrap items-center gap-2 mb-6">
@@ -348,7 +381,7 @@ const MyGalleryPage = ({ shareToken }: { shareToken?: string }) => {
           )}
         </motion.div>
 
-        {!isShared && <FeedbackForm page="galerim" />}
+        {isOwnGallery && <FeedbackForm page="galerim" />}
       </div>
 
       <MediaLightbox

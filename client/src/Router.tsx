@@ -28,6 +28,7 @@ import MyGalleryPage from "./pages/MyGalleryPage";
 import AwardCeremoniesPage from "./pages/AwardCeremoniesPage";
 import AwardCeremonyDetailPage from "./pages/AwardCeremonyDetailPage";
 import SharedGalleryPage from "./pages/SharedGalleryPage";
+import CustomerGalleryPreviewPage from "./pages/CustomerGalleryPreviewPage";
 
 import { SHOOTING_LIST_ROLES } from "./lib/roles";
 
@@ -118,6 +119,15 @@ const publicRoutes = (lang: Lang) => {
             element: (
               <ProtectedRoute redirectTo={loginRedirect("/galerim")}>
                 <MyGalleryPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            // Admin "müşteri gözüyle gör": müşterinin galerisi sitenin görünümüyle, salt okunur
+            path: "galerim/onizleme/:userId",
+            element: (
+              <ProtectedRoute requiredRole="admin">
+                <CustomerGalleryPreviewPage />
               </ProtectedRoute>
             ),
           },

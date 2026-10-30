@@ -27,16 +27,17 @@ const MiniCard = ({ item, onNavigate }: { item: ShowcaseItem; onNavigate?: () =>
   </LocalizedLink>
 );
 
-const GalleryShopPromo = () => {
+// withPopup=false: admin önizlemesinde popup kontrolü engellemesin (şerit kalır)
+const GalleryShopPromo = ({ withPopup = true }: { withPopup?: boolean }) => {
   const { t } = useTranslation();
   const { onSale, loaded } = useShowcase();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!loaded || onSale.length === 0) return;
+    if (!withPopup || !loaded || onSale.length === 0) return;
     const timer = setTimeout(() => setOpen(true), 900);
     return () => clearTimeout(timer);
-  }, [loaded, onSale.length]);
+  }, [withPopup, loaded, onSale.length]);
 
   const close = () => setOpen(false);
 

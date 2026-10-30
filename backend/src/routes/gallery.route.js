@@ -21,6 +21,8 @@ import {
   moveUserPhotos,
   deleteSelectedUserPhotos,
   getRecentAlbums,
+  getUserZipManifestAdmin,
+  downloadUserPhotoAdmin,
 } from "../controllers/gallery.controller.js";
 import { authMiddleware, requireAdmin } from "../middleware/authMiddleware.js";
 
@@ -49,6 +51,10 @@ router.post("/admin/confirm", authMiddleware, requireAdmin, confirmPhotoUploads)
 router.get("/admin/user/:userId", authMiddleware, requireAdmin, getUserPhotosAdmin);
 router.get("/admin/user/:userId/downloads", authMiddleware, requireAdmin, getUserDownloadsAdmin);
 router.get("/admin/albums", authMiddleware, requireAdmin, getRecentAlbums);
+// "Müşteri gözüyle gör" önizlemesi (Galerim sayfası müşterinin verisiyle, salt okunur)
+router.get("/admin/user/:userId/download-manifest", authMiddleware, requireAdmin, getUserZipManifestAdmin);
+router.post("/admin/user/:userId/download-manifest", authMiddleware, requireAdmin, getUserZipManifestAdmin);
+router.get("/admin/user/:userId/:id/download", authMiddleware, requireAdmin, downloadUserPhotoAdmin);
 router.post("/admin/user/:userId/photos/move", authMiddleware, requireAdmin, moveUserPhotos);
 router.post("/admin/user/:userId/photos/delete", authMiddleware, requireAdmin, deleteSelectedUserPhotos);
 router.delete("/admin/photo/:id", authMiddleware, requireAdmin, deletePhoto);

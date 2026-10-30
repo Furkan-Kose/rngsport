@@ -63,7 +63,8 @@ const ProductImageCarousel = ({ images, alt }: { images: string[]; alt: string }
         </span>
       </div>
 
-      <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+      {/* Küçük resimler: kaydırılabilir ama kaydırma çubuğu gizli */}
+      <div className="flex gap-2 mt-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {list.map((src, i) => (
           <button
             key={src}

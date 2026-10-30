@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { toast } from 'react-toastify';
-import { ArrowLeft, CheckSquare, FolderInput, Images, Loader2, Pencil, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Eye, FolderInput, Images, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid from '../../components/admin/AdminMediaGrid';
@@ -302,6 +302,15 @@ const UserGalleryPage = () => {
           <span>
             {user?.email} · {pagination?.total ?? user?._count.photos ?? 0} fotoğraf
           </span>
+          <a
+            href={`/galerim/onizleme/${userId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 hover:underline"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Müşteri gözüyle gör
+          </a>
           {(pagination?.total ?? 0) > 0 && (
             <button
               onClick={() => setConfirmDeleteAll(true)}

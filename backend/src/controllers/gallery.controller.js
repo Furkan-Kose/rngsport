@@ -161,11 +161,12 @@ export const getMyPhotos = async (req, res) => {
 
 // Toplu indirilecek dosyalar (tüm galeri veya bir albüm)
 // Seçili dosyalar (POST ids) da yalnızca kullanıcının kendi galerisinden gelir
-const findMyZipPhotos = async (req) => {
+// userId: admin "müşteri gözüyle gör" önizlemesinde müşterinin kimliği
+const findMyZipPhotos = async (req, userId = req.user.id) => {
   const album = req.query.album ? String(req.query.album).slice(0, 100) : undefined;
   const ids = parseSelectedIds(req.body);
   const photos = await prisma.galleryPhoto.findMany({
-    where: { userId: req.user.id, ...(album && { album }), ...(ids && { id: { in: ids } }) },
+    where: { userId, ...(album && { album }), ...(ids && { id: { in: ids } }) },
     orderBy: { createdAt: "asc" },
   });
   if (photos.length === 0) {
@@ -386,6 +387,23 @@ export const getUserPhotosAdmin = async (req, res) => {
     prisma.galleryPhoto.count({ where: { userId: req.params.userId, ...missingPreviewWhere } }),
   ]);
   res.json({ ...list, missingPreviews });
+};
+
+// ---------------------------------------------------------------------------
+// Admin "müşteri gözüyle gör": Galerim sayfası müşterinin verisiyle salt okunur açılır.
+// Liste için getUserPhotosAdmin yeterli (aynı yanıt). İndirmeler müşterinin indirme
+// geçmişine YAZILMAZ ("Son indirme" yanıltmasın). Sunucu zip'i yok (Railway trafiği).
+// ---------------------------------------------------------------------------
+export const getUserZipManifestAdmin = async (req, res) => {
+  const { photos, zipName } = await findMyZipPhotos(req, req.params.userId);
+  res.json(await zipManifest(photos, zipName, (photo) => photo.album, parseQuality(req.query.quality)));
+};
+
+export const downloadUserPhotoAdmin = async (req, res) => {
+  const photo = await prisma.galleryPhoto.findFirst({ where: { id: req.params.id, userId: req.params.userId } });
+  if (!photo) throw new AppError("Fotoğraf bulunamadı", 404);
+  const target = downloadTarget(photo, parseQuality(req.query.quality));
+  res.json({ url: await presignDownload(target.key, target.fileName) });
 };
 
 // Admin: müşterinin indirme geçmişi (son 200) + özet
