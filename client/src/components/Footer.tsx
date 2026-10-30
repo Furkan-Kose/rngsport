@@ -15,7 +15,8 @@ const Footer = () => {
       external: true,
     },
     { label: t("common.footer.email"), href: "mailto:range.media0@gmail.com", icon: Mail },
-    { label: t("common.footer.phone"), href: "tel:+905423406557", icon: Phone },
+    // Telefon hattı yalnızca WhatsApp için kullanılıyor
+    { label: t("common.footer.phone"), href: "https://wa.me/905512217635", icon: Phone, external: true },
   ];
 
   const navLinks = [
@@ -93,8 +94,11 @@ const Footer = () => {
               {t("common.footer.contact")}
             </h4>
             <ul className="space-y-3 text-gray-400">
-              <li className="hover:text-emerald-400 transition-colors">
-                +90 (542) 340 65 57
+              <li>
+                <a href="https://wa.me/905512217635" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">
+                  <span className="block text-xs text-gray-500">{t("common.footer.phone")}</span>
+                  +90 (551) 221 76 35
+                </a>
               </li>
               <li>{t("common.footer.location")}</li>
             </ul>

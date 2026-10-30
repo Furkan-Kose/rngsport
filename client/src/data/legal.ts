@@ -30,7 +30,8 @@ export interface LegalDoc {
 
 export type LegalKey = "privacy" | "kvkk" | "distanceSales" | "refund";
 
-const PHONE = { value: "+90 542 340 65 57", href: "tel:+905423406557" };
+// Hat yalnızca WhatsApp için kullanılıyor
+const PHONE = { value: "+90 551 221 76 35", href: "https://wa.me/905512217635" };
 const EMAIL = { value: "hakankose5534@gmail.com", href: "mailto:hakankose5534@gmail.com" };
 const ADDRESS = "Başıbüyük Mah. Aydınlılar Sk. No: 39 Maltepe/İstanbul";
 const COMPANY = "Hakan Köse - Range Media";
@@ -112,7 +113,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
               type: "fields",
               rows: [
                 { label: "Company", value: COMPANY },
-                { label: "Phone", ...PHONE },
+                { label: "WhatsApp contact line", ...PHONE },
                 { label: "Email", ...EMAIL },
                 { label: "Address", value: ADDRESS },
               ],
@@ -193,7 +194,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
       ],
       footer: [
         "This text has been prepared under the Personal Data Protection Law No. 6698.",
-        "For questions, you can reach us by phone at +90 (542) 340 65 57.",
+        "For questions, you can reach us via our WhatsApp contact line at +90 (551) 221 76 35.",
       ],
     },
     distanceSales: {
@@ -210,7 +211,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
               title: "1.1. SELLER (Service Provider)",
               rows: [
                 { label: "Title", value: COMPANY },
-                { label: "Phone", ...PHONE },
+                { label: "WhatsApp contact line", ...PHONE },
                 { label: "Email", ...EMAIL },
                 { label: "Address", value: ADDRESS },
               ],
@@ -432,7 +433,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
               type: "fields",
               rows: [
                 { label: "Компания", value: COMPANY },
-                { label: "Телефон", ...PHONE },
+                { label: "Связь через WhatsApp", ...PHONE },
                 { label: "Эл. почта", ...EMAIL },
                 { label: "Адрес", value: ADDRESS },
               ],
@@ -513,7 +514,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
       ],
       footer: [
         "Настоящий текст подготовлен в соответствии с Законом № 6698 о защите персональных данных.",
-        "По вопросам звоните нам: +90 (542) 340 65 57.",
+        "По вопросам пишите нам в WhatsApp: +90 (551) 221 76 35.",
       ],
     },
     distanceSales: {
@@ -530,7 +531,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
               title: "1.1. ПРОДАВЕЦ (исполнитель услуги)",
               rows: [
                 { label: "Наименование", value: COMPANY },
-                { label: "Телефон", ...PHONE },
+                { label: "Связь через WhatsApp", ...PHONE },
                 { label: "Эл. почта", ...EMAIL },
                 { label: "Адрес", value: ADDRESS },
               ],

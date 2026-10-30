@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 const WpButton = () => {
   const { t } = useTranslation();
-  const phoneNumber = "905423406557"; // WhatsApp numaranızı buraya yazın (ülke kodu ile, boşluksuz)
+  const phoneNumber = "905512217635"; // WhatsApp numaranızı buraya yazın (ülke kodu ile, boşluksuz)
   const message = t("common.whatsapp.message");
 
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;

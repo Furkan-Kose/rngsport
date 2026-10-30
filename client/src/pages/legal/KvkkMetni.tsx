@@ -256,12 +256,14 @@ const KvkkMetni = () => {
                 <br />
                 Sorularınız için{" "}
                 <a
-                  href="tel:+905423406557"
+                  href="https://wa.me/905512217635"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-emerald-500 hover:text-emerald-400 transition-colors"
                 >
-                  +90 (542) 340 65 57
+                  +90 (551) 221 76 35
                 </a>{" "}
-                numaralı telefondan bize ulaşabilirsiniz.
+                numaralı WhatsApp iletişim hattından bize ulaşabilirsiniz.
               </p>
             </div>
           </div>

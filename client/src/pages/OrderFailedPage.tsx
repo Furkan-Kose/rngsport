@@ -81,11 +81,13 @@ const OrderFailedPage = () => {
           <div className="mt-10 pt-6 border-t border-zinc-800">
             <p className="text-zinc-500 text-sm mb-3">{t("pages.orderFailed.stillProblem")}</p>
             <a
-              href="tel:+905423406557"
+              href="https://wa.me/905512217635"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               <Phone className="w-4 h-4" />
-              +90 (542) 340 65 57
+              {t("common.footer.phone")}: +90 (551) 221 76 35
             </a>
           </div>
         </Reveal>

@@ -74,13 +74,15 @@ const MesafeliSatis = () => {
                     <p className="text-gray-100">Hakan Köse - Range Media</p>
                   </div>
                   <div>
-                    <span className="text-gray-400 text-sm">Telefon:</span>
+                    <span className="text-gray-400 text-sm">WhatsApp İletişim Hattı:</span>
                     <p>
                       <a
-                        href="tel:+905423406557"
+                        href="https://wa.me/905512217635"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-emerald-400 hover:text-emerald-300"
                       >
-                        0 542 340 65 57
+                        +90 551 221 76 35
                       </a>
                     </p>
                   </div>
