@@ -2,7 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Plus, Pencil, Trash2, X, Loader2, Package, Save, Upload } from 'lucide-react';
 import api from '../../lib/api';
+import { toast } from 'react-toastify';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  PageHeader,
+  SkeletonPage,
+  Panel,
+} from '../../components/admin/ui';
+import { tableBodyClass, tableHeadRowClass, thClass } from '../../lib/adminUi';
 
 
 interface Package {
@@ -72,7 +83,8 @@ const PackagesPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<PackageFormData>(initialFormData);
   const [error, setError] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<Package | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   // Görsel yükleme durumu: imagePreview form açıkken gösterilen URL
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState('');
@@ -204,13 +216,18 @@ const PackagesPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/api/packages/${id}`);
+      await api.delete(`/api/packages/${toDelete.id}`);
       await fetchPackages();
-      setDeleteConfirm(null);
+      setToDelete(null);
+      toast.success('Paket silindi');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Silme işlemi başarısız');
+      toast.error(err.response?.data?.message || 'Silme işlemi başarısız');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -239,35 +256,25 @@ const PackagesPage = () => {
     return badges[category] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <SkeletonPage cards={false} />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Paketler</h1>
-          <p className="text-gray-400 mt-1 text-sm sm:text-base">Fotoğraf ve video paketlerini yönetin</p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-medium transition-colors self-start sm:self-auto"
-        >
-          <Plus className="w-5 h-5" />
-          Yeni Paket
-        </button>
-      </div>
+      <PageHeader
+        title="Paketler"
+        icon={Package}
+        description="Fotoğraf ve video paketlerini yönetin"
+        actions={
+          <Button variant="primary" icon={Plus} onClick={openCreateModal}>
+            Yeni Paket
+          </Button>
+        }
+      />
 
       {/* Mobile cards */}
       <div className="lg:hidden space-y-3">
         {packages.map((pkg) => (
-          <div key={pkg.id} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+          <Panel key={pkg.id} className="p-4">
             <div className="flex items-start gap-3">
               <img
                 src={pkg.imageUrl || pkg.image}
@@ -317,68 +324,38 @@ const PackagesPage = () => {
             </div>
 
             <div className="mt-3 flex items-center justify-end gap-2">
-              <button
-                onClick={() => openEditModal(pkg)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 rounded-md text-xs font-medium transition-colors"
-              >
-                <Pencil className="w-3.5 h-3.5" />
+              <Button size="sm" icon={Pencil} onClick={() => openEditModal(pkg)}>
                 Düzenle
-              </button>
-              {deleteConfirm === pkg.id ? (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleDelete(pkg.id)}
-                    className="px-3 py-1.5 text-xs bg-red-500 hover:bg-red-600 text-white rounded-md font-medium"
-                  >
-                    Sil
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(null)}
-                    className="px-3 py-1.5 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded-md font-medium"
-                  >
-                    İptal
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setDeleteConfirm(pkg.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 rounded-md text-xs font-medium transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Sil
-                </button>
-              )}
+              </Button>
+              <Button size="sm" variant="danger" icon={Trash2} onClick={() => setToDelete(pkg)}>
+                Sil
+              </Button>
             </div>
-          </div>
+          </Panel>
         ))}
 
-        {packages.length === 0 && (
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl text-center py-12">
-            <Package className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">Henüz paket eklenmemiş</p>
-          </div>
-        )}
+        {packages.length === 0 && <EmptyState icon={Package} title="Henüz paket eklenmemiş" />}
       </div>
 
       {/* Packages Table (desktop) */}
-      <div className="hidden lg:block bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
+      <Panel className="hidden lg:block overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-left text-gray-400 text-sm border-b border-gray-700 bg-gray-800/50">
-                <th className="px-6 py-4 font-medium">Paket</th>
-                <th className="px-6 py-4 font-medium">Kategori</th>
-                <th className="px-6 py-4 font-medium">Normal Fiyat</th>
-                <th className="px-6 py-4 font-medium">Rezervasyon Fiyatı</th>
-                <th className="px-6 py-4 font-medium">Durum</th>
-                <th className="px-6 py-4 font-medium">Sıra</th>
-                <th className="px-6 py-4 font-medium text-right">İşlemler</th>
+              <tr className={tableHeadRowClass}>
+                <th className={thClass}>Paket</th>
+                <th className={thClass}>Kategori</th>
+                <th className={thClass}>Normal Fiyat</th>
+                <th className={thClass}>Rezervasyon Fiyatı</th>
+                <th className={thClass}>Durum</th>
+                <th className={thClass}>Sıra</th>
+                <th className={`${thClass} text-right`}>İşlemler</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/50">
+            <tbody className={tableBodyClass}>
               {packages.map((pkg) => (
-                <tr key={pkg.id} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="px-6 py-4">
+                <tr key={pkg.id} className="hover:bg-gray-700/20 transition-colors">
+                  <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <img
                         src={pkg.imageUrl || pkg.image}
@@ -391,18 +368,18 @@ const PackagesPage = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getCategoryBadge(pkg.category)}`}>
                       {getCategoryLabel(pkg.category)}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <div className="text-sm">
                       <p className="text-white">{formatPrice(pkg.price)}</p>
                       <p className="text-gray-500 text-xs">2S: {formatPrice(pkg.discount2)} / 3S: {formatPrice(pkg.discount3)}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <div className="text-sm">
                       <p className="text-violet-400">{formatPrice(pkg.reservationPrice || pkg.price)}</p>
                       <p className="text-gray-500 text-xs">
@@ -410,7 +387,7 @@ const PackagesPage = () => {
                       </p>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                       pkg.isActive 
                         ? 'bg-green-500/20 text-green-400' 
@@ -419,40 +396,11 @@ const PackagesPage = () => {
                       {pkg.isActive ? 'Aktif' : 'Pasif'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-gray-400">{pkg.sortOrder}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEditModal(pkg)}
-                        className="p-2 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
-                        title="Düzenle"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      {deleteConfirm === pkg.id ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleDelete(pkg.id)}
-                            className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded"
-                          >
-                            Sil
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(null)}
-                            className="px-2 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
-                          >
-                            İptal
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeleteConfirm(pkg.id)}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Sil"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                  <td className="px-4 py-3 text-gray-400">{pkg.sortOrder}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <IconButton icon={Pencil} title="Düzenle" onClick={() => openEditModal(pkg)} />
+                      <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setToDelete(pkg)} />
                     </div>
                   </td>
                 </tr>
@@ -461,13 +409,8 @@ const PackagesPage = () => {
           </table>
         </div>
 
-        {packages.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">Henüz paket eklenmemiş</p>
-          </div>
-        )}
-      </div>
+        {packages.length === 0 && <EmptyState bare icon={Package} title="Henüz paket eklenmemiş" />}
+      </Panel>
 
       {/* Modal */}
       {showModal && (
@@ -762,30 +705,32 @@ const PackagesPage = () => {
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-                >
+                <Button variant="ghost" onClick={closeModal}>
                   İptal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl font-medium transition-colors"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
+                </Button>
+                <Button type="submit" variant="primary" icon={Save} loading={isSubmitting}>
                   {editingId ? 'Güncelle' : 'Oluştur'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        open={!!toDelete}
+        title="Paket silinsin mi?"
+        message={
+          <>
+            <strong className="text-white">{toDelete?.name}</strong> paketi silinecek. Eski sipariş ve
+            rezervasyonlardaki kayıtlar değişmez. Satıştan kaldırmak için paketi silmek yerine pasif de
+            yapabilirsiniz.
+          </>
+        }
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 };

@@ -23,7 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const StatusBadge = ({ status }: { status: string }) => (
   <span
-    className={`px-2 py-1 text-xs font-medium rounded-full border ${
+    className={`px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ${
       BADGE_CLASSES[status] || BADGE_CLASSES.PENDING
     }`}
   >

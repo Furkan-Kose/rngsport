@@ -77,6 +77,11 @@ const MyGalleryPage = ({
     : isPreview
       ? `/api/gallery/admin/user/${encodeURIComponent(previewUserId)}`
       : "/api/gallery/my";
+  // Önizlemede müşterinin gördüğü kapsam: gizlenen galeri / albümler admin önizlemesinde de düşer
+  const asCustomer = useCallback(
+    (url: string) => (isPreview ? `${url}${url.includes("?") ? "&" : "?"}asCustomer=1` : url),
+    [isPreview],
+  );
   const [sharedInfo, setSharedInfo] = useState<{ album: string | null; expiresAt: string } | null>(null);
   const [invalidLink, setInvalidLink] = useState(false);
   const { shares, setShares } = useGalleryShares(isOwnGallery);
@@ -100,7 +105,7 @@ const MyGalleryPage = ({
         const params = new URLSearchParams({ page: String(page), limit: "60" });
         if (album) params.set("album", album);
         if (type !== "all") params.set("type", type);
-        const { data } = await api.get(`${base}?${params}`);
+        const { data } = await api.get(asCustomer(`${base}?${params}`));
         setPhotos((prev) => (append ? [...prev, ...data.data] : data.data));
         setAlbums(data.albums || []);
         setPagination(data.pagination);
@@ -120,7 +125,7 @@ const MyGalleryPage = ({
     },
     // t yalnızca hata bildiriminde
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [base]
+    [base, asCustomer]
   );
 
   useEffect(() => {
@@ -139,7 +144,7 @@ const MyGalleryPage = ({
   const handleDownloadAll = async (quality: MediaQuality) => {
     const query = activeAlbum ? `?${new URLSearchParams({ album: activeAlbum })}` : "";
     await zip.start(
-      withQuality(`${base}/download-manifest${query}`, quality),
+      asCustomer(withQuality(`${base}/download-manifest${query}`, quality)),
       // Paylaşılan galeride sunucu zip'i yok: tarayıcının kaldıramayacağı boyutta uyarı çıkar
       isOwnGallery ? withQuality(`/api/gallery/my/download-all${query}`, quality) : undefined,
     );
@@ -147,14 +152,14 @@ const MyGalleryPage = ({
 
   // Seçilenler: manifest POST ile yalnızca bu id'ler (sunucu zip'i yok — Railway trafiği)
   const handleZipSelected = (ids: string[], quality: MediaQuality) =>
-    zip.start(withQuality(`${base}/download-manifest`, quality), undefined, ids);
+    zip.start(asCustomer(withQuality(`${base}/download-manifest`, quality)), undefined, ids);
 
   // Taze imzalı indirme linki (galeriye kaydet için dosya buradan çekilir).
   // purpose=save: admin indirme geçmişinde "Galeriye kaydedildi" olarak görünsün
   const getUrl = useCallback(
     async (item: MediaItem, quality: MediaQuality) =>
-      (await api.get(withQuality(`${base}/${item.id}/download?purpose=save`, quality))).data.url as string,
-    [base]
+      (await api.get(asCustomer(withQuality(`${base}/${item.id}/download?purpose=save`, quality)))).data.url as string,
+    [base, asCustomer]
   );
 
   // Filtre değişince seçim sıfırlanır (seçilenler görünmeyen dosyalarda kalmasın)
@@ -170,7 +175,7 @@ const MyGalleryPage = ({
   const handleDownload = async (photo: GalleryPhoto, quality: MediaQuality) => {
     setDownloadingId(photo.id);
     try {
-      const { data } = await api.get(withQuality(`${base}/${photo.id}/download`, quality));
+      const { data } = await api.get(asCustomer(withQuality(`${base}/${photo.id}/download`, quality)));
       triggerDownload(data.url, photo.fileName);
     } catch (error) {
       console.error("İndirme hatası:", error);

@@ -94,6 +94,17 @@ export interface ShippingInput {
 export const SHOP_PROGRESS: ShopStatus[] = ["CONFIRMED", "IN_PRODUCTION", "SHIPPED", "DELIVERED"];
 export const isUnpaid = (status: ShopStatus) => status === "PENDING" || status === "FAILED";
 
+/** Ürün siparişi durum adları (admin paneli Türkçe) */
+export const SHOP_STATUS_LABELS: Record<ShopStatus, string> = {
+  PENDING: "Ödeme bekleniyor",
+  FAILED: "Ödeme başarısız",
+  CONFIRMED: "Onaylandı",
+  IN_PRODUCTION: "Hazırlanıyor",
+  SHIPPED: "Kargoda",
+  DELIVERED: "Teslim edildi",
+  CANCELLED: "İptal",
+};
+
 export const SHOP_STATUS_CLASSES: Record<ShopStatus, string> = {
   PENDING: "bg-amber-500/10 text-amber-400 border-amber-500/30",
   FAILED: "bg-red-500/10 text-red-400 border-red-500/30",

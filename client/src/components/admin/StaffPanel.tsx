@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Camera, Loader2, Pencil, Plus, ShieldCheck, Trash2, Video } from 'lucide-react';
+import { Camera, Pencil, Plus, ShieldCheck, Trash2, Video } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES, roleLabel } from '../../lib/roles';
 import StaffFormModal, { type StaffUser } from './StaffFormModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  Panel,
+  SkeletonRows,
+} from './ui';
+import { tableBodyClass, tableHeadRowClass } from '../../lib/adminUi';
 
 // Panel hesapları yönetimi: yöneticiler + saha personeli (fotoğrafçı / videocu).
 // Personel panelde sadece Çekim Listesi'ni görür; yönetici her şeyi.
@@ -14,7 +23,8 @@ const StaffPanel = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffUser | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<StaffUser | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchStaff = useCallback(async () => {
     setIsLoading(true);
@@ -43,14 +53,13 @@ const StaffPanel = () => {
     setModalOpen(true);
   };
 
-  const handleDelete = async (user: StaffUser) => {
-    if (!window.confirm(`"${user.name || user.username}" hesabı silinecek. Emin misiniz?`)) {
-      return;
-    }
-    setDeletingId(user.id);
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/api/users/staff/${user.id}`);
+      await api.delete(`/api/users/staff/${toDelete.id}`);
       toast.success('Personel silindi');
+      setToDelete(null);
       await fetchStaff();
     } catch (error) {
       console.error('Personel silinemedi:', error);
@@ -59,7 +68,7 @@ const StaffPanel = () => {
           ?.message || 'Personel silinemedi',
       );
     } finally {
-      setDeletingId(null);
+      setIsDeleting(false);
     }
   };
 
@@ -99,35 +108,28 @@ const StaffPanel = () => {
   };
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-gray-400 text-sm">
           Yönetici, fotoğrafçı ve videocu hesapları. Fotoğrafçı ve videocu panelde sadece Çekim Listesi&apos;ni görür.
         </p>
-        <button
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors self-start"
-        >
-          <Plus className="w-4 h-4" />
+        <Button variant="primary" icon={Plus} onClick={openCreate} className="self-start sm:self-auto">
           Hesap Ekle
-        </button>
+        </Button>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        </div>
+        <Panel className="overflow-hidden">
+          <SkeletonRows rows={4} />
+        </Panel>
       ) : staff.length === 0 ? (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
-          <Camera className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">Henüz personel hesabı yok</p>
-        </div>
+        <EmptyState icon={Camera} title="Henüz personel hesabı yok" />
       ) : (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden">
+        <Panel className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gray-700 text-xs uppercase text-gray-400">
+                <tr className={tableHeadRowClass}>
                   <th className="px-4 py-3 font-medium">Ad Soyad</th>
                   <th className="px-4 py-3 font-medium">Kullanıcı Adı</th>
                   <th className="px-4 py-3 font-medium">Görev</th>
@@ -135,7 +137,7 @@ const StaffPanel = () => {
                   <th className="px-4 py-3 font-medium text-right">İşlem</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/50">
+              <tbody className={tableBodyClass}>
                 {staff.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-700/20 transition-colors">
                     <td className="px-4 py-3 text-white font-medium">
@@ -152,27 +154,10 @@ const StaffPanel = () => {
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEdit(user)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 text-sm font-medium transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          Düzenle
-                        </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <IconButton icon={Pencil} title="Düzenle" onClick={() => openEdit(user)} />
                         {user.id !== currentUser?.id && (
-                        <button
-                          onClick={() => handleDelete(user)}
-                          disabled={deletingId === user.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50"
-                        >
-                          {deletingId === user.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                          Sil
-                        </button>
+                          <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setToDelete(user)} />
                         )}
                       </div>
                     </td>
@@ -181,8 +166,24 @@ const StaffPanel = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </Panel>
       )}
+
+      <ConfirmDeleteModal
+        open={!!toDelete}
+        title="Personel hesabı silinsin mi?"
+        message={
+          toDelete && (
+            <>
+              <strong className="text-white">{toDelete.name || toDelete.username}</strong> hesabı kalıcı olarak
+              silinecek. Bu işlem geri alınamaz.
+            </>
+          )
+        }
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
 
       <StaffFormModal
         open={modalOpen}

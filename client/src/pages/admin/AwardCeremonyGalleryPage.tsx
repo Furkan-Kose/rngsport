@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 import { toast } from 'react-toastify';
-import { ArrowLeft, Award, ExternalLink, Images, Loader2, Trash2 } from 'lucide-react';
+import { Award, ExternalLink, Images, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid, { type AdminMediaItem } from '../../components/admin/AdminMediaGrid';
 import PreviewBackfill from '../../components/admin/PreviewBackfill';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { Button, EmptyState, PageHeader, SkeletonGrid } from '../../components/admin/ui';
 import type { AwardCeremony, AwardPhoto, Pagination } from '../../lib/awardCeremonies';
 
 const AwardCeremonyGalleryPage = () => {
@@ -19,6 +20,7 @@ const AwardCeremonyGalleryPage = () => {
   const [missingPreviews, setMissingPreviews] = useState(0);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState<AdminMediaItem | null>(null);
 
   const fetchPhotos = useCallback(
     async (page: number, append: boolean) => {
@@ -44,14 +46,16 @@ const AwardCeremonyGalleryPage = () => {
     fetchPhotos(1, false);
   }, [fetchPhotos]);
 
-  const handleDelete = async (item: AdminMediaItem) => {
-    if (!window.confirm(`"${item.fileName}" silinecek. Emin misiniz?`)) return;
+  const handleDelete = async () => {
+    const item = photoToDelete;
+    if (!item) return;
     setDeletingId(item.id);
     try {
       await api.delete(`/api/award-ceremonies/photos/${item.id}`);
       setPhotos((prev) => prev.filter((p) => p.id !== item.id));
       setPagination((prev) => (prev ? { ...prev, total: prev.total - 1 } : prev));
       toast.success('Fotoğraf silindi');
+      setPhotoToDelete(null);
     } catch (error) {
       console.error('Delete error:', error);
       toast.error('Fotoğraf silinemedi');
@@ -78,42 +82,27 @@ const AwardCeremonyGalleryPage = () => {
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <Link
-          to="/admin/award-ceremonies"
-          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-amber-400 transition-colors mb-3"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Ödül Törenlerine Dön
-        </Link>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Award className="w-7 h-7 text-amber-500" />
-          {ceremony?.title || 'Ödül Töreni'} — Galeri
-        </h1>
-        <p className="text-gray-400 mt-1 flex flex-wrap items-center gap-x-3">
-          <span>{pagination?.total ?? 0} dosya · herkese açık</span>
-          {(pagination?.total ?? 0) > 0 && (
-            <button
-              onClick={() => setConfirmDeleteAll(true)}
-              className="inline-flex items-center gap-1 text-red-400 hover:text-red-300 hover:underline"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Tüm fotoğrafları sil
-            </button>
-          )}
-          {ceremony && (
-            <a
-              href={`/odul-torenleri/${ceremony.slug}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-amber-400 hover:underline"
-            >
-              Sitede gör <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          )}
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        back={{ to: '/admin/award-ceremonies', label: 'Ödül Törenlerine Dön' }}
+        title={`${ceremony?.title || 'Ödül Töreni'} — Galeri`}
+        icon={Award}
+        description={`${pagination?.total ?? 0} dosya · herkese açık`}
+        actions={
+          <>
+            {ceremony && (
+              <Button icon={ExternalLink} href={`/odul-torenleri/${ceremony.slug}`} target="_blank">
+                Sitede gör
+              </Button>
+            )}
+            {(pagination?.total ?? 0) > 0 && (
+              <Button variant="danger" icon={Trash2} onClick={() => setConfirmDeleteAll(true)}>
+                Tüm dosyaları sil
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <MediaUploader
         presign={async (files) => {
@@ -138,33 +127,37 @@ const AwardCeremonyGalleryPage = () => {
       />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        </div>
+        <SkeletonGrid />
       ) : photos.length === 0 ? (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
-          <Images className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">Bu törene henüz fotoğraf yüklenmedi</p>
-        </div>
+        <EmptyState icon={Images} title="Bu törene henüz fotoğraf yüklenmedi" />
       ) : (
-        <>
-          <AdminMediaGrid items={photos} deletingId={deletingId} onDelete={handleDelete} />
+        <div className="space-y-4">
+          <AdminMediaGrid items={photos} deletingId={deletingId} onDelete={setPhotoToDelete} />
           {hasMore && (
-            <div className="flex justify-center mt-6">
-              <button
-                onClick={() => pagination && fetchPhotos(pagination.page + 1, true)}
-                className="px-5 py-2.5 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700 text-gray-300 font-medium transition-colors"
-              >
-                Daha Fazla Yükle
-              </button>
+            <div className="flex justify-center">
+              <Button onClick={() => pagination && fetchPhotos(pagination.page + 1, true)}>Daha Fazla Yükle</Button>
             </div>
           )}
-        </>
+        </div>
       )}
 
       <ConfirmDeleteModal
+        open={!!photoToDelete}
+        title="Dosya silinsin mi?"
+        message={
+          <>
+            <strong className="text-white break-all">{photoToDelete?.fileName}</strong> (önizlemeleriyle birlikte)
+            kalıcı olarak silinecek ve sitedeki tören galerisinden kalkar. Bu işlem geri alınamaz.
+          </>
+        }
+        isDeleting={!!deletingId}
+        onConfirm={handleDelete}
+        onCancel={() => setPhotoToDelete(null)}
+      />
+
+      <ConfirmDeleteModal
         open={confirmDeleteAll}
-        title="Tüm fotoğraflar silinsin mi?"
+        title="Tüm dosyalar silinsin mi?"
         message={
           <>
             <strong>{ceremony?.title}</strong> törenindeki <strong>{pagination?.total ?? 0}</strong> dosya

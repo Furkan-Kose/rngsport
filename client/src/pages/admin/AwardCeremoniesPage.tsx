@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
 import { toast } from 'react-toastify';
-import {
-  Plus, Pencil, Trash2, X, Loader2, Award, Save, MapPin, Calendar, Images, ExternalLink,
-} from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Award, Save, MapPin, Calendar, Images, ExternalLink } from 'lucide-react';
 import api from '../../lib/api';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { Button, EmptyState, IconButton, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
 
 import { AWARD_FALLBACK_IMAGE, type AwardCeremonySummary } from '../../lib/awardCeremonies';
 
@@ -38,7 +37,8 @@ const AwardCeremoniesPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CeremonyFormData>(initialFormData);
   const [error, setError] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<AwardCeremonySummary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchCeremonies = async () => {
     try {
@@ -104,61 +104,54 @@ const AwardCeremoniesPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/api/award-ceremonies/${id}`);
-      setCeremonies((prev) => prev.filter((c) => c.id !== id));
-      setDeleteConfirm(null);
+      await api.delete(`/api/award-ceremonies/${toDelete.id}`);
+      setCeremonies((prev) => prev.filter((c) => c.id !== toDelete.id));
+      setToDelete(null);
       toast.success('Ödül töreni silindi');
     } catch (error) {
       console.error('Ödül töreni silinemedi:', error);
       toast.error('Ödül töreni silinemedi');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Award className="w-7 h-7 text-amber-500" />
-            Ödül Törenleri
-          </h1>
-          <p className="text-gray-400 mt-1">
+    <div className="space-y-6">
+      <PageHeader
+        title="Ödül Törenleri"
+        icon={Award}
+        description={
+          <>
             Herkese açık ödül töreni galerileri (
             <a href="/odul-torenleri" target="_blank" rel="noreferrer" className="text-amber-400 hover:underline">
               /odul-torenleri
             </a>
             )
-          </p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl transition-all duration-200"
-        >
-          <Plus className="w-4 h-4" />
-          Yeni Tören
-        </button>
-      </div>
+          </>
+        }
+        actions={
+          <Button variant="primary" icon={Plus} onClick={openCreateModal}>
+            Yeni Tören
+          </Button>
+        }
+      />
 
       {/* Liste */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        </div>
+        <Panel className="overflow-hidden">
+          <SkeletonRows rows={4} />
+        </Panel>
       ) : ceremonies.length === 0 ? (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
-          <Award className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">Henüz ödül töreni eklenmedi</p>
-        </div>
+        <EmptyState icon={Award} title="Henüz ödül töreni eklenmedi" />
       ) : (
         <div className="space-y-3">
           {ceremonies.map((ceremony) => (
-            <div
-              key={ceremony.id}
-              className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4"
-            >
+            <Panel key={ceremony.id} className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <img
                   src={ceremony.coverUrl || AWARD_FALLBACK_IMAGE}
@@ -189,63 +182,24 @@ const AwardCeremoniesPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {deleteConfirm === ceremony.id ? (
-                  <>
-                    <span className="text-sm text-red-400 mr-1">
-                      {ceremony.photoCount > 0
-                        ? `${ceremony.photoCount} dosya da silinecek. Emin misiniz?`
-                        : 'Emin misiniz?'}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(ceremony.id)}
-                      className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-colors"
-                    >
-                      Sil
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(null)}
-                      className="px-3 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
-                    >
-                      Vazgeç
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to={`/admin/award-ceremonies/${ceremony.id}`}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-sm font-medium transition-colors"
-                    >
-                      <Images className="w-4 h-4" />
-                      Fotoğraflar
-                    </Link>
-                    <a
-                      href={`/odul-torenleri/${ceremony.slug}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-amber-400 transition-colors"
-                      title="Sitede gör"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    <button
-                      onClick={() => openEditModal(ceremony)}
-                      className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-amber-400 transition-colors"
-                      title="Düzenle"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(ceremony.id)}
-                      className="p-2 rounded-lg bg-gray-700/50 hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-colors"
-                      title="Sil"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
+              <div className="flex items-center gap-1.5">
+                <Button size="sm" variant="soft" icon={Images} to={`/admin/award-ceremonies/${ceremony.id}`}>
+                  Fotoğraflar
+                </Button>
+                <a
+                  href={`/odul-torenleri/${ceremony.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-amber-400 transition-colors"
+                  title="Sitede gör"
+                  aria-label="Sitede gör"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+                <IconButton icon={Pencil} title="Düzenle" onClick={() => openEditModal(ceremony)} />
+                <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setToDelete(ceremony)} />
               </div>
-            </div>
+            </Panel>
           ))}
         </div>
       )}
@@ -347,26 +301,39 @@ const AwardCeremoniesPage = () => {
               />
 
               <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 py-2.5 rounded-xl bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-medium transition-colors"
-                >
+                <Button className="flex-1" onClick={closeModal}>
                   İptal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                </Button>
+                <Button type="submit" variant="primary" className="flex-1" icon={Save} loading={isSubmitting}>
                   {editingId ? 'Güncelle' : 'Oluştur'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        open={!!toDelete}
+        title="Ödül töreni silinsin mi?"
+        message={
+          toDelete && (
+            <>
+              <strong className="text-white">{toDelete.title}</strong> töreni
+              {toDelete.photoCount > 0 && (
+                <>
+                  {' '}
+                  ve <strong className="text-red-400">{toDelete.photoCount} dosyası</strong>
+                </>
+              )}{' '}
+              kalıcı olarak silinecek; sitedeki adresi de çalışmaz olur. Bu işlem geri alınamaz.
+            </>
+          )
+        }
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 };

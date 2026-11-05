@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, Trash2, X, Package as PackageIcon, Save } from 'lucide-react';
 import api from '../../lib/api';
+import { SkeletonRows } from './ui';
 import { APPARATUSES } from '../../constants/apparatuses';
 
 interface PackageOption {
@@ -417,8 +418,8 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
             </div>
 
             {isLoadingPackages ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
+              <div className="rounded-lg border border-gray-700 overflow-hidden">
+                <SkeletonRows rows={3} />
               </div>
             ) : items.length === 0 ? (
               <div className="text-center py-6 text-gray-500 bg-gray-900/30 border border-dashed border-gray-700 rounded-lg">

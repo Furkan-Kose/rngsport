@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, X, Loader2, Trophy, Save, MapPin, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Trophy, Save, MapPin, Calendar } from 'lucide-react';
+import { toast } from 'react-toastify';
 import api from '../../lib/api';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { Button, EmptyState, IconButton, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
 
 
 interface Tournament {
@@ -75,7 +78,8 @@ const TournamentsPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<TournamentFormData>(initialFormData);
   const [error, setError] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<Tournament | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchTournaments();
@@ -154,53 +158,46 @@ const TournamentsPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/api/tournaments/${id}`);
-      setTournaments((prev) => prev.filter((t) => t.id !== id));
-      setDeleteConfirm(null);
+      await api.delete(`/api/tournaments/${toDelete.id}`);
+      setTournaments((prev) => prev.filter((t) => t.id !== toDelete.id));
+      setToDelete(null);
+      toast.success('Turnuva silindi');
     } catch (error) {
       console.error('Turnuva silinemedi:', error);
+      toast.error('Turnuva silinemedi');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Trophy className="w-7 h-7 text-amber-500" />
-            Turnuvalar
-          </h1>
-          <p className="text-gray-400 mt-1">Ana sayfadaki turnuva takvimini yönetin</p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl transition-all duration-200"
-        >
-          <Plus className="w-4 h-4" />
-          Yeni Turnuva
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Turnuvalar"
+        icon={Trophy}
+        description="Ana sayfadaki turnuva takvimini yönetin"
+        actions={
+          <Button variant="primary" icon={Plus} onClick={openCreateModal}>
+            Yeni Turnuva
+          </Button>
+        }
+      />
 
       {/* Liste */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        </div>
+        <Panel className="overflow-hidden">
+          <SkeletonRows rows={4} />
+        </Panel>
       ) : tournaments.length === 0 ? (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
-          <Trophy className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">Henüz turnuva eklenmedi</p>
-        </div>
+        <EmptyState icon={Trophy} title="Henüz turnuva eklenmedi" description="Liste boşken ana sayfada turnuva bölümü gizlenir." />
       ) : (
         <div className="space-y-3">
           {tournaments.map((tournament) => (
-            <div
-              key={tournament.id}
-              className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4"
-            >
+            <Panel key={tournament.id} className="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
                 {tournament.flag && (
                   <img
@@ -228,43 +225,11 @@ const TournamentsPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {deleteConfirm === tournament.id ? (
-                  <>
-                    <span className="text-sm text-red-400 mr-1">Emin misiniz?</span>
-                    <button
-                      onClick={() => handleDelete(tournament.id)}
-                      className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-colors"
-                    >
-                      Sil
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(null)}
-                      className="px-3 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 text-sm transition-colors"
-                    >
-                      Vazgeç
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => openEditModal(tournament)}
-                      className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-amber-400 transition-colors"
-                      title="Düzenle"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(tournament.id)}
-                      className="p-2 rounded-lg bg-gray-700/50 hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-colors"
-                      title="Sil"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
+              <div className="flex items-center gap-1.5">
+                <IconButton icon={Pencil} title="Düzenle" onClick={() => openEditModal(tournament)} />
+                <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setToDelete(tournament)} />
               </div>
-            </div>
+            </Panel>
           ))}
         </div>
       )}
@@ -374,30 +339,31 @@ const TournamentsPage = () => {
               />
 
               <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 py-2.5 rounded-xl bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-medium transition-colors"
-                >
+                <Button className="flex-1" onClick={closeModal}>
                   İptal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
+                </Button>
+                <Button type="submit" variant="primary" className="flex-1" icon={Save} loading={isSubmitting}>
                   {editingId ? 'Güncelle' : 'Oluştur'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <ConfirmDeleteModal
+        open={!!toDelete}
+        title="Turnuva silinsin mi?"
+        message={
+          <>
+            <strong className="text-white">{toDelete?.name}</strong> ana sayfadaki takvimden kalıcı olarak silinecek.
+            Bu işlem geri alınamaz.
+          </>
+        }
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 };

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, MessageSquare, Star, Trash2 } from 'lucide-react';
+import { Check, MessageSquare, Star, Trash2, Undo2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../lib/api';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { Button, EmptyState, FilterTabs, PageHeader, SkeletonRows, Toolbar } from '../../components/admin/ui';
+import { useUrlState } from '../../hooks/useUrlState';
 
 interface Feedback {
   id: string;
@@ -24,7 +26,11 @@ const LOCALE_LABEL: Record<string, string> = { tr: 'TR', en: 'EN', ru: 'RU' };
 const FeedbackPage = () => {
   const [items, setItems] = useState<Feedback[]>([]);
   const [unread, setUnread] = useState(0);
-  const [onlyUnread, setOnlyUnread] = useState(false);
+  const [total, setTotal] = useState(0);
+  // Sekme adres çubuğunda (?tab=unread)
+  const [url, setUrl] = useUrlState({ tab: 'all' });
+  const onlyUnread = url.tab === 'unread';
+  const setOnlyUnread = (value: boolean) => setUrl({ tab: value ? 'unread' : 'all' });
   const [loading, setLoading] = useState(true);
   const [toDelete, setToDelete] = useState<Feedback | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -35,6 +41,7 @@ const FeedbackPage = () => {
       const { data } = await api.get('/api/feedback', { params: unreadOnly ? { unread: 1 } : {} });
       setItems(data.data);
       setUnread(data.unread);
+      setTotal(data.total);
     } catch {
       toast.error('Görüşler yüklenemedi');
     } finally {
@@ -63,6 +70,7 @@ const FeedbackPage = () => {
       await api.delete(`/api/feedback/${toDelete.id}`);
       setItems((prev) => prev.filter((x) => x.id !== toDelete.id));
       if (!toDelete.isRead) setUnread((n) => n - 1);
+      setTotal((n) => n - 1);
       setToDelete(null);
     } catch {
       toast.error('Silinemedi');
@@ -76,36 +84,39 @@ const FeedbackPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Görüşler</h1>
-          <p className="text-gray-400 text-sm mt-1">
+      <PageHeader
+        title="Görüşler"
+        icon={MessageSquare}
+        description={
+          <>
             Galerim sayfasının altındaki formdan gelen mesajlar
             {unread > 0 && <span className="ml-2 text-amber-400">· {unread} okunmamış</span>}
             {average !== null && <span className="ml-2">· Ortalama ★ {average.toFixed(1)}</span>}
-          </p>
-        </div>
-        <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-          <input type="checkbox" checked={onlyUnread} onChange={(e) => setOnlyUnread(e.target.checked)} className="accent-amber-500" />
-          Sadece okunmamışlar
-        </label>
-      </div>
+          </>
+        }
+      />
+
+      <Toolbar>
+        <FilterTabs
+          tabs={[
+            { key: 'all', label: 'Tümü', count: total },
+            { key: 'unread', label: 'Okunmamış', count: unread },
+          ]}
+          value={onlyUnread ? 'unread' : 'all'}
+          onChange={(key) => setOnlyUnread(key === 'unread')}
+        />
+      </Toolbar>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-        </div>
+        <SkeletonRows rows={4} />
       ) : items.length === 0 ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-10 text-center">
-          <MessageSquare className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">Henüz görüş yok.</p>
-        </div>
+        <EmptyState icon={MessageSquare} title={onlyUnread ? 'Okunmamış görüş yok' : 'Henüz görüş yok'} />
       ) : (
         <div className="space-y-3">
           {items.map((f) => (
             <div
               key={f.id}
-              className={`bg-gray-800 border rounded-xl p-4 sm:p-5 ${f.isRead ? 'border-gray-700' : 'border-amber-500/50'}`}
+              className={`bg-gray-800/50 border rounded-xl p-4 sm:p-5 ${f.isRead ? 'border-gray-700' : 'border-amber-500/50'}`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
                 <div className="min-w-0">
@@ -127,19 +138,12 @@ const FeedbackPage = () => {
               </div>
               <p className="text-gray-200 text-sm whitespace-pre-wrap break-words">{f.message}</p>
               <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => toggleRead(f)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-700 hover:bg-gray-600 text-gray-200"
-                >
+                <Button size="sm" icon={f.isRead ? Undo2 : Check} onClick={() => toggleRead(f)}>
                   {f.isRead ? 'Okunmadı yap' : 'Okundu'}
-                </button>
-                <button
-                  onClick={() => setToDelete(f)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+                <Button size="sm" variant="danger" icon={Trash2} onClick={() => setToDelete(f)}>
                   Sil
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -148,8 +152,8 @@ const FeedbackPage = () => {
 
       <ConfirmDeleteModal
         open={!!toDelete}
-        title="Görüşü sil"
-        message="Bu görüş kalıcı olarak silinecek."
+        title="Görüş silinsin mi?"
+        message="Bu görüş kalıcı olarak silinecek. Bu işlem geri alınamaz."
         isDeleting={deleting}
         onConfirm={remove}
         onCancel={() => setToDelete(null)}

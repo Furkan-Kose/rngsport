@@ -63,9 +63,10 @@ const AdminMediaGrid = ({ items, deletingId, onDelete, selectedIds, onToggleSele
           )}
           {!onToggleSelect && (
             <button
+              type="button"
               onClick={() => onDelete(item)}
               disabled={deletingId === item.id}
-              className="absolute top-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 hover:bg-red-600/80 transition-all duration-300"
+              className="absolute top-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm text-white pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-600/80 transition-all duration-300"
               title="Sil"
             >
               {deletingId === item.id ? (

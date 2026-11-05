@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Loader2, Pencil, Plus, Save, Star, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Save, Star, Trash2, X } from 'lucide-react';
 import api from '../../lib/api';
 import type { LoyaltyTier } from '../../lib/loyalty';
+import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { Button, EmptyState, IconButton, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
 
 interface TierForm {
   name: string;
@@ -25,7 +27,8 @@ const LoyaltyPage = () => {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
   const [form, setForm] = useState<TierForm>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<LoyaltyTier | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchTiers = async () => {
     try {
@@ -80,38 +83,36 @@ const LoyaltyPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/api/loyalty/tiers/${id}`);
-      setTiers((prev) => prev.filter((t) => t.id !== id));
-      setDeleteConfirm(null);
+      await api.delete(`/api/loyalty/tiers/${toDelete.id}`);
+      setTiers((prev) => prev.filter((t) => t.id !== toDelete.id));
+      setToDelete(null);
       toast.success('Seviye silindi');
     } catch {
       toast.error('Seviye silinemedi');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Star className="w-7 h-7 text-amber-500" />
-            Sadakat Sistemi
-          </h1>
-          <p className="text-gray-400 mt-1">Puan seviyeleri ve indirim oranları</p>
-        </div>
-        <button
-          onClick={() => startEdit(null)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl transition-all duration-200"
-        >
-          <Plus className="w-4 h-4" />
-          Yeni Seviye
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Sadakat Sistemi"
+        icon={Star}
+        description="Puan seviyeleri ve indirim oranları"
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => startEdit(null)}>
+            Yeni Seviye
+          </Button>
+        }
+      />
 
       {/* Nasıl çalışır */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-5 mb-6 text-sm text-gray-300 space-y-1.5">
+      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-5 text-sm text-gray-300 space-y-1.5">
         <p>• Paket puanları <strong className="text-white">Paketler</strong> sayfasından verilir (seri başına).</p>
         <p>• Puan <strong className="text-white">ödeme alınınca</strong> yazılır: rezervasyon Ödendi/Teslim Edildi olunca veya online ödeme başarılı olunca.</p>
         <p>• Ödenmiş kayıt <strong className="text-white">İptal</strong> edilirse puan geri alınır. Kaydı <strong className="text-white">silmek puanı geri almaz</strong>.</p>
@@ -122,15 +123,13 @@ const LoyaltyPage = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        </div>
+        <Panel className="overflow-hidden">
+          <SkeletonRows rows={4} />
+        </Panel>
       ) : (
         <div className="space-y-3">
           {tiers.length === 0 && editingId !== 'new' && (
-            <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-10 text-center text-gray-400">
-              Henüz seviye yok — indirim uygulanmaz.
-            </div>
+            <EmptyState icon={Star} title="Henüz seviye yok" description="Seviye eklenene kadar indirim uygulanmaz." />
           )}
 
           {[...tiers, ...(editingId === 'new' ? [null] : [])].map((tier) => {
@@ -140,7 +139,7 @@ const LoyaltyPage = () => {
                 <form
                   key={id}
                   onSubmit={handleSave}
-                  className="bg-gray-800/70 border border-amber-500/40 rounded-2xl p-4 grid sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-end"
+                  className="bg-gray-800/70 border border-amber-500/40 rounded-xl p-4 grid sm:grid-cols-[1fr_140px_140px_auto] gap-3 items-end"
                 >
                   {/* EN/RU ad — boşsa sitede Türkçe ad görünür */}
                   <div className="sm:col-span-4 grid grid-cols-2 gap-3 order-last">
@@ -198,32 +197,17 @@ const LoyaltyPage = () => {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-50"
-                    >
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <Button type="submit" variant="primary" icon={Save} loading={isSaving}>
                       Kaydet
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(null)}
-                      className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300"
-                      title="Vazgeç"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    </Button>
+                    <IconButton icon={X} title="Vazgeç" onClick={() => setEditingId(null)} />
                   </div>
                 </form>
               );
             }
             if (!tier) return null;
             return (
-              <div
-                key={tier.id}
-                className="bg-gray-800/50 border border-gray-700 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4"
-              >
+              <Panel key={tier.id} className="p-4 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-semibold">
                     {tier.name}
@@ -231,47 +215,29 @@ const LoyaltyPage = () => {
                   <span className="text-gray-300">{tier.minPoints.toLocaleString('tr-TR')}+ puan</span>
                   <span className="text-emerald-400 font-semibold">%{tier.discountPercent} indirim</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {deleteConfirm === tier.id ? (
-                    <>
-                      <span className="text-sm text-red-400 mr-1">Emin misiniz?</span>
-                      <button
-                        onClick={() => handleDelete(tier.id)}
-                        className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium"
-                      >
-                        Sil
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(null)}
-                        className="px-3 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 text-sm"
-                      >
-                        Vazgeç
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => startEdit(tier)}
-                        className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-amber-400"
-                        title="Düzenle"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(tier.id)}
-                        className="p-2 rounded-lg bg-gray-700/50 hover:bg-red-500/20 text-gray-300 hover:text-red-400"
-                        title="Sil"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
+                <div className="flex items-center gap-1.5">
+                  <IconButton icon={Pencil} title="Düzenle" onClick={() => startEdit(tier)} />
+                  <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setToDelete(tier)} />
                 </div>
-              </div>
+              </Panel>
             );
           })}
         </div>
       )}
+
+      <ConfirmDeleteModal
+        open={!!toDelete}
+        title="Seviye silinsin mi?"
+        message={
+          <>
+            <strong className="text-white">{toDelete?.name}</strong> seviyesi (%{toDelete?.discountPercent} indirim)
+            silinecek. Mevcut kayıtlardaki indirimler değişmez; yeni kayıtlarda bu seviye uygulanmaz.
+          </>
+        }
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 };

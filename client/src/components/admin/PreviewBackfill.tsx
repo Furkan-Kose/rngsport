@@ -85,7 +85,7 @@ const PreviewBackfill = ({ missing, fetchBatch, save, onDone }: PreviewBackfillP
   };
 
   return (
-    <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
       <div className="text-sm text-amber-200">
         {running ? (
           <>

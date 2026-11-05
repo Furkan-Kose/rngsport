@@ -184,3 +184,27 @@ body {
   ) !important;
   color: #eff6ff !important;
 }
+
+/* Admin menüsü: sığmazsa ince, koyu kaydırma çubuğu (varsayılan beyaz çubuk yerine) */
+.admin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
+}
+.admin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 9999px;
+}
+
+/* Yatay kayan sekme satırı: kaydırma çubuğu görünmez (dokunarak / tekerlekle kayar) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

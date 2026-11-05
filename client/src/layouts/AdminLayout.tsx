@@ -1,14 +1,66 @@
 import { Suspense, useEffect, useState } from "react";
 import { Outlet, NavLink, Link, useNavigate, useLocation } from "react-router";
+import { PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, SHOOTING_LIST_ROLES, roleLabel } from "../lib/roles";
 import UploadTray from "../components/admin/UploadTray";
+import CommandSearch from "../components/admin/CommandSearch";
+import { SkeletonPage } from "../components/admin/ui";
+import { BADGE_SECTION_BY_PATH, useAdminBadges } from "../hooks/useAdminBadges";
+
+const COLLAPSE_KEY = "admin-sidebar-collapsed";
+const readCollapsed = () => {
+  try {
+    return localStorage.getItem(COLLAPSE_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+const badgeText = (n: number) => (n > 99 ? "99+" : String(n));
+
+const NAV_GROUPS: { title: string | null; paths: string[] }[] = [
+  { title: null, paths: ['/admin'] },
+  { title: 'Satış', paths: ['/admin/orders', '/admin/reservations', '/admin/shop/orders'] },
+  { title: 'Çekim', paths: ['/admin/shooting-list'] },
+  { title: 'Katalog', paths: ['/admin/packages', '/admin/shop/products', '/admin/loyalty'] },
+  { title: 'İçerik', paths: ['/admin/tournaments', '/admin/award-ceremonies', '/admin/feedback'] },
+  { title: 'Yönetim', paths: ['/admin/users'] },
+];
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Masaüstünde menüyü yalnızca ikona daraltma (tarayıcıda hatırlanır; mobil çekmeceyi etkilemez)
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const isAdmin = user?.role === ROLES.ADMIN;
+  const badges = useAdminBadges(isAdmin);
+
+  const toggleCollapsed = () =>
+    setCollapsed((prev) => {
+      try {
+        localStorage.setItem(COLLAPSE_KEY, prev ? "0" : "1");
+      } catch {
+        /* yoksay */
+      }
+      return !prev;
+    });
+
+  // Ctrl/⌘+K → hızlı arama (yalnızca admin)
+  useEffect(() => {
+    if (!isAdmin) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isAdmin]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -41,7 +93,7 @@ const AdminLayout = () => {
       ),
     },
     {
-      name: 'Siparişler',
+      name: 'Paket Siparişleri',
       path: '/admin/orders',
       roles: [ROLES.ADMIN],
       icon: (
@@ -158,6 +210,19 @@ const AdminLayout = () => {
     item.roles.includes(user?.role ?? ''),
   );
 
+  // Menü grupları (başlıksız ilk grup: Dashboard). Kullanıcının göremediği
+  // öğeler düşer, boş kalan grup hiç çizilmez.
+  const navGroups = NAV_GROUPS.map((group) => ({
+    title: group.title,
+    items: group.paths
+      .map((path) => navItems.find((item) => item.path === path))
+      .filter((item): item is (typeof navItems)[number] => !!item),
+  })).filter((group) => group.items.length > 0);
+  // Personel tek öğe görür; tek grup varsa başlığa gerek yok
+  const showGroupTitles = navGroups.length > 1;
+  // Daraltılmışken masaüstünde gizlenecek metinler
+  const hideCollapsed = collapsed ? "lg:hidden" : "";
+
   return (
     <div className="min-h-screen bg-gray-900 lg:flex">
       {/* Mobile Top Bar */}
@@ -171,16 +236,32 @@ const AdminLayout = () => {
             </div>
             <span className="text-white font-semibold">rngsport</span>
           </div>
+          <div className="flex items-center gap-1">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-700/50 transition-colors"
+              aria-label="Ara"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-700/50 transition-colors"
+            className="relative p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-700/50 transition-colors"
             aria-label="Menüyü aç"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
+            {/* Menü kapalıyken yeni kayıt varsa nokta */}
+            {Object.values(badges).some((n) => n > 0) && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400" />
+            )}
           </button>
+          </div>
         </div>
       </header>
 
@@ -195,14 +276,14 @@ const AdminLayout = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-64 bg-gray-800/95 lg:bg-gray-800/50 backdrop-blur-sm border-r border-gray-700 flex flex-col transform transition-transform duration-200 ease-in-out lg:transform-none lg:h-screen ${
+        className={`fixed lg:sticky lg:top-0 inset-y-0 left-0 z-50 w-64 ${collapsed ? "lg:w-16" : ""} bg-gray-800/95 lg:bg-gray-800/50 backdrop-blur-sm border-r border-gray-700 flex flex-col transform transition-transform duration-200 ease-in-out lg:transform-none lg:h-screen ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Logo */}
-        <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+        <div className={`py-4 border-b border-gray-700 flex items-center justify-between ${collapsed ? "px-5 lg:px-0 lg:justify-center" : "px-5"}`}>
+          <div className={`flex items-center gap-3 ${hideCollapsed}`}>
+            <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
@@ -212,6 +293,27 @@ const AdminLayout = () => {
               <p className="text-gray-400 text-xs">Admin Panel</p>
             </div>
           </div>
+          <div className="flex items-center gap-1">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className={`p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors ${hideCollapsed}`}
+              title="Ara (Ctrl+K)"
+              aria-label="Ara"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="hidden lg:inline-flex p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+            title={collapsed ? "Menüyü genişlet" : "Menüyü daralt"}
+            aria-label={collapsed ? "Menüyü genişlet" : "Menüyü daralt"}
+          >
+            {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
@@ -222,61 +324,102 @@ const AdminLayout = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 flex flex-col overflow-y-auto">
-          <ul className="space-y-1">
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  end={item.path === '/admin'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                    }`
-                  }
-                >
-                  {item.icon}
-                  {item.name}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-
-          {/* Siteye Dön */}
-          <div className="mt-auto pt-4 border-t border-gray-700">
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+        <nav className={`admin-scroll flex-1 min-h-0 py-3 overflow-y-auto ${collapsed ? "px-3 lg:px-2" : "px-3"}`}>
+          {/* Daraltılmış menüde arama ikonu (genişken logo satırında) */}
+          {isAdmin && collapsed && (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="hidden lg:flex w-full justify-center py-2 mb-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50"
+              title="Ara (Ctrl+K)"
+              aria-label="Ara"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              Siteye Dön
-            </Link>
-          </div>
+              <Search className="w-5 h-5" />
+            </button>
+          )}
+          {navGroups.map((group, index) => (
+            <div key={group.title ?? 'main'} className={index > 0 ? 'mt-3' : ''}>
+              {showGroupTitles && group.title && (
+                <>
+                  <p className={`px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500 ${hideCollapsed}`}>
+                    {group.title}
+                  </p>
+                  {collapsed && <div className="hidden lg:block mx-2 mb-2 border-t border-gray-700" />}
+                </>
+              )}
+              <ul className="space-y-0.5">
+                {group.items.map((item) => {
+                  const section = BADGE_SECTION_BY_PATH[item.path];
+                  const count = section && isAdmin ? badges[section] : 0;
+                  return (
+                    <li key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        end={item.path === '/admin'}
+                        title={collapsed ? item.name : undefined}
+                        className={({ isActive }) =>
+                          `relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            collapsed ? 'lg:justify-center lg:px-0' : ''
+                          } ${
+                            isActive
+                              ? 'bg-amber-500/20 text-amber-400'
+                              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                          }`
+                        }
+                      >
+                        {item.icon}
+                        <span className={`flex-1 ${hideCollapsed}`}>{item.name}</span>
+                        {count > 0 && (
+                          <span
+                            className={`min-w-5 h-5 px-1.5 rounded-full bg-amber-500 text-white text-[11px] font-bold leading-5 text-center ${
+                              collapsed ? 'lg:absolute lg:top-0 lg:right-0 lg:min-w-4 lg:h-4 lg:px-1 lg:leading-4 lg:text-[10px]' : ''
+                            }`}
+                            title={`Son bakışınızdan beri ${count} yeni`}
+                          >
+                            {badgeText(count)}
+                          </span>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </nav>
 
-        {/* User Section */}
-        <div className="p-4 border-t border-gray-700">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center shrink-0">
+        {/* User Section: ad + Siteye Dön + Çıkış */}
+        <div className="px-3 py-3 border-t border-gray-700">
+          <div className={`flex items-center gap-2 px-2 ${collapsed ? "lg:flex-col lg:px-0" : ""}`}>
+            <div className={`w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center shrink-0 ${hideCollapsed}`}>
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className={`flex-1 min-w-0 ${hideCollapsed}`}>
               <p className="text-white text-sm font-medium truncate">{user?.name || user?.username}</p>
               <p className="text-gray-400 text-xs">{roleLabel(user?.role)}</p>
             </div>
+            <Link
+              to="/"
+              className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
+              title="Siteye Dön"
+              aria-label="Siteye Dön"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </Link>
             <button
+              type="button"
               onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+              className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-gray-700/50 transition-colors"
               title="Çıkış Yap"
+              aria-label="Çıkış Yap"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -291,17 +434,14 @@ const AdminLayout = () => {
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Sayfa parçası (lazy) yüklenirken menü yerinde kalsın */}
           <Suspense
-            fallback={
-              <div className="flex justify-center py-20">
-                <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            }
+            fallback={<SkeletonPage />}
           >
             <Outlet />
           </Suspense>
         </div>
       </main>
       <UploadTray />
+      {isAdmin && <CommandSearch open={searchOpen} onClose={() => setSearchOpen(false)} />}
     </div>
   );
 };

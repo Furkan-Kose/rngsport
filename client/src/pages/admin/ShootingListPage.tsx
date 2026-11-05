@@ -26,6 +26,8 @@ import { TRACK_LABELS, type Track } from '../../lib/roles';
 import { trackTimes, type ShootTrack } from '../../lib/shooting';
 import PriorityBadge from '../../components/PriorityBadge';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { Button, PageHeader, SkeletonRows } from '../../components/admin/ui';
+import ExportModal from '../../components/admin/ExportModal';
 
 interface ShootingItem {
   packageName: string;
@@ -280,7 +282,8 @@ const ShootingListPage = () => {
   const [isClearing, setIsClearing] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  // Excel: sütun + filtre seçimi penceresi (ExportModal)
+  const [exportOpen, setExportOpen] = useState(false);
   // Yükleme modalı: null = yeni gün; dolu = o günün üzerine yaz
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadExisting, setUploadExisting] = useState<{ id: string; label: string } | null>(null);
@@ -398,30 +401,6 @@ const ShootingListPage = () => {
     fetchList(1, false, dayId);
   };
 
-  const handleExport = async () => {
-    if (!activeDay) return;
-    setIsExporting(true);
-    try {
-      const { data } = await api.get('/api/shooting-list/export', {
-        params: { dayId: activeDay.id },
-        responseType: 'blob',
-      });
-      const url = URL.createObjectURL(data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `cekim-listesi-${activeDay.label}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Excel indirilemedi:', error);
-      toast.error('Excel indirilemedi');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   // Admin: seçili iz görünümüne göre günün sürelerini toplu sıfırla (Tümü → foto + video)
   const handleResetTimes = async () => {
     if (!activeDay) return;
@@ -439,16 +418,14 @@ const ShootingListPage = () => {
     }
   };
 
+  const [confirmDeleteDay, setConfirmDeleteDay] = useState(false);
   const handleDeleteDay = async () => {
     if (!activeDay) return;
-    if (
-      !window.confirm(`"${activeDay.label}" günü ve tüm satırları silinecek. Emin misiniz?`)
-    )
-      return;
     setIsClearing(true);
     try {
       await api.delete(`/api/shooting-list?dayId=${activeDay.id}`);
       toast.success('Gün silindi');
+      setConfirmDeleteDay(false);
       // Silinen günden çık; backend kalan ilk günü aktif yapacak
       setActiveDayId(null);
       await fetchList(1, false, null);
@@ -531,94 +508,58 @@ const ShootingListPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
-            <Camera className="w-5 h-5 text-amber-400" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-white">
-              {track === 'all' ? 'Çekim Listesi' : `${TRACK_LABELS[track]} Çekim Listesi`}
-            </h1>
-            <p className="text-gray-400 mt-1 text-xs sm:text-sm">
-              Sıradaki sporcuda <span className="text-emerald-400">Başlat</span>'a basın —
-              önceki kayıt otomatik kapanır
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {isAdmin && (
-            <>
-              {/* İz seçici: hangi ekibin gözünden bakıldığı */}
-              <div className="inline-flex rounded-lg border border-gray-700 bg-gray-800/50 p-0.5">
-                {(['all', 'photo', 'video'] as Track[]).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setSelectedTrack(option)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      track === option
-                        ? 'bg-amber-500/20 text-amber-300'
-                        : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    {TRACK_LABELS[option]}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={openNewDay}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Yeni Gün
-              </button>
-            </>
-          )}
-          {isAdmin && activeDay && (
-            <>
-              <button
-                onClick={openReupload}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Yeniden Yükle
-              </button>
-              <button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {isExporting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Download className="w-4 h-4" />
-                )}
-                Excel İndir
-              </button>
-              <button
-                onClick={() => setConfirmReset(true)}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Süreleri Sıfırla
-              </button>
-              <button
-                onClick={handleDeleteDay}
-                disabled={isClearing}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {isClearing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-                Bu Günü Sil
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={track === 'all' ? 'Çekim Listesi' : `${TRACK_LABELS[track]} Çekim Listesi`}
+        icon={Camera}
+        description={
+          <>
+            Sıradaki sporcuda <span className="text-emerald-400">Başlat</span>'a basın — önceki kayıt otomatik
+            kapanır
+          </>
+        }
+        actions={
+          <>
+            {isAdmin && (
+              <>
+                {/* İz seçici: hangi ekibin gözünden bakıldığı */}
+                <div className="inline-flex h-10 items-center rounded-lg border border-gray-700 bg-gray-800/50 p-0.5">
+                  {(['all', 'photo', 'video'] as Track[]).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setSelectedTrack(option)}
+                      className={`h-full px-3 rounded-md text-sm font-medium transition-colors ${
+                        track === option ? 'bg-amber-500/20 text-amber-300' : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {TRACK_LABELS[option]}
+                    </button>
+                  ))}
+                </div>
+                <Button variant="primary" icon={Plus} onClick={openNewDay}>
+                  Yeni Gün
+                </Button>
+              </>
+            )}
+            {isAdmin && activeDay && (
+              <>
+                <Button iconOnlyOnMobile icon={RefreshCw} onClick={openReupload}>
+                  Yeniden Yükle
+                </Button>
+                <Button iconOnlyOnMobile icon={Download} onClick={() => setExportOpen(true)}>
+                  Excel İndir
+                </Button>
+                <Button iconOnlyOnMobile variant="soft" icon={RotateCcw} onClick={() => setConfirmReset(true)}>
+                  Süreleri Sıfırla
+                </Button>
+                <Button iconOnlyOnMobile variant="danger" icon={Trash2} loading={isClearing} onClick={() => setConfirmDeleteDay(true)}>
+                  Bu Günü Sil
+                </Button>
+              </>
+            )}
+          </>
+        }
+      />
 
       {/* Gün sekmeleri */}
       {days.length > 0 && (
@@ -688,9 +629,7 @@ const ShootingListPage = () => {
       {/* Table */}
       <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-          </div>
+          <SkeletonRows rows={8} />
         ) : entries.length === 0 ? (
           <div className="p-12 text-center">
             <Camera className="w-12 h-12 text-gray-600 mx-auto mb-4" />
@@ -978,6 +917,67 @@ const ShootingListPage = () => {
         onConfirm={handleResetTimes}
         onCancel={() => setConfirmReset(false)}
       />
+
+      <ConfirmDeleteModal
+        open={confirmDeleteDay && !!activeDay}
+        title="Gün silinsin mi?"
+        message={
+          activeDay && (
+            <>
+              <strong>{activeDay.label}</strong> günü ve listedeki bütün satırları (süreler dahil) kalıcı olarak
+              silinecek. Sipariş ve rezervasyonlar etkilenmez. Bu işlem geri alınamaz.
+            </>
+          )
+        }
+        confirmLabel="Evet, Günü Sil"
+        isDeleting={isClearing}
+        onConfirm={handleDeleteDay}
+        onCancel={() => setConfirmDeleteDay(false)}
+      />
+
+      {activeDay && (
+        <ExportModal
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          title={`Çekim Listesi — ${activeDay.label} — Excel`}
+          columnsUrl="/api/shooting-list/export/columns"
+          exportUrl="/api/shooting-list/export"
+          storageKey="shooting-list"
+          fallbackFileName={`cekim-listesi-${activeDay.label}.xlsx`}
+          fixedParams={{ dayId: activeDay.id }}
+          initialValues={{ track: track, onlyShot: '', search: searchQuery, sort: sortKey }}
+          fields={[
+            {
+              key: 'track',
+              label: 'Ekip',
+              type: 'select',
+              options: [
+                { value: 'all', label: 'Tümü (foto + video)' },
+                { value: 'photo', label: 'Fotoğraf' },
+                { value: 'video', label: 'Video' },
+              ],
+            },
+            {
+              key: 'sort',
+              label: 'Sıralama',
+              type: 'select',
+              options: [
+                { value: 'position', label: 'Excel sırası' },
+                { value: 'expected', label: 'Beklenen saat' },
+                { value: 'started', label: 'Çekim başlangıcı' },
+                { value: 'name', label: 'Sporcu adı' },
+              ],
+            },
+            { key: 'search', label: 'Arama (sporcu, kulüp)', type: 'text', placeholder: 'Boş = hepsi' },
+            {
+              key: 'onlyShot',
+              label: 'Sadece çekilecekler',
+              type: 'checkbox',
+              hint: 'Seçili ekip için paketi olan sporcular (Tümü seçiliyse herhangi bir paketi olanlar)',
+            },
+          ]}
+        />
+      )}
     </div>
   );
 };

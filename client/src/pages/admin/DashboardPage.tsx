@@ -1,7 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router';
+import {
+  CalendarDays,
+  CheckCircle2,
+  CircleDollarSign,
+  ClipboardList,
+  Clock,
+  LayoutDashboard,
+  MessageSquare,
+  ShoppingCart,
+  Star,
+  Truck,
+  Wallet,
+  Wrench,
+} from 'lucide-react';
 import api from '../../lib/api';
+import StatusBadge from '../../lib/orderStatus';
+import ShopStatusBadge from '../../components/admin/ShopStatusBadge';
+import type { ShopStatus } from '../../lib/shop';
+import {
+  SkeletonCards,
+  PageHeader,
+  Panel,
+  PanelHeader,
+  SectionTitle,
+  StatCard,
+} from '../../components/admin/ui';
+import { tableBodyClass, tableHeadRowClass } from '../../lib/adminUi';
 
-interface Order {
+interface RecentRecord {
   id: string;
   athleteName: string;
   clubName: string;
@@ -10,356 +37,413 @@ interface Order {
   createdAt: string;
 }
 
-interface Reservation {
-  id: string;
-  athleteName: string;
-  clubName: string;
-  totalPrice: number;
-  status: string;
-  createdAt: string;
+interface OrderStats {
+  total: number;
+  paid: number;
+  pending: number;
+  revenue: number;
+  recentOrders: RecentRecord[];
 }
 
-interface Stats {
-  totalOrders: number;
-  paidOrders: number;
-  pendingOrders: number;
-  totalRevenue: number;
-  // Rezervasyon stats
-  totalReservations: number;
-  confirmedReservations: number; // yalnızca Onaylandı (henüz tahsil edilmedi)
-  paidReservations: number; // Ödendi + Teslim edildi
-  pendingReservations: number;
-  confirmedRevenue: number;
+interface ReservationStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  paid: number;
+  confirmedRevenue?: number;
+  paidRevenue?: number;
+  recentReservations: RecentRecord[];
+}
+
+interface ShopStats {
+  counts: Record<ShopStatus, number>;
+  toProcess: number;
+  unpaid: number;
+  paid: number;
   paidRevenue: number;
+  recentOrders: {
+    id: string;
+    productName: string;
+    quantity: number;
+    recipientName: string;
+    city: string;
+    totalPrice: number;
+    status: ShopStatus;
+    paidAt: string | null;
+    createdAt: string;
+  }[];
 }
+
+interface FeedbackSummary {
+  unread: number;
+  total: number;
+  averageRating: number | null;
+  ratedCount: number;
+  recent: {
+    id: string;
+    rating: number | null;
+    message: string;
+    isRead: boolean;
+    createdAt: string;
+    user: { name: string | null; email: string | null } | null;
+  }[];
+}
+
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(price);
+
+const formatDate = (date: string) =>
+  new Intl.DateTimeFormat('tr-TR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(date));
+
+const SeeAll = ({ to }: { to: string }) => (
+  <Link to={to} className="text-sm text-amber-400 hover:text-amber-300 font-medium whitespace-nowrap">
+    Tümünü gör →
+  </Link>
+);
+
+const Unavailable = () => <p className="text-gray-500 text-sm text-center py-8">Bu bölüm yüklenemedi.</p>;
+
+const RecentTable = ({
+  head,
+  empty,
+  children,
+}: {
+  head: string[];
+  empty: string;
+  children: ReactNode[];
+}) =>
+  children.length === 0 ? (
+    <p className="text-gray-400 text-sm text-center py-8">{empty}</p>
+  ) : (
+    <div className="overflow-x-auto -mx-4 sm:-mx-6">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className={tableHeadRowClass}>
+            {head.map((h) => (
+              <th key={h} className={`px-4 sm:px-6 pb-3 font-medium ${h === 'Tarih' ? 'hidden sm:table-cell' : ''}`}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className={tableBodyClass}>{children}</tbody>
+      </table>
+    </div>
+  );
+
+const Stars = ({ rating }: { rating: number }) => (
+  <span className="inline-flex" aria-label={`${rating} yıldız`}>
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star key={n} className={`w-3.5 h-3.5 ${n <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
+    ))}
+  </span>
+);
 
 const DashboardPage = () => {
-  const [stats, setStats] = useState<Stats>({
-    totalOrders: 0,
-    paidOrders: 0,
-    pendingOrders: 0,
-    totalRevenue: 0,
-    totalReservations: 0,
-    confirmedReservations: 0,
-    paidReservations: 0,
-    pendingReservations: 0,
-    confirmedRevenue: 0,
-    paidRevenue: 0,
-  });
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [recentReservations, setRecentReservations] = useState<Reservation[]>([]);
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<OrderStats | null>(null);
+  const [reservations, setReservations] = useState<ReservationStats | null>(null);
+  const [shop, setShop] = useState<ShopStats | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const [orderStatsRes, reservationStatsRes] = await Promise.all([
-        api.get('/api/orders/stats'),
-        api.get('/api/reservations/stats'),
-      ]);
-      
-      const orderStats = orderStatsRes.data;
-      const reservationStats = reservationStatsRes.data;
-
-      setStats({ 
-        totalOrders: orderStats.total,
-        paidOrders: orderStats.paid,
-        pendingOrders: orderStats.pending,
-        totalRevenue: orderStats.revenue,
-        totalReservations: reservationStats.total,
-        confirmedReservations: reservationStats.confirmed,
-        paidReservations: reservationStats.paid,
-        pendingReservations: reservationStats.pending,
-        confirmedRevenue: reservationStats.confirmedRevenue ?? 0,
-        paidRevenue: reservationStats.paidRevenue ?? 0,
+    // allSettled: bir bölümün hatası diğerlerini göstermeye engel olmasın
+    Promise.allSettled([
+      api.get('/api/orders/stats'),
+      api.get('/api/reservations/stats'),
+      api.get('/api/shop/admin/stats'),
+      api.get('/api/feedback/summary'),
+    ]).then(([o, r, s, f]) => {
+      if (o.status === 'fulfilled') setOrders(o.value.data);
+      if (r.status === 'fulfilled') setReservations(r.value.data);
+      if (s.status === 'fulfilled') setShop(s.value.data);
+      if (f.status === 'fulfilled') setFeedback(f.value.data);
+      [o, r, s, f].forEach((res) => {
+        if (res.status === 'rejected') console.error('Dashboard verisi alınamadı:', res.reason);
       });
-      setRecentOrders(orderStats.recentOrders);
-      setRecentReservations(reservationStats.recentReservations);
-    } catch (error) {
-      console.error('Dashboard data fetch error:', error);
-    } finally {
       setIsLoading(false);
-    }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-    }).format(price);
-  };
-
-  const formatDate = (date: string) => {
-    return new Intl.DateTimeFormat('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
-  };
-
-  const getStatusBadge = (status: string) => {
-    const badges: Record<string, string> = {
-      PENDING: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      PAID: 'bg-green-500/20 text-green-400 border-green-500/30',
-      FAILED: 'bg-red-500/20 text-red-400 border-red-500/30',
-      CANCELLED: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-      CONFIRMED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      DELIVERED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    };
-    const labels: Record<string, string> = {
-      PENDING: 'Bekliyor',
-      PAID: 'Ödendi',
-      FAILED: 'Başarısız',
-      CANCELLED: 'İptal',
-      CONFIRMED: 'Onaylandı',
-      DELIVERED: 'Teslim Edildi',
-    };
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${badges[status] || badges.PENDING}`}>
-        {labels[status] || status}
-      </span>
-    );
-  };
+    });
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+      <div className="space-y-6" aria-busy="true">
+        <PageHeader title="Dashboard" icon={LayoutDashboard} description="Hoş geldiniz! İşte genel bakış." />
+        <SkeletonCards />
+        <SkeletonCards />
+        <SkeletonCards />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-gray-400 mt-1 text-sm sm:text-base">Hoş geldiniz! İşte genel bakış.</p>
-      </div>
+      <PageHeader title="Dashboard" icon={LayoutDashboard} description="Hoş geldiniz! İşte genel bakış." />
 
-      {/* Sipariş Stats */}
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          Online Siparişler
-        </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-blue-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Toplam Sipariş</p>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats.totalOrders}</p>
-              </div>
-            </div>
+      {/* Paket Siparişleri (online) */}
+      <section>
+        <SectionTitle
+          title="Paket Siparişleri (Online)"
+          icon={ShoppingCart}
+          iconClassName="text-blue-400"
+          action={<SeeAll to="/admin/orders" />}
+        />
+        {orders ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard reserveHint label="Toplam Sipariş" value={orders.total} icon={ClipboardList} tone="blue" />
+            <StatCard reserveHint label="Ödenen" value={orders.paid} hint="teslim edilenler dahil" icon={CheckCircle2} tone="green" />
+            <StatCard reserveHint label="Bekleyen" value={orders.pending} icon={Clock} tone="yellow" />
+            <StatCard reserveHint label="Toplam Gelir" value={formatPrice(orders.revenue)} icon={CircleDollarSign} tone="amber" />
           </div>
+        ) : (
+          <Panel>
+            <Unavailable />
+          </Panel>
+        )}
+      </section>
 
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-green-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Ödenen</p>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats.paidOrders}</p>
-              </div>
-            </div>
+      {/* Rezervasyonlar (nakit) */}
+      <section>
+        <SectionTitle
+          title="Rezervasyonlar (Nakit)"
+          icon={CalendarDays}
+          iconClassName="text-violet-400"
+          action={<SeeAll to="/admin/reservations" />}
+        />
+        {reservations ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard reserveHint label="Toplam Rezervasyon" value={reservations.total} icon={CalendarDays} tone="violet" />
+            <StatCard reserveHint label="Bekleyen" value={reservations.pending} icon={Clock} tone="yellow" />
+            {/* Onaylandı: para henüz alınmadı */}
+            <StatCard
+              reserveHint
+              label={`Onaylandı · ${reservations.confirmed}`}
+              value={formatPrice(reservations.confirmedRevenue ?? 0)}
+              hint="tahsil edilecek"
+              icon={CheckCircle2}
+              tone="blue"
+            />
+            {/* Ödendi: teslim edilenler dahil */}
+            <StatCard
+              reserveHint
+              label={`Ödendi · ${reservations.paid}`}
+              value={formatPrice(reservations.paidRevenue ?? 0)}
+              hint="tahsil edildi · teslim edilenler dahil"
+              icon={Wallet}
+              tone="green"
+            />
           </div>
+        ) : (
+          <Panel>
+            <Unavailable />
+          </Panel>
+        )}
+      </section>
 
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-yellow-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Bekleyen</p>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats.pendingOrders}</p>
-              </div>
-            </div>
+      {/* Ürün Siparişleri */}
+      <section>
+        <SectionTitle
+          title="Ürün Siparişleri"
+          icon={Truck}
+          iconClassName="text-teal-400"
+          action={<SeeAll to="/admin/shop/orders" />}
+        />
+        {shop ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <StatCard
+              reserveHint
+              label="Hazırlanacak"
+              value={shop.toProcess}
+              hint="onaylandı + hazırlanıyor"
+              icon={Wrench}
+              tone="sky"
+              to="/admin/shop/orders"
+            />
+            {/* Sipariş verildi ama ödeme gelmedi (iyzico'da yarım kalan / başarısız) */}
+            <StatCard
+              reserveHint
+              label="Ödeme Bekleyen"
+              value={shop.unpaid ?? 0}
+              hint="ödeme bekleniyor / başarısız"
+              icon={Clock}
+              tone="yellow"
+              to="/admin/shop/orders?tab=unpaid"
+            />
+            <StatCard
+              reserveHint
+              label="Kargoda"
+              value={shop.counts.SHIPPED ?? 0}
+              hint={`teslim edildi: ${shop.counts.DELIVERED ?? 0}`}
+              icon={Truck}
+              tone="violet"
+            />
+            <StatCard
+              reserveHint
+              label={`Ürün Geliri · ${shop.paid}`}
+              value={formatPrice(shop.paidRevenue)}
+              icon={CircleDollarSign}
+              tone="amber"
+            />
           </div>
+        ) : (
+          <Panel>
+            <Unavailable />
+          </Panel>
+        )}
+      </section>
 
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-amber-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Toplam Gelir</p>
-                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.totalRevenue)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Rezervasyon Stats */}
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-          <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          Rezervasyonlar (Nakit)
-        </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-violet-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Toplam Rezervasyon</p>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats.totalReservations}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-yellow-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Bekleyen</p>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats.pendingReservations}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Onaylandı: para henüz alınmadı */}
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-blue-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Onaylandı · {stats.confirmedReservations}</p>
-                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.confirmedRevenue)}</p>
-                <p className="text-[11px] sm:text-xs text-blue-300/80 truncate">tahsil edilecek</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Ödendi: teslim edilenler dahil */}
-          <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-3 sm:p-5">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-green-500/20 rounded-lg shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-400 truncate">Ödendi · {stats.paidReservations}</p>
-                <p className="text-base sm:text-2xl font-bold text-white truncate">{formatPrice(stats.paidRevenue)}</p>
-                <p className="text-[11px] sm:text-xs text-green-300/80 truncate">tahsil edildi · teslim edilenler dahil</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Tables Grid */}
+      {/* Son kayıtlar */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Recent Orders */}
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Son Siparişler
-          </h2>
-          
-          {recentOrders.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">Henüz sipariş yok.</p>
+        <Panel padded>
+          <PanelHeader
+            title="Son Paket Siparişleri"
+            icon={ShoppingCart}
+            iconClassName="text-blue-400"
+            action={<SeeAll to="/admin/orders" />}
+          />
+          {orders ? (
+            <RecentTable head={['Sporcu', 'Tutar', 'Durum', 'Tarih']} empty="Henüz paket siparişi yok.">
+              {orders.recentOrders.map((order) => (
+                <tr key={order.id} onClick={() => navigate(`/admin/orders?id=${order.id}`)} className="cursor-pointer hover:bg-gray-700/20 transition-colors" title="Detayı aç">
+                  <td className="px-4 sm:px-6 py-3">
+                    <div className="text-white font-medium">{order.athleteName}</div>
+                    <div className="text-xs text-gray-500">{order.clubName}</div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 text-gray-300 whitespace-nowrap">{formatPrice(order.totalPrice)}</td>
+                  <td className="px-4 sm:px-6 py-3">
+                    <StatusBadge status={order.status} />
+                  </td>
+                  <td className="hidden sm:table-cell px-4 sm:px-6 py-3 text-gray-400 text-xs whitespace-nowrap">{formatDate(order.createdAt)}</td>
+                </tr>
+              ))}
+            </RecentTable>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-gray-400 text-sm border-b border-gray-700">
-                    <th className="pb-3 font-medium">Sporcu</th>
-                    <th className="pb-3 font-medium">Tutar</th>
-                    <th className="pb-3 font-medium">Durum</th>
-                    <th className="pb-3 font-medium">Tarih</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700/50">
-                  {recentOrders.map((order) => (
-                    <tr key={order.id} className="text-sm">
-                      <td className="py-3">
-                        <div className="text-white font-medium">{order.athleteName}</div>
-                        <div className="text-xs text-gray-500">{order.clubName}</div>
-                      </td>
-                      <td className="py-3 text-gray-300">{formatPrice(order.totalPrice)}</td>
-                      <td className="py-3">{getStatusBadge(order.status)}</td>
-                      <td className="py-3 text-gray-400 text-xs">{formatDate(order.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Unavailable />
           )}
-        </div>
+        </Panel>
 
-        {/* Recent Reservations */}
-        <div className="bg-gray-800/50 border border-violet-700/50 rounded-xl p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Son Rezervasyonlar
-          </h2>
-          
-          {recentReservations.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">Henüz rezervasyon yok.</p>
+        <Panel padded>
+          <PanelHeader
+            title="Son Rezervasyonlar"
+            icon={CalendarDays}
+            iconClassName="text-violet-400"
+            action={<SeeAll to="/admin/reservations" />}
+          />
+          {reservations ? (
+            <RecentTable head={['Sporcu', 'Tutar', 'Durum', 'Tarih']} empty="Henüz rezervasyon yok.">
+              {reservations.recentReservations.map((r) => (
+                <tr key={r.id} onClick={() => navigate(`/admin/reservations?id=${r.id}`)} className="cursor-pointer hover:bg-gray-700/20 transition-colors" title="Detayı aç">
+                  <td className="px-4 sm:px-6 py-3">
+                    <div className="text-white font-medium">{r.athleteName}</div>
+                    <div className="text-xs text-gray-500">{r.clubName}</div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 text-gray-300 whitespace-nowrap">{formatPrice(r.totalPrice)}</td>
+                  <td className="px-4 sm:px-6 py-3">
+                    <StatusBadge status={r.status} />
+                  </td>
+                  <td className="hidden sm:table-cell px-4 sm:px-6 py-3 text-gray-400 text-xs whitespace-nowrap">{formatDate(r.createdAt)}</td>
+                </tr>
+              ))}
+            </RecentTable>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-gray-400 text-sm border-b border-gray-700">
-                    <th className="pb-3 font-medium">Sporcu</th>
-                    <th className="pb-3 font-medium">Tutar</th>
-                    <th className="pb-3 font-medium">Durum</th>
-                    <th className="pb-3 font-medium">Tarih</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700/50">
-                  {recentReservations.map((reservation) => (
-                    <tr key={reservation.id} className="text-sm">
-                      <td className="py-3">
-                        <div className="text-white font-medium">{reservation.athleteName}</div>
-                        <div className="text-xs text-gray-500">{reservation.clubName}</div>
-                      </td>
-                      <td className="py-3 text-gray-300">{formatPrice(reservation.totalPrice)}</td>
-                      <td className="py-3">{getStatusBadge(reservation.status)}</td>
-                      <td className="py-3 text-gray-400 text-xs">{formatDate(reservation.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Unavailable />
           )}
-        </div>
+        </Panel>
+
+        <Panel padded>
+          <PanelHeader
+            title="Son Ürün Siparişleri"
+            icon={Truck}
+            iconClassName="text-teal-400"
+            action={<SeeAll to="/admin/shop/orders" />}
+          />
+          {shop ? (
+            <RecentTable head={['Ürün', 'Alıcı', 'Tutar', 'Durum']} empty="Henüz ödenmiş ürün siparişi yok.">
+              {shop.recentOrders.map((o) => (
+                <tr key={o.id} onClick={() => navigate(`/admin/shop/orders?tab=all&id=${o.id}`)} className="cursor-pointer hover:bg-gray-700/20 transition-colors" title="Detayı aç">
+                  <td className="px-4 sm:px-6 py-3">
+                    <div className="text-white font-medium">
+                      {o.productName}
+                      {o.quantity > 1 && <span className="text-gray-400"> × {o.quantity}</span>}
+                    </div>
+                    <div className="text-xs text-gray-500">{formatDate(o.paidAt ?? o.createdAt)}</div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3">
+                    <div className="text-gray-200">{o.recipientName}</div>
+                    <div className="text-xs text-gray-500">{o.city}</div>
+                  </td>
+                  <td className="px-4 sm:px-6 py-3 text-gray-300 whitespace-nowrap">{formatPrice(o.totalPrice)}</td>
+                  <td className="px-4 sm:px-6 py-3">
+                    <ShopStatusBadge status={o.status} />
+                  </td>
+                </tr>
+              ))}
+            </RecentTable>
+          ) : (
+            <Unavailable />
+          )}
+        </Panel>
+
+        <Panel padded>
+          <PanelHeader
+            title={
+              <>
+                Son Görüşler
+                {feedback && (
+                  <span className="ml-2 text-sm font-normal text-gray-400">
+                    {feedback.unread > 0 && <span className="text-amber-400">{feedback.unread} okunmamış · </span>}
+                    {feedback.averageRating !== null
+                      ? `ort. ${feedback.averageRating.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}★`
+                      : `${feedback.total} görüş`}
+                  </span>
+                )}
+              </>
+            }
+            icon={MessageSquare}
+            iconClassName="text-amber-400"
+            action={<SeeAll to="/admin/feedback" />}
+          />
+          {feedback ? (
+            feedback.recent.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-8">Henüz görüş yok.</p>
+            ) : (
+              <ul className="divide-y divide-gray-700/50 -my-3">
+                {feedback.recent.map((f) => (
+                  <li
+                    key={f.id}
+                    onClick={() => navigate(f.isRead ? '/admin/feedback' : '/admin/feedback?tab=unread')}
+                    className="py-3 flex gap-3 cursor-pointer hover:bg-gray-700/20 -mx-2 px-2 rounded-lg transition-colors"
+                    title="Görüşlerde aç"
+                  >
+                    <span
+                      className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${f.isRead ? 'bg-transparent' : 'bg-amber-400'}`}
+                      title={f.isRead ? undefined : 'Okunmamış'}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
+                        <span className="text-gray-200 text-sm font-medium">
+                          {f.user?.name || f.user?.email || 'Silinmiş hesap'}
+                        </span>
+                        {f.rating ? <Stars rating={f.rating} /> : null}
+                        <span>{formatDate(f.createdAt)}</span>
+                      </div>
+                      <p className="text-gray-300 text-sm mt-1 line-clamp-2 whitespace-pre-line">{f.message}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : (
+            <Unavailable />
+          )}
+        </Panel>
       </div>
     </div>
   );

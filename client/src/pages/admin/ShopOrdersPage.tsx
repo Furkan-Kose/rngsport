@@ -1,9 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Copy, Loader2, Save, Search, Trash2, Truck, X } from 'lucide-react';
+import { Copy, Eye, FileSpreadsheet, Pencil, Save, Trash2, Truck, X } from 'lucide-react';
 import api from '../../lib/api';
+import { useUrlState } from '../../hooks/useUrlState';
+import PhoneLinks from '../../components/admin/PhoneLinks';
+import ExportModal from '../../components/admin/ExportModal';
 import { formatTL } from '../../lib/loyalty';
-import { SHOP_STATUS_CLASSES, type ShopOrder, type ShopStatus } from '../../lib/shop';
+import { SHOP_STATUS_LABELS as STATUS_LABELS, isUnpaid, type ShippingInput, type ShopOrder, type ShopStatus } from '../../lib/shop';
+import ShopStatusBadge from '../../components/admin/ShopStatusBadge';
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  FilterTabs,
+  SkeletonRows,
+  SortableTh,
+  PageHeader,
+  Pagination,
+  Panel,
+  SearchInput,
+  Toolbar,
+} from '../../components/admin/ui';
+import { tableBodyClass, tableHeadRowClass, tdClass, thClass } from '../../lib/adminUi';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import { getApparatusLabel } from '../../constants/apparatuses';
 
@@ -14,15 +32,6 @@ interface AdminShopOrder extends ShopOrder {
   user: { id: string; name: string | null; email: string | null } | null;
 }
 
-const STATUS_LABELS: Record<ShopStatus, string> = {
-  PENDING: 'Ödeme bekleniyor',
-  FAILED: 'Ödeme başarısız',
-  CONFIRMED: 'Onaylandı',
-  IN_PRODUCTION: 'Hazırlanıyor',
-  SHIPPED: 'Kargoda',
-  DELIVERED: 'Teslim edildi',
-  CANCELLED: 'İptal',
-};
 
 // Sekme → sunucudaki status filtresi
 const TABS: { key: string; label: string; statuses: ShopStatus[] }[] = [
@@ -36,11 +45,6 @@ const TABS: { key: string; label: string; statuses: ShopStatus[] }[] = [
   { key: 'all', label: 'Tümü', statuses: [] },
 ];
 
-const StatusBadge = ({ status }: { status: ShopStatus }) => (
-  <span className={`px-2 py-0.5 rounded-md text-xs font-medium border whitespace-nowrap ${SHOP_STATUS_CLASSES[status]}`}>
-    {STATUS_LABELS[status]}
-  </span>
-);
 
 const selectionText = (o: ShopOrder) =>
   o.selection ? `${getApparatusLabel(o.selection.apparatus)} · Poz ${o.selection.poseNo}` : '';
@@ -58,21 +62,33 @@ const inputClass =
   'w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
 
 const ShopOrdersPage = () => {
-  const [tab, setTab] = useState('paid');
-  const [search, setSearch] = useState('');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
+  // Sekme, arama, sayfa, sıralama ve açık detay adres çubuğunda.
+  // Dashboard'daki "Ödeme Bekleyen" kartı → ?tab=unpaid, hızlı arama → ?tab=all&id=…
+  const [url, setUrl] = useUrlState({ tab: 'paid', q: '', page: '1', sort: '', dir: 'desc', id: '' });
+  const tab = TABS.some((t) => t.key === url.tab) ? url.tab : 'paid';
+  const query = url.q;
+  const page = Math.max(1, Number(url.page) || 1);
+  const setPage = (p: number) => setUrl({ page: String(p) });
+  const [search, setSearch] = useState(url.q);
+  const [exportOpen, setExportOpen] = useState(false);
   const [orders, setOrders] = useState<AdminShopOrder[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AdminShopOrder | null>(null);
+  // Listedeki satırdan silme (yalnızca ödenmemiş siparişler silinebilir)
+  const [rowDelete, setRowDelete] = useState<AdminShopOrder | null>(null);
+  const [rowDeleting, setRowDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ status: tab, page: String(page), limit: '20' });
       if (query) params.set('search', query);
+      if (url.sort) {
+        params.set('sort', url.sort);
+        params.set('dir', url.dir);
+      }
       const { data } = await api.get(`/api/shop/admin/orders?${params}`);
       setOrders(data.data);
       setCounts(data.counts);
@@ -83,128 +99,247 @@ const ShopOrdersPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [tab, page, query]);
+  }, [tab, page, query, url.sort, url.dir]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Detay aç/kapat: açık sipariş ?id= ile adres çubuğunda
+  const openDetail = (order: AdminShopOrder | null) => {
+    setSelected(order);
+    setUrl({ id: order?.id ?? '' });
+  };
+
+  // ?id= ile gelindi: listede yoksa aynı admin biçimiyle tek kayıt getirilir (search id ile eşleşir)
+  useEffect(() => {
+    if (!url.id || selected?.id === url.id) return;
+    const inList = orders.find((o) => o.id === url.id);
+    if (inList) {
+      setSelected(inList);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get('/api/shop/admin/orders', { params: { status: 'all', search: url.id, limit: 1 } })
+      .then(({ data }) => {
+        if (cancelled) return;
+        const found = data.data?.find((o: AdminShopOrder) => o.id === url.id);
+        if (found) setSelected(found);
+        else {
+          toast.error('Sipariş bulunamadı');
+          setUrl({ id: '' });
+        }
+      })
+      .catch(() => !cancelled && setUrl({ id: '' }));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url.id, orders]);
+
+  const handleSort = (sort: string, dir: 'asc' | 'desc' | null) =>
+    setUrl(dir ? { sort, dir, page: '1' } : { sort: '', dir: 'desc', page: '1' });
+  const sortDir = url.dir as 'asc' | 'desc';
+
+  const deleteRow = async () => {
+    if (!rowDelete) return;
+    setRowDeleting(true);
+    try {
+      await api.delete(`/api/shop/admin/orders/${rowDelete.id}`);
+      toast.success('Sipariş silindi');
+      setRowDelete(null);
+      load();
+    } catch (err) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || 'Silinemedi');
+    } finally {
+      setRowDeleting(false);
+    }
+  };
+
   const tabCount = (t: (typeof TABS)[number]) =>
     t.statuses.length ? t.statuses.reduce((sum, s) => sum + (counts[s] ?? 0), 0) : Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Truck className="w-7 h-7 text-amber-500" />
-          Ürün Siparişleri
-        </h1>
-        <p className="text-gray-400 mt-1 text-sm">
-          Kişiye özel ürün siparişleri. Durumu buradan güncelleyin; müşteri profilinden görür. "Kargoda" ve "Teslim edildi"de müşteriye mail gider.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Ürün Siparişleri"
+        icon={Truck}
+        description={'Kişiye özel ürün siparişleri. Durumu buradan güncelleyin; müşteri profilinden görür. "Kargoda" ve "Teslim edildi"de müşteriye mail gider.'}
+        actions={
+          <Button icon={FileSpreadsheet} onClick={() => setExportOpen(true)}>
+            Excel İndir
+          </Button>
+        }
+      />
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => {
-              setTab(t.key);
-              setPage(1);
-            }}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-              tab === t.key ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:text-gray-200'
-            }`}
-          >
-            {t.label} <span className="opacity-70">({tabCount(t)})</span>
-          </button>
-        ))}
-      </div>
+      <Toolbar>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          onSubmit={() => setUrl({ q: search.trim(), page: '1' })}
+          placeholder="Alıcı, telefon, e-posta, ürün, il ara... (Enter)"
+        />
+        <FilterTabs
+          tabs={TABS.map((t) => ({ key: t.key, label: t.label, count: tabCount(t) }))}
+          value={tab}
+          onChange={(key) => setUrl({ tab: key, page: '1' })}
+        />
+      </Toolbar>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setQuery(search.trim());
-          setPage(1);
-        }}
-        className="relative mb-4 max-w-md"
-      >
-        <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Alıcı, telefon, e-posta, ürün, il ara..." className={`${inputClass} pl-9`} />
-      </form>
-
-      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-x-auto">
+      <Panel className="overflow-hidden">
         {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-          </div>
+          <SkeletonRows />
         ) : orders.length === 0 ? (
-          <p className="text-center text-gray-400 py-16">Sipariş yok</p>
+          <EmptyState bare icon={Truck} title="Sipariş yok" description={query ? 'Aramayı değiştirmeyi deneyin.' : undefined} />
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-400 border-b border-gray-700">
-                <th className="px-4 py-3 font-medium">Tarih</th>
-                <th className="px-4 py-3 font-medium">Ürün</th>
-                <th className="px-4 py-3 font-medium">Alıcı</th>
-                <th className="px-4 py-3 font-medium">İl</th>
-                <th className="px-4 py-3 font-medium">Tutar</th>
-                <th className="px-4 py-3 font-medium">Durum</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-gray-700/50 hover:bg-gray-700/30 cursor-pointer">
-                  <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{formatDateTime(o.paidAt ?? o.createdAt)}</td>
-                  <td className="px-4 py-3 text-white">
-                    {o.productName}
-                    {o.quantity > 1 && <span className="text-gray-400"> × {o.quantity}</span>}
-                    {o.selection && <div className="text-xs text-amber-300">{selectionText(o)}</div>}
-                  </td>
-                  <td className="px-4 py-3 text-gray-200">
-                    {o.recipientName}
-                    <div className="text-xs text-gray-500">{o.phone}</div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-300">{o.city}</td>
-                  <td className="px-4 py-3 text-gray-200 whitespace-nowrap">{formatTL(o.totalPrice)}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={o.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          <>
+          {/* Mobil kartlar */}
+          <div className="md:hidden divide-y divide-gray-700/50">
+            {orders.map((o) => (
+              <div key={o.id} className="p-4">
+                <button type="button" onClick={() => openDetail(o)} className="w-full text-left">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-medium">
+                        {o.productName}
+                        {o.quantity > 1 && <span className="text-gray-400"> × {o.quantity}</span>}
+                      </p>
+                      {o.selection && <p className="text-xs text-amber-300">{selectionText(o)}</p>}
+                      <p className="text-gray-400 text-xs mt-1 truncate">
+                        {o.recipientName} · {o.city}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-white font-semibold">{formatTL(o.totalPrice)}</p>
+                      <div className="mt-1.5">
+                        <ShopStatusBadge status={o.status} />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-gray-500 text-xs mt-2">{formatDateTime(o.paidAt ?? o.createdAt)}</p>
+                </button>
+                <div className="mt-3 flex items-center gap-2">
+                  <Button size="sm" icon={Eye} onClick={() => openDetail(o)}>
+                    Detay / Düzenle
+                  </Button>
+                  {isUnpaid(o.status) && (
+                    <Button size="sm" variant="danger" icon={Trash2} onClick={() => setRowDelete(o)}>
+                      Sil
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4 text-sm">
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 disabled:opacity-40">
-            Önceki
-          </button>
-          <span className="text-gray-400">
-            {page} / {totalPages}
-          </span>
-          <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 disabled:opacity-40">
-            Sonraki
-          </button>
-        </div>
-      )}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className={tableHeadRowClass}>
+                  <SortableTh label="Tarih" field="createdAt" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <th className={thClass}>Ürün</th>
+                  <SortableTh label="Alıcı" field="recipientName" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <SortableTh label="İl" field="city" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <SortableTh label="Tutar" field="totalPrice" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <SortableTh label="Durum" field="status" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <th className={`${thClass} text-right`}>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className={tableBodyClass}>
+                {orders.map((o) => (
+                  <tr key={o.id} onClick={() => openDetail(o)} className="hover:bg-gray-700/20 cursor-pointer transition-colors">
+                    <td className={`${tdClass} text-gray-300 whitespace-nowrap`}>{formatDateTime(o.paidAt ?? o.createdAt)}</td>
+                    <td className={`${tdClass} text-white`}>
+                      {o.productName}
+                      {o.quantity > 1 && <span className="text-gray-400"> × {o.quantity}</span>}
+                      {o.selection && <div className="text-xs text-amber-300">{selectionText(o)}</div>}
+                    </td>
+                    <td className={`${tdClass} text-gray-200`}>
+                      {o.recipientName}
+                      <div className="text-xs" onClick={(e) => e.stopPropagation()}>
+                        <PhoneLinks phone={o.phone} />
+                      </div>
+                    </td>
+                    <td className={`${tdClass} text-gray-300`}>{o.city}</td>
+                    <td className={`${tdClass} text-gray-200 whitespace-nowrap`}>{formatTL(o.totalPrice)}</td>
+                    <td className={tdClass}>
+                      <ShopStatusBadge status={o.status} />
+                    </td>
+                    <td className={tdClass} onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <IconButton icon={Eye} title="Detay / Düzenle" onClick={() => openDetail(o)} />
+                        {isUnpaid(o.status) ? (
+                          <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setRowDelete(o)} />
+                        ) : (
+                          <IconButton
+                            icon={Trash2}
+                            title="Ödenmiş sipariş silinemez; iptal için durumu İptal yapın"
+                            tone="danger"
+                            disabled
+                          />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          </>
+        )}
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </Panel>
 
       {selected && (
         <OrderDetail
           order={selected}
-          onClose={() => setSelected(null)}
+          onClose={() => openDetail(null)}
           onSaved={(updated) => {
             setSelected(updated);
             load();
           }}
           onDeleted={() => {
-            setSelected(null);
+            openDetail(null);
             load();
           }}
         />
       )}
+
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title="Ürün Siparişleri — Excel"
+        columnsUrl="/api/shop/admin/orders/export/columns"
+        exportUrl="/api/shop/admin/orders/export"
+        storageKey="shop-orders"
+        fallbackFileName="urun-siparisleri.xlsx"
+        initialValues={{ status: tab, search: query, from: '', to: '', sort: url.sort, dir: url.dir }}
+        fields={[
+          { key: 'status', label: 'Durum', type: 'select', options: TABS.map((t) => ({ value: t.key, label: t.label })) },
+          { key: 'search', label: 'Arama (alıcı, telefon, e-posta, ürün, il)', type: 'text', placeholder: 'Boş = hepsi' },
+          { key: 'from', label: 'Başlangıç tarihi', type: 'date' },
+          { key: 'to', label: 'Bitiş tarihi', type: 'date' },
+        ]}
+      />
+
+      <ConfirmDeleteModal
+        open={!!rowDelete}
+        title="Sipariş silinsin mi?"
+        message={
+          rowDelete && (
+            <>
+              <strong className="text-white">{rowDelete.recipientName}</strong> adına{' '}
+              <strong className="text-white">{rowDelete.productName}</strong> siparişi hiç ödenmedi. Kalıcı olarak
+              silinecek.
+            </>
+          )
+        }
+        isDeleting={rowDeleting}
+        onConfirm={deleteRow}
+        onCancel={() => setRowDelete(null)}
+      />
     </div>
   );
 };
@@ -227,6 +362,18 @@ const OrderDetail = ({
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Teslimat adresi düzenleme (backend validateShipping ile doğrular)
+  const shippingFrom = (o: AdminShopOrder): ShippingInput => ({
+    recipientName: o.recipientName,
+    phone: o.phone,
+    city: o.city,
+    district: o.district,
+    address: o.address,
+    postalCode: o.postalCode ?? '',
+    note: o.customerNote ?? '',
+  });
+  const [addressForm, setAddressForm] = useState<ShippingInput | null>(null);
+  const [savingAddress, setSavingAddress] = useState(false);
   const unpaid = order.status === 'PENDING' || order.status === 'FAILED';
   const mailOnSave = notify && status !== order.status && (status === 'SHIPPED' || status === 'DELIVERED');
 
@@ -249,6 +396,22 @@ const OrderDetail = ({
       toast.error(message || 'Kaydedilemedi');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveAddress = async () => {
+    if (!addressForm) return;
+    setSavingAddress(true);
+    try {
+      const { data } = await api.patch(`/api/shop/admin/orders/${order.id}`, { shipping: addressForm });
+      toast.success('Adres güncellendi');
+      setAddressForm(null);
+      onSaved(data.order);
+    } catch (err) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || 'Adres kaydedilemedi');
+    } finally {
+      setSavingAddress(false);
     }
   };
 
@@ -321,14 +484,84 @@ const OrderDetail = ({
               )}
             </div>
             <div className="bg-gray-900/40 border border-gray-700 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between gap-2 mb-2">
                 <h3 className="text-sm font-medium text-gray-300">Teslimat adresi</h3>
-                <button onClick={() => copy(addressText)} className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300">
-                  <Copy className="w-3.5 h-3.5" /> Kopyala
-                </button>
+                {!addressForm && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setAddressForm(shippingFrom(order))}
+                      className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+                    >
+                      <Pencil className="w-3.5 h-3.5" /> Düzenle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copy(addressText)}
+                      className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Kopyala
+                    </button>
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-white whitespace-pre-line break-words">{addressText}</p>
-              {order.customerNote && <p className="text-sm text-gray-400 italic mt-2">Not: {order.customerNote}</p>}
+              {addressForm ? (
+                <div className="space-y-2">
+                  {(
+                    [
+                      ['recipientName', 'Alıcı adı soyadı', 100],
+                      ['phone', 'Telefon', 20],
+                      ['city', 'İl', 50],
+                      ['district', 'İlçe', 50],
+                      ['postalCode', 'Posta kodu', 10],
+                    ] as [keyof ShippingInput, string, number][]
+                  ).map(([key, label, max]) => (
+                    <input
+                      key={key}
+                      value={addressForm[key]}
+                      onChange={(e) => setAddressForm((f) => (f ? { ...f, [key]: e.target.value } : f))}
+                      placeholder={label}
+                      aria-label={label}
+                      maxLength={max}
+                      className={inputClass}
+                    />
+                  ))}
+                  <textarea
+                    value={addressForm.address}
+                    onChange={(e) => setAddressForm((f) => (f ? { ...f, address: e.target.value } : f))}
+                    placeholder="Açık adres"
+                    aria-label="Açık adres"
+                    rows={3}
+                    maxLength={500}
+                    className={inputClass}
+                  />
+                  <textarea
+                    value={addressForm.note}
+                    onChange={(e) => setAddressForm((f) => (f ? { ...f, note: e.target.value } : f))}
+                    placeholder="Müşteri notu (isteğe bağlı)"
+                    aria-label="Müşteri notu"
+                    rows={2}
+                    maxLength={500}
+                    className={inputClass}
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <Button size="sm" variant="primary" icon={Save} loading={savingAddress} onClick={saveAddress}>
+                      Adresi kaydet
+                    </Button>
+                    <Button size="sm" variant="ghost" disabled={savingAddress} onClick={() => setAddressForm(null)}>
+                      Vazgeç
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-white whitespace-pre-line break-words">{addressText}</p>
+                  <div className="mt-2 text-sm">
+                    <PhoneLinks phone={order.phone} />
+                  </div>
+                  {order.customerNote && <p className="text-sm text-gray-400 italic mt-2">Not: {order.customerNote}</p>}
+                </>
+              )}
               <p className="text-xs text-gray-500 mt-3">
                 Hesap: {order.user?.name ?? '—'} · {order.user?.email ?? 'hesap silinmiş'}
               </p>
@@ -368,19 +601,18 @@ const OrderDetail = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-t border-gray-700">
-          {unpaid && (
-            <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-sm text-red-400">
-              <Trash2 className="w-4 h-4" /> Sil
-            </button>
+          {unpaid ? (
+            <Button variant="danger" icon={Trash2} onClick={() => setConfirmDelete(true)}>
+              Sil
+            </Button>
+          ) : (
+            <p className="text-xs text-gray-500">Ödenmiş sipariş silinemez — iptal için durumu "İptal" yapın.</p>
           )}
           <div className="flex-1" />
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm">
-            Kapat
-          </button>
-          <button onClick={save} disabled={saving} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold disabled:opacity-60">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <Button onClick={onClose}>Kapat</Button>
+          <Button variant="primary" icon={Save} loading={saving} onClick={save}>
             Kaydet
-          </button>
+          </Button>
         </div>
       </div>
 

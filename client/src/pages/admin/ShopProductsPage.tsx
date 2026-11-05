@@ -6,6 +6,7 @@ import api from '../../lib/api';
 import { formatTL } from '../../lib/loyalty';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import { Button, EmptyState, PageHeader, Panel, SkeletonGrid } from '../../components/admin/ui';
 import { APPARATUSES, getApparatusLabel } from '../../constants/apparatuses';
 
 interface FieldDef {
@@ -393,38 +394,34 @@ const ShopProductsPage = () => {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <ShoppingBag className="w-7 h-7 text-amber-500" />
-            Ürünler
-          </h1>
-          <p className="text-gray-400 mt-1 text-sm">
-            Kişiye özel ürünler. Fiyat girip <strong className="text-gray-200">aktif</strong> yapılan ürün sitede satışa açılır.
-          </p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl"
-        >
-          <Plus className="w-4 h-4" />
-          Yeni Ürün
-        </button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Ürünler"
+        icon={ShoppingBag}
+        description={
+          <>
+            Kişiye özel ürünler. Fiyat girip <strong className="text-gray-200">aktif</strong> yapılan ürün sitede satışa
+            açılır.
+          </>
+        }
+        actions={
+          <Button variant="primary" icon={Plus} onClick={openCreate}>
+            Yeni Ürün
+          </Button>
+        }
+      />
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        </div>
+        <SkeletonGrid count={4} className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4" tileClassName="h-80" />
       ) : products.length === 0 ? (
-        <p className="text-gray-400 bg-gray-800/50 border border-gray-700 rounded-2xl p-10 text-center">Henüz ürün yok</p>
+        <EmptyState icon={ShoppingBag} title="Henüz ürün yok" />
       ) : (
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
           {products.map((p) => (
-            <div key={p.id} className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden flex flex-col">
-              <div className="relative aspect-video bg-gray-900">
-                {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />}
+            <Panel key={p.id} className="overflow-hidden flex flex-col">
+              {/* Sabit yükseklik: dikey ürün fotoğrafı kartı uzatmasın; object-contain → figür kesilmeden sığar */}
+              <div className="relative h-44 bg-gray-900 overflow-hidden flex items-center justify-center">
+                {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="max-h-full max-w-full object-contain" />}
                 <span
                   className={`absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
                     p.isActive ? 'bg-emerald-600 text-white border-emerald-400/60 shadow-lg' : 'bg-gray-900/80 text-gray-300 border-gray-600'
@@ -448,25 +445,24 @@ const ShopProductsPage = () => {
                     </p>
                   );
                 })()}
-                <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-700">
-                  <button onClick={() => openEdit(p)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm text-white">
-                    <Pencil className="w-3.5 h-3.5" /> Düzenle
-                  </button>
-                  <button
+                <div className="flex flex-wrap gap-2 mt-auto pt-3 border-t border-gray-700">
+                  <Button size="sm" icon={Pencil} onClick={() => openEdit(p)}>
+                    Düzenle
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={p.isActive ? 'secondary' : 'soft'}
+                    icon={p.isActive ? EyeOff : Eye}
                     onClick={() => toggleActive(p)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm ${
-                      p.isActive ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                    }`}
                   >
-                    {p.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     {p.isActive ? 'Satıştan kaldır' : 'Satışa aç'}
-                  </button>
-                  <button onClick={() => setToDelete(p)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-sm text-red-400 ml-auto">
-                    <Trash2 className="w-3.5 h-3.5" /> Sil
-                  </button>
+                  </Button>
+                  <Button size="sm" variant="danger" icon={Trash2} className="ml-auto" onClick={() => setToDelete(p)}>
+                    Sil
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Panel>
           ))}
         </div>
       )}
@@ -733,13 +729,12 @@ const ShopProductsPage = () => {
             </div>
 
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-700">
-              <button type="button" onClick={() => setFormOpen(false)} className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm">
+              <Button variant="ghost" onClick={() => setFormOpen(false)}>
                 Vazgeç
-              </button>
-              <button type="submit" disabled={saving || uploading} className="flex items-center gap-2 px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold disabled:opacity-60">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              </Button>
+              <Button type="submit" variant="primary" icon={Save} loading={saving} disabled={uploading}>
                 Kaydet
-              </button>
+              </Button>
             </div>
           </form>
         </div>

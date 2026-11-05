@@ -1,21 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router';
 import { toast } from 'react-toastify';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Images,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  Trash2,
-  Users,
-} from 'lucide-react';
+import { Images, KeyRound, MailWarning, Pencil, Plus, Trash2, UserCheck, Users } from 'lucide-react';
 import api from '../../lib/api';
+import { useUrlState } from '../../hooks/useUrlState';
+import PhoneLinks from '../../components/admin/PhoneLinks';
 import StaffPanel from '../../components/admin/StaffPanel';
 import CustomerFormModal, { type CustomerUser } from '../../components/admin/CustomerFormModal';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  SkeletonRows,
+  SortableTh,
+  PageHeader,
+  Pagination as PaginationBar,
+  Panel,
+  SearchInput,
+  SectionTabs,
+  StatCard,
+  Toolbar,
+} from '../../components/admin/ui';
+import { tableBodyClass, tableHeadRowClass } from '../../lib/adminUi';
 
 interface UserRow extends CustomerUser {
   _count: {
@@ -48,15 +55,12 @@ const errorMessage = (err: unknown) =>
   (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
   'Bir hata oluştu';
 
-const StatCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="bg-gray-800/50 border border-gray-700 rounded-xl px-4 py-3">
-    <p className="text-2xl font-bold text-white">{value}</p>
-    <p className="text-xs text-gray-400 mt-0.5">{label}</p>
-  </div>
-);
 
 const UsersPage = () => {
-  const [tab, setTab] = useState<Tab>('customers');
+  // Sekme, arama, sayfa ve sıralama adres çubuğunda (galeriye girip geri dönünce kaybolmasın)
+  const [url, setUrl] = useUrlState({ tab: 'customers', q: '', page: '1', sort: '', dir: 'desc' });
+  const tab: Tab = url.tab === 'staff' ? 'staff' : 'customers';
+  const setTab = (next: Tab) => setUrl({ tab: next, page: '1' });
   const [users, setUsers] = useState<UserRow[]>([]);
   const [stats, setStats] = useState<CustomerStats | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
@@ -66,8 +70,8 @@ const UsersPage = () => {
     totalPages: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+  const searchQuery = url.q;
+  const [searchInput, setSearchInput] = useState(url.q);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
@@ -84,6 +88,10 @@ const UsersPage = () => {
       if (searchQuery) {
         params.append('search', searchQuery);
       }
+      if (url.sort) {
+        params.append('sort', url.sort);
+        params.append('dir', url.dir);
+      }
 
       const { data } = await api.get(`/api/users?${params}`);
       setUsers(data.data);
@@ -93,7 +101,7 @@ const UsersPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, url.sort, url.dir]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -105,8 +113,8 @@ const UsersPage = () => {
   }, []);
 
   useEffect(() => {
-    fetchUsers(1);
-  }, [fetchUsers]);
+    if (tab === 'customers') fetchUsers(Math.max(1, Number(url.page) || 1));
+  }, [fetchUsers, url.page, tab]);
 
   useEffect(() => {
     fetchStats();
@@ -115,14 +123,19 @@ const UsersPage = () => {
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchQuery(searchInput);
+      if (searchInput.trim() !== searchQuery) setUrl({ q: searchInput.trim(), page: '1' });
     }, 500);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
+
+  const handleSort = (sort: string, dir: 'asc' | 'desc' | null) =>
+    setUrl(dir ? { sort, dir, page: '1' } : { sort: '', dir: 'desc', page: '1' });
+  const sortDir = url.dir as 'asc' | 'desc';
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
-      fetchUsers(newPage);
+      setUrl({ page: String(newPage) });
     }
   };
 
@@ -159,38 +172,21 @@ const UsersPage = () => {
     }).format(new Date(date));
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Users className="w-7 h-7 text-amber-500" />
-          Kullanıcılar
-        </h1>
-        <p className="text-gray-400 mt-1">
-          Kayıtlı müşteriler, galeri yönetimi ve saha personeli
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Kullanıcılar"
+        icon={Users}
+        description="Kayıtlı müşteriler, galeri yönetimi ve saha personeli"
+      />
 
-      {/* Sekmeler */}
-      <div className="flex items-center gap-2 border-b border-gray-700 mb-6">
-        {([
-          ['customers', `Müşteriler (${pagination.total})`],
-          ['staff', 'Personel'],
-        ] as [Tab, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`px-4 py-2 -mb-px border-b-2 text-sm font-medium transition-colors ${
-              tab === key
-                ? 'border-amber-500 text-amber-400'
-                : 'border-transparent text-gray-400 hover:text-white'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SectionTabs<Tab>
+        tabs={[
+          { key: 'customers', label: 'Müşteriler', count: pagination.total },
+          { key: 'staff', label: 'Personel' },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
 
       {tab === 'staff' ? (
         <StaffPanel />
@@ -198,68 +194,107 @@ const UsersPage = () => {
         <>
       {/* Özet kartlar */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Toplam müşteri" value={stats.total} />
-          <StatCard label="Şifre belirlememiş" value={stats.withoutPassword} />
-          <StatCard label="E-postası doğrulanmamış" value={stats.unverified} />
-          <StatCard label="Galerisi dolu" value={stats.withPhotos} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StatCard label="Toplam müşteri" value={stats.total} icon={Users} tone="amber" />
+          <StatCard label="Şifre belirlememiş" value={stats.withoutPassword} icon={KeyRound} tone="yellow" />
+          <StatCard label="E-postası doğrulanmamış" value={stats.unverified} icon={MailWarning} tone="red" />
+          <StatCard label="Galerisi dolu" value={stats.withPhotos} icon={UserCheck} tone="green" />
         </div>
       )}
 
       {/* Arama + ekle */}
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-60 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="İsim, e-posta veya telefon ara..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
-          />
-        </div>
-        <button
-          type="button"
+      <Toolbar className="lg:justify-between">
+        <SearchInput value={searchInput} onChange={setSearchInput} placeholder="İsim, e-posta veya telefon ara..." />
+        <Button
+          variant="primary"
+          icon={Plus}
           onClick={() => {
             setEditing(null);
             setModalOpen(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-medium transition-colors"
         >
-          <Plus className="w-4 h-4" />
           Müşteri Ekle
-        </button>
-      </div>
+        </Button>
+      </Toolbar>
 
       {/* Tablo */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-        </div>
+        <SkeletonRows />
       ) : users.length === 0 ? (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
-          <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">
-            {searchQuery ? 'Arama sonucu bulunamadı' : 'Henüz kayıtlı kullanıcı yok'}
-          </p>
-        </div>
+        <EmptyState icon={Users} title={searchQuery ? 'Arama sonucu bulunamadı' : 'Henüz kayıtlı kullanıcı yok'} />
       ) : (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
+        <Panel className="overflow-hidden">
+          {/* Mobil kartlar */}
+          <div className="md:hidden divide-y divide-gray-700/50">
+            {users.map((user) => (
+              <div key={user.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <Link to={`/admin/users/${user.id}`} className="min-w-0 flex-1">
+                    <p className="text-white font-medium truncate">{user.name || '-'}</p>
+                    <p className="text-gray-400 text-xs truncate">{user.email || '-'}</p>
+                    {user.phone && <p className="text-gray-500 text-xs mt-0.5">{user.phone}</p>}
+                  </Link>
+                  <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    <Images className="w-3 h-3" />
+                    {user._count.photos}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1 mt-2">
+                  {!user.hasPassword && (
+                    <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
+                      Şifre yok
+                    </span>
+                  )}
+                  {!user.emailVerified && (
+                    <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
+                      Doğrulanmadı
+                    </span>
+                  )}
+                  <span className="text-[11px] text-gray-500">
+                    {user.lastDownloadAt
+                      ? `Son indirme ${formatDate(user.lastDownloadAt)}`
+                      : user._count.photos > 0
+                        ? 'İndirmedi'
+                        : `Kayıt ${formatDate(user.createdAt)}`}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    icon={Pencil}
+                    onClick={() => {
+                      setEditing(user);
+                      setModalOpen(true);
+                    }}
+                  >
+                    Düzenle
+                  </Button>
+                  <Button size="sm" variant="soft" icon={Images} to={`/admin/users/${user.id}/galeri`}>
+                    Galeri
+                  </Button>
+                  <Button size="sm" variant="danger" icon={Trash2} className="ml-auto" onClick={() => setDeleting(user)}>
+                    Sil
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gray-700 text-xs uppercase text-gray-400">
-                  <th className="px-4 py-3 font-medium">Ad Soyad</th>
-                  <th className="px-4 py-3 font-medium">E-posta</th>
+                <tr className={tableHeadRowClass}>
+                  <SortableTh label="Ad Soyad" field="name" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <SortableTh label="E-posta" field="email" sort={url.sort} dir={sortDir} onSort={handleSort} />
                   <th className="px-4 py-3 font-medium hidden md:table-cell">Telefon</th>
-                  <th className="px-4 py-3 font-medium text-center">Fotoğraf</th>
+                  <SortableTh label="Fotoğraf" field="photos" sort={url.sort} dir={sortDir} onSort={handleSort} className="text-center" />
                   <th className="px-4 py-3 font-medium hidden md:table-cell">Son İndirme</th>
                   <th className="px-4 py-3 font-medium text-center hidden lg:table-cell">Rezervasyon</th>
-                  <th className="px-4 py-3 font-medium hidden lg:table-cell">Kayıt Tarihi</th>
+                  <SortableTh label="Kayıt Tarihi" field="createdAt" sort={url.sort} dir={sortDir} onSort={handleSort} className="hidden lg:table-cell" />
                   <th className="px-4 py-3 font-medium text-right">İşlem</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/50">
+              <tbody className={tableBodyClass}>
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-700/20 transition-colors">
                     <td className="px-4 py-3">
@@ -287,8 +322,8 @@ const UsersPage = () => {
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-300 text-sm hidden md:table-cell">
-                      {user.phone || '-'}
+                    <td className="px-4 py-3 text-sm hidden md:table-cell">
+                      <PhoneLinks phone={user.phone} />
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
@@ -311,35 +346,17 @@ const UsersPage = () => {
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
+                      <div className="flex items-center justify-end gap-1.5">
+                        <IconButton
+                          icon={Pencil}
+                          title="Düzenle"
                           onClick={() => {
                             setEditing(user);
                             setModalOpen(true);
                           }}
-                          title="Düzenle"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-200 text-sm font-medium transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                          <span className="hidden xl:inline">Düzenle</span>
-                        </button>
-                        <Link
-                          to={`/admin/users/${user.id}/galeri`}
-                          title="Galeri"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-medium transition-colors"
-                        >
-                          <Images className="w-4 h-4" />
-                          <span className="hidden xl:inline">Galeri</span>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => setDeleting(user)}
-                          title="Sil"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        />
+                        <IconButton icon={Images} title="Galeri" tone="accent" to={`/admin/users/${user.id}/galeri`} />
+                        <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setDeleting(user)} />
                       </div>
                     </td>
                   </tr>
@@ -348,31 +365,14 @@ const UsersPage = () => {
             </table>
           </div>
 
-          {/* Sayfalama */}
-          {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-700">
-              <p className="text-sm text-gray-400">
-                Sayfa {pagination.page} / {pagination.totalPages}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                  className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.totalPages}
-                  className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+          <PaginationBar
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            limit={pagination.limit}
+            onChange={handlePageChange}
+          />
+        </Panel>
       )}
 
       <CustomerFormModal
@@ -384,7 +384,7 @@ const UsersPage = () => {
 
       <ConfirmDeleteModal
         open={!!deleting}
-        title="Müşteriyi Sil"
+        title="Müşteri silinsin mi?"
         isDeleting={isDeleting}
         onCancel={() => setDeleting(null)}
         onConfirm={handleDelete}

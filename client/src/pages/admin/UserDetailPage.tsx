@@ -1,16 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { toast } from 'react-toastify';
 import {
-  ArrowLeft,
   Calendar,
   Images,
   KeyRound,
-  Loader2,
   Mail,
   Package,
   Pencil,
-  Phone,
   Trash2,
   User as UserIcon,
 } from 'lucide-react';
@@ -20,6 +17,8 @@ import CustomerFormModal, { type CustomerUser } from '../../components/admin/Cus
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import UserLoyaltyPanel from '../../components/admin/UserLoyaltyPanel';
 import PriorityBadge from '../../components/PriorityBadge';
+import { Button, EmptyState, PageHeader, Panel, SkeletonPage } from '../../components/admin/ui';
+import PhoneLinks from '../../components/admin/PhoneLinks';
 
 /** Ham OrderItem / ReservationItem satırı (backend include: { items: true }) */
 interface RecordItem {
@@ -46,6 +45,8 @@ interface CustomerRecord {
 interface CustomerDetail extends CustomerUser {
   role: string;
   albums: (string | null)[];
+  /** Müşteriden gizlenen galeri / albümler */
+  galleryHidden?: { all: boolean; albums: string[] };
   orders: CustomerRecord[];
   reservations: CustomerRecord[];
   _count: { photos: number; reservations: number; orders: number };
@@ -76,10 +77,10 @@ const Badge = ({ tone, children }: { tone: 'amber' | 'red' | 'green'; children: 
 };
 
 const RecordList = ({ title, records }: { title: string; records: CustomerRecord[] }) => (
-  <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-5">
-    <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-      <Calendar className="w-4 h-4 text-amber-500" />
-      {title} ({records.length})
+  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-6">
+    <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+      <Calendar className="w-5 h-5 text-amber-500" />
+      {title} <span className="text-gray-500 font-normal">({records.length})</span>
     </h2>
 
     {records.length === 0 ? (
@@ -180,27 +181,13 @@ const UserDetailPage = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <SkeletonPage />;
 
   if (notFound || !user) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <Link
-          to="/admin/users"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Kullanıcılara Dön
-        </Link>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-12 text-center">
-          <p className="text-gray-400">Kullanıcı bulunamadı.</p>
-        </div>
+      <div className="space-y-6">
+        <PageHeader back={{ to: '/admin/users', label: 'Kullanıcılara Dön' }} title="Kullanıcı" icon={UserIcon} />
+        <EmptyState icon={UserIcon} title="Kullanıcı bulunamadı" />
       </div>
     );
   }
@@ -208,113 +195,83 @@ const UserDetailPage = () => {
   const albums = user.albums.filter(Boolean) as string[];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <Link
-        to="/admin/users"
-        className="inline-flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Kullanıcılara Dön
-      </Link>
+    <div className="space-y-6">
+      <PageHeader
+        back={{ to: '/admin/users', label: 'Kullanıcılara Dön' }}
+        title={user.name || 'İsimsiz müşteri'}
+        icon={UserIcon}
+        actions={
+          <>
+            <Button icon={Pencil} onClick={() => setModalOpen(true)}>
+              Düzenle
+            </Button>
+            <Button icon={KeyRound} loading={isSendingLink} disabled={!user.email} onClick={handleSendLink}>
+              {user.hasPassword ? 'Şifre sıfırlama linki' : 'Şifre linki gönder'}
+            </Button>
+            <Button variant="danger" icon={Trash2} onClick={() => setConfirmOpen(true)}>
+              Sil
+            </Button>
+          </>
+        }
+      />
 
       {/* Profil kartı */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-5 mb-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-              <UserIcon className="w-6 h-6 text-amber-500" />
-              {user.name || 'İsimsiz müşteri'}
-            </h1>
-
-            <div className="flex flex-wrap items-center gap-2 mt-3">
-              {user.hasPassword ? (
-                <Badge tone="green">Şifre belirlendi</Badge>
-              ) : (
-                <Badge tone="amber">Şifre belirlenmedi</Badge>
-              )}
-              {user.emailVerified ? (
-                <Badge tone="green">E-posta doğrulandı</Badge>
-              ) : (
-                <Badge tone="red">E-posta doğrulanmadı</Badge>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mt-4 text-sm">
-              <p className="flex items-center gap-2 text-gray-300">
-                <Mail className="w-4 h-4 text-gray-500" />
-                {user.email || '-'}
-              </p>
-              <p className="flex items-center gap-2 text-gray-300">
-                <Phone className="w-4 h-4 text-gray-500" />
-                {user.phone || '-'}
-              </p>
-              <p className="flex items-center gap-2 text-gray-400">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                Kayıt: {formatDate(user.createdAt)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-200 text-sm font-medium transition-colors"
-            >
-              <Pencil className="w-4 h-4" />
-              Düzenle
-            </button>
-            <button
-              type="button"
-              onClick={handleSendLink}
-              disabled={isSendingLink || !user.email}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-700/50 hover:bg-gray-700 border border-gray-600 text-gray-200 text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {isSendingLink ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <KeyRound className="w-4 h-4" />
-              )}
-              {user.hasPassword ? 'Şifre sıfırlama linki' : 'Şifre linki gönder'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Sil
-            </button>
-          </div>
+      <Panel padded>
+        <div className="flex flex-wrap items-center gap-2">
+          {user.hasPassword ? (
+            <Badge tone="green">Şifre belirlendi</Badge>
+          ) : (
+            <Badge tone="amber">Şifre belirlenmedi</Badge>
+          )}
+          {user.emailVerified ? (
+            <Badge tone="green">E-posta doğrulandı</Badge>
+          ) : (
+            <Badge tone="red">E-posta doğrulanmadı</Badge>
+          )}
         </div>
-      </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2 mt-4 text-sm">
+          <p className="flex items-center gap-2 text-gray-300 min-w-0">
+            <Mail className="w-4 h-4 text-gray-500 shrink-0" />
+            <span className="truncate">{user.email || '-'}</span>
+          </p>
+          <div className="flex items-center gap-2 text-gray-300">
+            <PhoneLinks phone={user.phone} />
+          </div>
+          <p className="flex items-center gap-2 text-gray-400">
+            <Calendar className="w-4 h-4 text-gray-500 shrink-0" />
+            Kayıt: {formatDate(user.createdAt)}
+          </p>
+        </div>
+      </Panel>
 
       {/* Galeri özeti */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-5 mb-6 flex flex-wrap items-center justify-between gap-4">
+      <Panel padded className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Images className="w-4 h-4 text-amber-500" />
+          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+            <Images className="w-5 h-5 text-amber-500" />
             Galeri
+            {user.galleryHidden?.all ? (
+              <Badge tone="amber">Müşteriden gizli</Badge>
+            ) : user.galleryHidden?.albums.length ? (
+              <Badge tone="amber">{`${user.galleryHidden.albums.length} albüm gizli`}</Badge>
+            ) : null}
           </h2>
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-gray-400 mt-1">
             {user._count.photos} dosya
             {albums.length > 0 && ` · ${albums.length} albüm: ${albums.join(', ')}`}
           </p>
         </div>
-        <Link
-          to={`/admin/users/${user.id}/galeri`}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-sm font-medium transition-colors"
-        >
-          <Images className="w-4 h-4" />
+        <Button variant="soft" icon={Images} to={`/admin/users/${user.id}/galeri`}>
           Galeriyi Yönet
-        </Link>
-      </div>
+        </Button>
+      </Panel>
 
       <UserLoyaltyPanel userId={user.id} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <RecordList title="Rezervasyonlar" records={user.reservations} />
-        <RecordList title="Siparişler" records={user.orders} />
+        <RecordList title="Paket Siparişleri" records={user.orders} />
       </div>
 
       <CustomerFormModal
@@ -326,7 +283,7 @@ const UserDetailPage = () => {
 
       <ConfirmDeleteModal
         open={confirmOpen}
-        title="Müşteriyi Sil"
+        title="Müşteri silinsin mi?"
         isDeleting={isDeleting}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleDelete}

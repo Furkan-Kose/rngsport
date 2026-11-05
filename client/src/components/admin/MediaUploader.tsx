@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'react-toastify';
 import { Upload, X } from 'lucide-react';
 import { formatFileSize } from '../../lib/media';
+import { Button } from './ui';
 import {
   enqueueUpload,
   onUploadFinished,
@@ -67,7 +68,7 @@ const MediaUploader = ({ presign, confirm, label, target, onUploaded, renderFiel
   const totalSelectedSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
 
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 mb-6">
+    <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-6">
       <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
         <Upload className="w-5 h-5 text-amber-500" />
         Fotoğraf Yükle
@@ -142,14 +143,9 @@ const MediaUploader = ({ presign, confirm, label, target, onUploaded, renderFiel
         </p>
       )}
 
-      <button
-        onClick={handleUpload}
-        disabled={selectedFiles.length === 0}
-        className="px-6 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-      >
-        <Upload className="w-4 h-4" />
+      <Button variant="primary" icon={Upload} onClick={handleUpload} disabled={selectedFiles.length === 0}>
         Yüklemeyi Başlat
-      </button>
+      </Button>
     </div>
   );
 };

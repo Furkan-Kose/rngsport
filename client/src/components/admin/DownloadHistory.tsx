@@ -117,7 +117,7 @@ const DownloadHistory = ({ userId }: { userId: string }) => {
   const lines = useMemo(() => groupRows(rows ?? []), [rows]);
 
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-2xl mb-6">
+    <div className="bg-gray-800/50 border border-gray-700 rounded-xl">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

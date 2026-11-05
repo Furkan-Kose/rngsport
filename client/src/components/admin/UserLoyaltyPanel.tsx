@@ -50,7 +50,7 @@ const UserLoyaltyPanel = ({ userId }: { userId: string }) => {
   if (!summary) return null;
 
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-5 mb-6">
+    <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <Star className="w-4 h-4 text-amber-500" />
