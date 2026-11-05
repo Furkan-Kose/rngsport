@@ -42,9 +42,46 @@ const buildUserPrefix = (user) =>
 const buildUploadKey = (user, album, ext) =>
   `${buildUserPrefix(user)}${slugify(album) || "genel"}/${ORIGINAL_DIR}/${crypto.randomUUID()}.${ext}`;
 
+// ---------------------------------------------------------------------------
+// Gizleme (admin): galerinin tamamı (album "") ya da tek albüm müşteriden gizlenebilir.
+// Gizli kapsam müşteri tarafında hiç yokmuş gibi davranır: liste, zip, tek indirme,
+// paylaşım linkleri. Admin sayfası her şeyi görür. Tablo henüz yoksa (db:push yapılmadı)
+// hiçbir şey gizli sayılmaz — galeri asla yanlışlıkla kapanmaz.
+// ---------------------------------------------------------------------------
+const NO_HIDDEN = { all: false, albums: [] };
+
+const hiddenFor = async (userId) => {
+  try {
+    const rows = await prisma.galleryHidden.findMany({ where: { userId }, select: { album: true } });
+    return { all: rows.some((r) => r.album === ""), albums: rows.map((r) => r.album).filter(Boolean) };
+  } catch (err) {
+    if (err?.code === "P2021" || /gallery_hidden/i.test(String(err?.message))) return NO_HIDDEN;
+    throw err;
+  }
+};
+
+// Görünür dosyalar: gizli albümler hariç. NOT IN null albümleri de düşürmesin diye null ayrıca eklenir.
+const visibleWhere = (hidden) =>
+  hidden.albums.length ? { OR: [{ album: null }, { album: { notIn: hidden.albums } }] } : {};
+
+const isPhotoHidden = (photo, hidden) => hidden.all || (photo.album != null && hidden.albums.includes(photo.album));
+
+const emptyList = (query) => {
+  const limit = Math.min(200, Math.max(1, parseInt(query.limit) || 60));
+  return {
+    data: [],
+    albums: [],
+    albumCounts: {},
+    downloadSizes: { original: 0, preview: 0, hasPreview: false },
+    pagination: { page: 1, limit, total: 0, totalPages: 0 },
+  };
+};
+
 // Fotoğrafları presigned URL'lerle birlikte, sayfalı döner (getMyPhotos + admin listesi ortak)
 // fixedAlbum: paylaşım linki tek albüme aitse sorgudaki albüm yok sayılır
-const listPhotosForUser = async (userId, query, { fixedAlbum = null } = {}) => {
+// hidden: müşteri görünümünde gizli kapsam (admin listesinde verilmez → her şey görünür)
+const listPhotosForUser = async (userId, query, { fixedAlbum = null, hidden = NO_HIDDEN } = {}) => {
+  if (hidden.all || (fixedAlbum && hidden.albums.includes(fixedAlbum))) return emptyList(query);
   const page = Math.max(1, parseInt(query.page) || 1);
   const limit = Math.min(200, Math.max(1, parseInt(query.limit) || 60));
   const album = fixedAlbum ?? (query.album ? String(query.album).slice(0, 100) : undefined);
@@ -55,6 +92,7 @@ const listPhotosForUser = async (userId, query, { fixedAlbum = null } = {}) => {
     userId,
     ...(album && { album }),
     ...(type && { contentType: { startsWith: `${type}/` } }),
+    ...visibleWhere(hidden),
   };
 
   const [photos, total, albums, sizes] = await Promise.all([
@@ -69,11 +107,11 @@ const listPhotosForUser = async (userId, query, { fixedAlbum = null } = {}) => {
       ? [{ album: fixedAlbum, _count: { _all: null } }]
       : prisma.galleryPhoto.groupBy({
           by: ["album"],
-          where: { userId, album: { not: null } },
+          where: { userId, album: hidden.albums.length ? { not: null, notIn: hidden.albums } : { not: null } },
           _count: { _all: true },
           orderBy: { album: "asc" },
         }),
-    downloadSizes(prisma.galleryPhoto, { userId, ...(album && { album }) }),
+    downloadSizes(prisma.galleryPhoto, { userId, ...(album && { album }), ...visibleWhere(hidden) }),
   ]);
 
   // Presign lokal HMAC hesabı — network çağrısı yok, toplu üretim ucuz
@@ -156,19 +194,24 @@ const singleLog = (photo, target, req, shareId = null) =>
 
 // Girişli kullanıcının kendi galerisi
 export const getMyPhotos = async (req, res) => {
-  res.json(await listPhotosForUser(req.user.id, req.query));
+  res.json(await listPhotosForUser(req.user.id, req.query, { hidden: await hiddenFor(req.user.id) }));
 };
 
 // Toplu indirilecek dosyalar (tüm galeri veya bir albüm)
 // Seçili dosyalar (POST ids) da yalnızca kullanıcının kendi galerisinden gelir
 // userId: admin "müşteri gözüyle gör" önizlemesinde müşterinin kimliği
+// Müşterinin göremediği (gizli) dosyalar zip'e de girmez
 const findMyZipPhotos = async (req, userId = req.user.id) => {
   const album = req.query.album ? String(req.query.album).slice(0, 100) : undefined;
   const ids = parseSelectedIds(req.body);
-  const photos = await prisma.galleryPhoto.findMany({
-    where: { userId, ...(album && { album }), ...(ids && { id: { in: ids } }) },
-    orderBy: { createdAt: "asc" },
-  });
+  const hidden = await hiddenFor(userId);
+  const photos =
+    hidden.all || (album && hidden.albums.includes(album))
+      ? []
+      : await prisma.galleryPhoto.findMany({
+          where: { userId, ...(album && { album }), ...(ids && { id: { in: ids } }), ...visibleWhere(hidden) },
+          orderBy: { createdAt: "asc" },
+        });
   if (photos.length === 0) {
     throw new AppError("İndirilecek dosya bulunamadı", 404);
   }
@@ -210,6 +253,10 @@ export const downloadMyPhoto = async (req, res) => {
   if (photo.userId !== req.user.id && req.user.role !== "admin") {
     throw new AppError("Bu fotoğrafa erişim yetkiniz yok", 403);
   }
+  // Gizli albüm / galeri: müşteri için yok hükmünde
+  if (photo.userId === req.user.id && isPhotoHidden(photo, await hiddenFor(photo.userId))) {
+    throw new AppError("Fotoğraf bulunamadı", 404);
+  }
 
   const target = downloadTarget(photo, parseQuality(req.query.quality));
   const url = await presignDownload(target.key, target.fileName);
@@ -246,7 +293,11 @@ export const createMyShare = async (req, res) => {
   });
   if (existing) return res.json({ share: shareView(existing), created: false });
 
-  const count = await prisma.galleryPhoto.count({ where: { userId: req.user.id, ...(album && { album }) } });
+  const hidden = await hiddenFor(req.user.id);
+  const count =
+    hidden.all || (album && hidden.albums.includes(album))
+      ? 0
+      : await prisma.galleryPhoto.count({ where: { userId: req.user.id, ...(album && { album }), ...visibleWhere(hidden) } });
   if (count === 0) throw new AppError("Paylaşılacak dosya yok", 400);
 
   const share = await prisma.galleryShare.create({
@@ -283,7 +334,10 @@ const shareScope = (share) => ({ userId: share.userId, ...(share.album && { albu
 // Public: paylaşılan galeri (sayfalı)
 export const getSharedGallery = async (req, res) => {
   const share = await findActiveShare(req.params.token);
-  const list = await listPhotosForUser(share.userId, req.query, { fixedAlbum: share.album });
+  const list = await listPhotosForUser(share.userId, req.query, {
+    fixedAlbum: share.album,
+    hidden: await hiddenFor(share.userId),
+  });
   res.json({ ...list, share: { album: share.album, expiresAt: share.expiresAt } });
 };
 
@@ -292,10 +346,14 @@ export const getSharedZipManifest = async (req, res) => {
   const share = await findActiveShare(req.params.token);
   const album = share.album ?? (req.query.album ? String(req.query.album).slice(0, 100) : undefined);
   const ids = parseSelectedIds(req.body);
-  const photos = await prisma.galleryPhoto.findMany({
-    where: { ...shareScope(share), ...(album && { album }), ...(ids && { id: { in: ids } }) },
-    orderBy: { createdAt: "asc" },
-  });
+  const hidden = await hiddenFor(share.userId);
+  const photos =
+    hidden.all || (album && hidden.albums.includes(album))
+      ? []
+      : await prisma.galleryPhoto.findMany({
+          where: { ...shareScope(share), ...(album && { album }), ...(ids && { id: { in: ids } }), ...visibleWhere(hidden) },
+          orderBy: { createdAt: "asc" },
+        });
   if (photos.length === 0) throw new AppError("İndirilecek dosya bulunamadı", 404);
   const zipName = album ? zipFileName(album, "galeri") : "rngsport-galeri.zip";
   const quality = parseQuality(req.query.quality);
@@ -308,7 +366,7 @@ export const getSharedZipManifest = async (req, res) => {
 export const downloadSharedPhoto = async (req, res) => {
   const share = await findActiveShare(req.params.token);
   const photo = await prisma.galleryPhoto.findFirst({ where: { id: req.params.id, ...shareScope(share) } });
-  if (!photo) throw new AppError("Fotoğraf bulunamadı", 404);
+  if (!photo || isPhotoHidden(photo, await hiddenFor(share.userId))) throw new AppError("Fotoğraf bulunamadı", 404);
   const target = downloadTarget(photo, parseQuality(req.query.quality));
   const url = await presignDownload(target.key, target.fileName);
   singleLog(photo, target, req, share.id);
@@ -381,12 +439,46 @@ export const confirmPhotoUploads = async (req, res) => {
 };
 
 // Admin: bir kullanıcının galerisi
+// ?asCustomer=1 → "müşteri gözüyle gör" önizlemesi: gizli kapsam müşteride olduğu gibi düşer
 export const getUserPhotosAdmin = async (req, res) => {
+  const visibility = await hiddenFor(req.params.userId);
+  const asCustomer = req.query.asCustomer === "1";
   const [list, missingPreviews] = await Promise.all([
-    listPhotosForUser(req.params.userId, req.query),
+    listPhotosForUser(req.params.userId, req.query, asCustomer ? { hidden: visibility } : {}),
     prisma.galleryPhoto.count({ where: { userId: req.params.userId, ...missingPreviewWhere } }),
   ]);
-  res.json({ ...list, missingPreviews });
+  res.json({ ...list, missingPreviews, visibility });
+};
+
+// Admin: galeriyi / albümü gizle-aç. { album: null → tüm galeri, "Ad" → albüm; hidden: bool }
+export const setGalleryVisibility = async (req, res) => {
+  const { userId } = req.params;
+  const hidden = req.body?.hidden;
+  if (typeof hidden !== "boolean") throw new AppError("Geçersiz istek", 400);
+  const album = req.body?.album == null ? "" : String(req.body.album).trim().slice(0, 100);
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!user) throw new AppError("Kullanıcı bulunamadı", 404);
+  try {
+    if (hidden) {
+      await prisma.galleryHidden.upsert({
+        where: { userId_album: { userId, album } },
+        create: { userId, album },
+        update: {},
+      });
+    } else {
+      await prisma.galleryHidden.deleteMany({ where: { userId, album } });
+    }
+  } catch (err) {
+    if (err?.code === "P2021" || /gallery_hidden/i.test(String(err?.message))) {
+      throw new AppError("Gizleme özelliği için veritabanı güncellemesi gerekiyor (db:push)", 503);
+    }
+    throw err;
+  }
+  const visibility = await hiddenFor(userId);
+  res.json({
+    message: hidden ? (album ? "Albüm müşteriden gizlendi" : "Galeri müşteriden gizlendi") : album ? "Albüm müşteriye açıldı" : "Galeri müşteriye açıldı",
+    visibility,
+  });
 };
 
 // ---------------------------------------------------------------------------
@@ -402,6 +494,9 @@ export const getUserZipManifestAdmin = async (req, res) => {
 export const downloadUserPhotoAdmin = async (req, res) => {
   const photo = await prisma.galleryPhoto.findFirst({ where: { id: req.params.id, userId: req.params.userId } });
   if (!photo) throw new AppError("Fotoğraf bulunamadı", 404);
+  if (req.query.asCustomer === "1" && isPhotoHidden(photo, await hiddenFor(photo.userId))) {
+    throw new AppError("Fotoğraf bulunamadı", 404);
+  }
   const target = downloadTarget(photo, parseQuality(req.query.quality));
   res.json({ url: await presignDownload(target.key, target.fileName) });
 };
@@ -471,6 +566,18 @@ export const moveUserPhotos = async (req, res) => {
   if (!user) throw new AppError("Kullanıcı bulunamadı", 404);
 
   const scope = ids ? { userId, id: { in: ids } } : { userId, album: fromAlbum };
+
+  // Gizli albümün adı değişirse / başka albüme birleşirse gizlilik yeni ada taşınır
+  // (güvenli taraf: taşınan dosyalar müşteriye bir an bile görünmesin)
+  const renamingHidden = fromAlbum && album && (await hiddenFor(userId)).albums.includes(fromAlbum);
+  if (renamingHidden) {
+    await prisma.galleryHidden.upsert({
+      where: { userId_album: { userId, album } },
+      create: { userId, album },
+      update: {},
+    });
+  }
+
   const photos = await prisma.galleryPhoto.findMany({
     where: scope,
     orderBy: { createdAt: "asc" },
@@ -495,6 +602,9 @@ export const moveUserPhotos = async (req, res) => {
   await Promise.all(Array.from({ length: Math.min(MOVE_CONCURRENCY, photos.length) }, worker));
 
   const remaining = ids ? 0 : await prisma.galleryPhoto.count({ where: scope });
+  if (renamingHidden && remaining === 0) {
+    await prisma.galleryHidden.deleteMany({ where: { userId, album: fromAlbum } });
+  }
   res.json({ moved, failed, remaining });
 };
 

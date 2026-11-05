@@ -54,6 +54,27 @@ export const getAllFeedback = async (req, res) => {
   res.json({ data: items, unread, total });
 };
 
+// Admin: Dashboard özeti (okunmamış, ortalama puan, son 5 görüş)
+export const getFeedbackSummary = async (req, res) => {
+  const [unread, total, avg, recent] = await Promise.all([
+    prisma.feedback.count({ where: { isRead: false } }),
+    prisma.feedback.count(),
+    prisma.feedback.aggregate({ _avg: { rating: true }, _count: { rating: true } }),
+    prisma.feedback.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { user: { select: { id: true, name: true, email: true } } },
+    }),
+  ]);
+  res.json({
+    unread,
+    total,
+    averageRating: avg._avg.rating,
+    ratedCount: avg._count.rating,
+    recent,
+  });
+};
+
 // Admin: okundu / okunmadı
 export const updateFeedback = async (req, res) => {
   if (typeof req.body?.isRead !== "boolean") throw new AppError("Geçersiz istek", 400);

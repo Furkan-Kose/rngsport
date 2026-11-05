@@ -13,6 +13,7 @@ import { validateAndPriceItems } from "../utils/items.js";
 import {
   parsePaginationQuery,
   buildCustomerSearchWhere,
+  parseSort,
 } from "../utils/pagination.js";
 import {
   resolveAccountFor,
@@ -117,25 +118,32 @@ export const createOrder = async (req, res) => {
   });
 };
 
-export const getAllOrders = async (req, res) => {
-  const { page, limit, skip, status, search } = parsePaginationQuery(req);
-  const where = buildCustomerSearchWhere({ status, search });
+// Admin listesinde başlığa tıklayıp sıralanabilen alanlar
+const LIST_SORT_FIELDS = ["createdAt", "totalPrice", "athleteName", "clubName", "status"];
 
-  const [orders, total, checkList] = await Promise.all([
+export const getAllOrders = async (req, res) => {
+  const { page, limit, skip, status, search, id } = parsePaginationQuery(req);
+  const where = buildCustomerSearchWhere({ status, search, id });
+
+  const [orders, total, checkList, grouped] = await Promise.all([
     prisma.order.findMany({
       where,
       include: { items: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: parseSort(req, LIST_SORT_FIELDS),
       skip,
       take: limit,
     }),
     prisma.order.count({ where }),
     shootingListChecker(),
+    // Durum sekmelerindeki sayılar: aramaya uyar, seçili durumdan bağımsız
+    prisma.order.groupBy({ by: ["status"], where: buildCustomerSearchWhere({ search }), _count: true }),
   ]);
+  const counts = Object.fromEntries(grouped.map((g) => [g.status, g._count]));
 
   res.json({
     // listMatch + unmatchedApparatuses: çekim listesiyle isim+alet eşleşmesi (admin renklendirmesi)
     data: orders.map((o) => ({ ...o, ...checkList(o) })),
+    counts,
     pagination: {
       page,
       limit,

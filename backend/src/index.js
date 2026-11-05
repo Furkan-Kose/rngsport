@@ -19,6 +19,7 @@ import awardCeremonyRoutes from "./routes/awardCeremony.route.js";
 import loyaltyRoutes from "./routes/loyalty.route.js";
 import shopRoutes from "./routes/shop.route.js";
 import feedbackRoutes from "./routes/feedback.route.js";
+import adminRoutes from "./routes/admin.route.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkEnv } from "./utils/env.js";
 import { translateResponses } from "./utils/i18n.js";
@@ -68,6 +69,7 @@ app.use("/api/award-ceremonies", awardCeremonyRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
 app.use("/api/shop", shopRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(errorHandler);
 

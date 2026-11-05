@@ -49,6 +49,22 @@ const findCustomerOrThrow = async (id) => {
 };
 
 // Admin: müşteri listesi (arama + sayfalama)
+// Müşteri listesinde başlıktan sıralama: ?sort=createdAt|name|email|photos&dir=asc|desc
+const userOrderBy = (req) => {
+  const dir = req.query.dir === "asc" ? "asc" : "desc";
+  switch (req.query.sort) {
+    case "name":
+    case "email":
+      return [{ [req.query.sort]: { sort: dir, nulls: "last" } }, { id: "desc" }];
+    case "photos":
+      return [{ photos: { _count: dir } }, { id: "desc" }];
+    case "createdAt":
+      return [{ createdAt: dir }, { id: "desc" }];
+    default:
+      return { createdAt: "desc" };
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
@@ -76,7 +92,7 @@ export const getAllUsers = async (req, res) => {
         // "Son indirme" sütunu (galeri indirme kaydı)
         galleryDownloads: { select: { createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: userOrderBy(req),
       skip: (page - 1) * limit,
       take: limit,
     }),
@@ -141,10 +157,19 @@ export const getUser = async (req, res) => {
       })
     : [];
 
+  // Galeri gizleme durumu (detaydaki Galeri kartında rozet). Tablo yoksa hiçbir şey gizli değildir.
+  const hiddenRows = await prisma.galleryHidden
+    .findMany({ where: { userId: user.id }, select: { album: true } })
+    .catch(() => []);
+
   res.json({
     user: {
       ...formatCustomer(user),
       albums: albums.map((a) => a.album),
+      galleryHidden: {
+        all: hiddenRows.some((r) => r.album === ""),
+        albums: hiddenRows.map((r) => r.album).filter(Boolean),
+      },
     },
   });
 };

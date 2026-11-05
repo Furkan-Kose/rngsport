@@ -3,6 +3,7 @@ import prisma from "../lib/prisma.js";
 import bus from "../lib/events.js";
 import { AppError, rethrowPrismaError } from "../utils/errors.js";
 import { parsePaginationQuery } from "../utils/pagination.js";
+import { buildXlsx, columnList, excelDateTime, pickColumns, sendXlsx } from "../utils/excel.js";
 import { normalizeApparatus } from "../utils/apparatuses.js";
 import { matchKey } from "../utils/names.js";
 import {
@@ -437,38 +438,42 @@ const slugify = (s) =>
   normalizeKey(s).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "liste";
 
 // Excel sheet adı: 31 karakter sınırı + geçersiz karakterleri temizle
-const safeSheetName = (label) =>
-  String(label || "Liste")
-    .replace(/[\\/?*[\]:]/g, " ")
-    .trim()
-    .slice(0, 31) || "Liste";
+// Excel sütunları (formatEntry çıktısından). Kullanıcı indirirken seçer; seçim yoksa hepsi.
+// Fotoğraf ve video "çekilecek" bayrakları ayrı sütunlarda; başlangıç/bitiş ortak tek zamanlayıcı.
+const SHOOTING_COLUMNS = [
+  { key: "position", label: "Sıra", group: "Liste", get: (e) => e.position },
+  { key: "athleteName", label: "Sporcu Adı", group: "Sporcu", get: (e) => e.athleteName || "" },
+  { key: "clubName", label: "Kulüp", group: "Sporcu", get: (e) => e.clubName || "" },
+  { key: "birthYear", label: "Doğum Yılı", group: "Sporcu", get: (e) => e.birthYear || "" },
+  { key: "category", label: "Alet / Kategori", group: "Liste", get: (e) => e.category || "" },
+  { key: "expectedTime", label: "Beklenen Saat", group: "Liste", get: (e) => e.expectedTime || "" },
+  { key: "willBeShot", label: "Çekilecek mi", group: "Çekim", get: (e) => (e.willBeShot ? "Evet" : "Hayır") },
+  { key: "willBeShotPhoto", label: "Foto Çekilecek", group: "Çekim", get: (e) => (e.willBeShotPhoto ? "Evet" : "Hayır") },
+  { key: "willBeShotVideo", label: "Video Çekilecek", group: "Çekim", get: (e) => (e.willBeShotVideo ? "Evet" : "Hayır") },
+  { key: "photoFolder", label: "Foto Klasör", group: "Çekim", get: (e) => e.photoFolder ?? "" },
+  { key: "startedAt", label: "Başlangıç", group: "Çekim", get: (e) => excelDateTime(e.photoStartedAt) },
+  { key: "endedAt", label: "Bitiş", group: "Çekim", get: (e) => excelDateTime(e.photoEndedAt) },
+  { key: "customerPhone", label: "Telefon", group: "Müşteri", get: (e) => e.customerPhone || "" },
+  {
+    key: "packages",
+    label: "Paket / Seri",
+    group: "Müşteri",
+    get: (e) =>
+      (e.items || [])
+        .map((it) => `${it.packageName}${it.priority ? " [ÖNCELİKLİ]" : ""} (${it.seriesCount}×${it.quantity})`)
+        .join(", "),
+  },
+  { key: "notes", label: "Not", group: "Müşteri", get: (e) => e.notes || "" },
+];
 
-const excelTime = (value) =>
-  value ? new Date(value).toLocaleString("tr-TR") : "";
+// GET /api/shooting-list/export/columns
+export const getShootingExportColumns = (req, res) => {
+  res.json({ columns: columnList(SHOOTING_COLUMNS) });
+};
 
-// Bir entry'yi (formatEntry çıktısı) Excel satırına (Türkçe başlıklı) dönüştür.
-// Her iki iz de ayrı sütunlarda raporlanır.
-const toExcelRow = (e) => ({
-  "Sıra": e.position,
-  "Sporcu Adı": e.athleteName || "",
-  "Kulüp": e.clubName || "",
-  "Doğum Yılı": e.birthYear || "",
-  "Alet / Kategori": e.category || "",
-  "Beklenen Saat": e.expectedTime || "",
-  "Çekilecek mi": e.willBeShot ? "Evet" : "Hayır",
-  "Foto Çekilecek": e.willBeShotPhoto ? "Evet" : "Hayır",
-  "Video Çekilecek": e.willBeShotVideo ? "Evet" : "Hayır",
-  "Foto Klasör": e.photoFolder ?? "",
-  "Başlangıç": excelTime(e.photoStartedAt),
-  "Bitiş": excelTime(e.photoEndedAt),
-  "Telefon": e.customerPhone || "",
-  "Paket / Seri": (e.items || [])
-    .map((it) => `${it.packageName}${it.priority ? " [ÖNCELİKLİ]" : ""} (${it.seriesCount}×${it.quantity})`)
-    .join(", "),
-  "Not": e.notes || "",
-});
-
-// Aktif günün çekim listesini Excel olarak indir
+// Aktif günün çekim listesini Excel olarak indir.
+// Filtreler: ?track=all|photo|video (+ onlyShot=1 → yalnızca o izde çekilecekler),
+// ?search=, ?sort=position|expected|started|name, ?columns=a,b. Parametresiz çağrı eskisi gibi her şeyi verir.
 export const exportShootingList = async (req, res) => {
   const dayId = req.query.dayId ? String(req.query.dayId) : null;
   if (!dayId) throw new AppError("Gün belirtilmedi", 400);
@@ -479,46 +484,41 @@ export const exportShootingList = async (req, res) => {
   // İndirmeden önce eşleşmeleri güncelle (getShootingList ile aynı davranış)
   await syncMatchesIfNeeded();
 
+  const track = ["photo", "video"].includes(req.query.track) ? req.query.track : "all";
+  const onlyShot = req.query.onlyShot === "1" || req.query.onlyShot === "true";
+  const search = req.query.search ? String(req.query.search).trim().slice(0, 100) : "";
+  const sortKey = VALID_SORTS.has(req.query.sort) ? req.query.sort : "position";
+
+  const where = { dayId };
+  if (onlyShot) {
+    where[track === "photo" ? "willBeShotPhoto" : track === "video" ? "willBeShotVideo" : "willBeShot"] = true;
+  }
+  if (search) {
+    where.OR = [
+      { athleteName: { contains: search, mode: "insensitive" } },
+      { clubName: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
   const include = {
     order: { select: { customerPhone: true, notes: true, status: true, items: true } },
     reservation: { select: { customerPhone: true, notes: true, status: true, items: true } },
   };
 
-  const entries = await prisma.shootingListEntry.findMany({
-    where: { dayId },
-    include,
-    orderBy: buildOrderBy("position"),
-  });
+  // Klasör numaraları tüm günün foto sırasına göre hesaplanır; filtre numaraları kaydırmasın
+  const [entries, allForFolders] = await Promise.all([
+    prisma.shootingListEntry.findMany({ where, include, orderBy: buildOrderBy(sortKey, track) }),
+    onlyShot || search || sortKey !== "position"
+      ? prisma.shootingListEntry.findMany({ where: { dayId }, include, orderBy: buildOrderBy("position") })
+      : null,
+  ]);
 
-  const folders = computePhotoFolders(entries);
-  const rows = entries.map((entry) => toExcelRow(formatEntry(entry, "all", folders)));
-
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-
-  // Sütun genişliklerini içeriğe (başlık + en uzun hücre) göre ayarla
-  const headers = rows.length ? Object.keys(rows[0]) : Object.keys(toExcelRow({}));
-  worksheet["!cols"] = headers.map((header) => {
-    const maxCell = rows.reduce(
-      (max, row) => Math.max(max, String(row[header] ?? "").length),
-      header.length,
-    );
-    // +2 nefes payı, 10–60 arası sınırla
-    return { wch: Math.min(60, Math.max(10, maxCell + 2)) };
-  });
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, safeSheetName(day.label));
-  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  );
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="cekim-listesi-${slugify(day.label)}.xlsx"`,
-  );
-  res.send(buffer);
+  const folders = computePhotoFolders(allForFolders ?? entries);
+  // formatEntry(…, "all") her iki izin bayrağını ve tüm kalemleri verir; iz filtresi yukarıda uygulandı
+  const rows = entries.map((entry) => formatEntry(entry, "all", folders));
+  const columns = pickColumns(SHOOTING_COLUMNS, req.query.columns);
+  const suffix = track === "all" ? "" : `-${track === "photo" ? "foto" : "video"}`;
+  sendXlsx(res, buildXlsx(rows, columns, day.label), `cekim-listesi-${slugify(day.label)}${suffix}.xlsx`);
 };
 
 // Zincir: yeni çekim başlarken aynı gün + aynı izdeki açık kayıt aynı anda kapanır.

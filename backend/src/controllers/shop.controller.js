@@ -9,6 +9,7 @@ import { serveR2Image } from "../utils/r2Image.js";
 import { Iyzipay, iyzicoDate, iyzicoLocale, initializeCheckout, retrieveCheckout } from "../utils/iyzicoCheckout.js";
 import { sendShopOrderPaidEmail, sendShopOrderStatusEmail } from "../lib/mail.js";
 import { APPARATUSES } from "../utils/apparatuses.js";
+import { buildXlsx, columnList, pickColumns, sendXlsx, shopOrderColumns } from "../utils/excel.js";
 
 // Mağaza: kişiye özel ürünler. Paket siparişlerinden (Order) tamamen ayrı tablolar,
 // ayrı iyzico dönüşü (/api/shop/payment/callback); sadakat puanı ve çekim listesi yok.
@@ -685,12 +686,42 @@ const statusWhere = (status) => {
   throw new AppError("Geçersiz durum", 400);
 };
 
-export const listOrdersAdmin = async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
-  const search = req.query.search ? String(req.query.search).trim().slice(0, 100) : "";
-  const where = {
-    ...statusWhere(req.query.status),
+// Admin: Dashboard özeti. toProcess = ödenmiş ama henüz kargoya verilmemiş (iş bekleyen).
+export const getShopStatsAdmin = async (req, res) => {
+  const [grouped, revenue, recentOrders] = await Promise.all([
+    prisma.shopOrder.groupBy({ by: ["status"], _count: true }),
+    prisma.shopOrder.aggregate({ where: { status: { in: PAID_STATUSES } }, _sum: { totalPrice: true } }),
+    prisma.shopOrder.findMany({
+      where: { status: { in: PAID_STATUSES } },
+      orderBy: [{ paidAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
+      take: 5,
+      include: { user: { select: { id: true, name: true, email: true } }, product: { select: { image: true } } },
+    }),
+  ]);
+  const counts = Object.fromEntries(SHOP_STATUSES.map((s) => [s, 0]));
+  for (const g of grouped) counts[g.status] = g._count;
+
+  res.json({
+    counts,
+    toProcess: counts.CONFIRMED + counts.IN_PRODUCTION,
+    unpaid: counts.PENDING + counts.FAILED, // sipariş verildi, ödeme gelmedi
+    paid: PAID_STATUSES.reduce((sum, s) => sum + counts[s], 0),
+    paidRevenue: revenue._sum.totalPrice ?? 0,
+    recentOrders: recentOrders.map(formatAdminOrder),
+  });
+};
+
+const SHOP_SORT_FIELDS = ["createdAt", "totalPrice", "recipientName", "city", "status"];
+
+// Liste ve Excel aynı filtreyi kullanır: sekme (status), arama, isteğe bağlı tarih aralığı
+const shopOrderWhere = (query) => {
+  const search = query.search ? String(query.search).trim().slice(0, 100) : "";
+  const dayStart = (v, end) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? new Date(`${v}T${end ? "23:59:59.999" : "00:00:00"}+03:00`) : null;
+  const from = dayStart(query.from, false);
+  const to = dayStart(query.to, true);
+  return {
+    ...statusWhere(query.status),
     ...(search && {
       OR: [
         { recipientName: { contains: search, mode: "insensitive" } },
@@ -701,13 +732,42 @@ export const listOrdersAdmin = async (req, res) => {
         { id: search },
       ],
     }),
+    ...((from || to) && { createdAt: { ...(from && { gte: from }), ...(to && { lte: to }) } }),
   };
+};
+
+const shopOrderBy = (query) =>
+  SHOP_SORT_FIELDS.includes(query.sort)
+    ? [{ [query.sort]: query.dir === "asc" ? "asc" : "desc" }, { id: "desc" }]
+    : [{ paidAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }];
+
+// Admin Excel: GET /api/shop/admin/orders/export(/columns)
+export const getShopExportColumns = (req, res) => {
+  res.json({ columns: columnList(shopOrderColumns) });
+};
+
+export const exportShopOrders = async (req, res) => {
+  const orders = await prisma.shopOrder.findMany({
+    where: shopOrderWhere(req.query),
+    orderBy: shopOrderBy(req.query),
+    take: 5000,
+    include: { user: { select: { email: true, name: true } } },
+  });
+  const columns = pickColumns(shopOrderColumns, req.query.columns);
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Istanbul" });
+  sendXlsx(res, buildXlsx(orders, columns, "Ürün Siparişleri"), `urun-siparisleri-${today}.xlsx`);
+};
+
+export const listOrdersAdmin = async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+  const where = shopOrderWhere(req.query);
 
   const [orders, total, grouped] = await Promise.all([
     prisma.shopOrder.findMany({
       where,
-      // Ödenenler: en eski ödeme üstte değil, en yeni üstte
-      orderBy: [{ paidAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
+      // Varsayılan: en yeni ödeme üstte. ?sort= ile başlıktan sıralama
+      orderBy: shopOrderBy(req.query),
       skip: (page - 1) * limit,
       take: limit,
       include: { user: { select: { id: true, name: true, email: true } }, product: { select: { image: true } } },

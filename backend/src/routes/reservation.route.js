@@ -11,12 +11,18 @@ import {
   deliverReservation,
   getReservationStats,
 } from "../controllers/reservation.controller.js";
+import { exportColumnsHandler, exportRecordsHandler } from "../utils/recordExport.js";
+import { bulkPreviewHandler, bulkStatusHandler } from "../utils/bulkStatus.js";
 import { authMiddleware, requireAdmin, optionalAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.get("/", authMiddleware, requireAdmin, getAllReservations);
 router.get("/stats", authMiddleware, requireAdmin, getReservationStats); // Dashboard için stats
+router.get("/export/columns", authMiddleware, requireAdmin, exportColumnsHandler("reservation")); // Excel sütun listesi
+router.get("/export", authMiddleware, requireAdmin, exportRecordsHandler("reservation")); // Excel (filtre + sütun seçimi)
+router.post("/bulk-status/preview", authMiddleware, requireAdmin, bulkPreviewHandler("reservation")); // Toplu işlem onay bilgisi
+router.post("/bulk-status", authMiddleware, requireAdmin, bulkStatusHandler("reservation")); // Toplu durum (tüm durumlar)
 // /my rotaları /:id'den ÖNCE kayıtlı olmalı
 router.get("/my", authMiddleware, getMyReservations);
 router.put("/my/:id", authMiddleware, updateMyReservation); // Müşteri: ödeme öncesi düzenleme

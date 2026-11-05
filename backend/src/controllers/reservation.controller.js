@@ -11,6 +11,7 @@ import { validateAndPriceItems } from "../utils/items.js";
 import {
   parsePaginationQuery,
   buildCustomerSearchWhere,
+  parseSort,
 } from "../utils/pagination.js";
 import { matchKey, shootingListChecker } from "../utils/names.js";
 import {
@@ -112,27 +113,34 @@ const findOwnEditableReservation = async (req) => {
   return reservation;
 };
 
-export const getAllReservations = async (req, res) => {
-  const { page, limit, skip, status, search } = parsePaginationQuery(req);
-  const where = buildCustomerSearchWhere({ status, search });
+// Admin listesinde başlığa tıklayıp sıralanabilen alanlar
+const LIST_SORT_FIELDS = ["createdAt", "totalPrice", "athleteName", "clubName", "status"];
 
-  const [reservations, total, checkList] = await Promise.all([
+export const getAllReservations = async (req, res) => {
+  const { page, limit, skip, status, search, id } = parsePaginationQuery(req);
+  const where = buildCustomerSearchWhere({ status, search, id });
+
+  const [reservations, total, checkList, grouped] = await Promise.all([
     prisma.reservation.findMany({
       where,
       include: { items: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: parseSort(req, LIST_SORT_FIELDS),
       skip,
       take: limit,
     }),
     prisma.reservation.count({ where }),
     shootingListChecker(),
+    // Durum sekmelerindeki sayılar: aramaya uyar, seçili durumdan bağımsız
+    prisma.reservation.groupBy({ by: ["status"], where: buildCustomerSearchWhere({ search }), _count: true }),
   ]);
+  const counts = Object.fromEntries(grouped.map((g) => [g.status, g._count]));
 
   res.json({
     data: reservations.map((r) => ({
       ...r,
       ...checkList(r), // listMatch + unmatchedApparatuses (admin renklendirmesi)
     })),
+    counts,
     pagination: {
       page,
       limit,

@@ -15,6 +15,9 @@ import {
   deleteProduct,
   presignProductImage,
   listOrdersAdmin,
+  getShopStatsAdmin,
+  getShopExportColumns,
+  exportShopOrders,
   updateOrderAdmin,
   deleteOrderAdmin,
 } from "../controllers/shop.controller.js";
@@ -44,6 +47,9 @@ router.post("/admin/products", ...admin, createProduct);
 router.post("/admin/products/upload-image", ...admin, presignProductImage);
 router.put("/admin/products/:id", ...admin, updateProduct);
 router.delete("/admin/products/:id", ...admin, deleteProduct);
+router.get("/admin/stats", ...admin, getShopStatsAdmin); // Dashboard
+router.get("/admin/orders/export/columns", ...admin, getShopExportColumns); // Excel sütun listesi
+router.get("/admin/orders/export", ...admin, exportShopOrders); // Excel (sekme + arama + tarih)
 router.get("/admin/orders", ...admin, listOrdersAdmin);
 router.patch("/admin/orders/:id", ...admin, updateOrderAdmin);
 router.delete("/admin/orders/:id", ...admin, deleteOrderAdmin);

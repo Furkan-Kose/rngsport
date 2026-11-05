@@ -2,6 +2,7 @@ import express from "express";
 import {
   createFeedback,
   getAllFeedback,
+  getFeedbackSummary,
   updateFeedback,
   deleteFeedback,
 } from "../controllers/feedback.controller.js";
@@ -11,6 +12,7 @@ const router = express.Router();
 
 router.post("/", authMiddleware, createFeedback); // Girişli müşteri (Galerim formu); 24 saatte en fazla 5
 router.get("/", authMiddleware, requireAdmin, getAllFeedback);
+router.get("/summary", authMiddleware, requireAdmin, getFeedbackSummary); // Dashboard
 router.patch("/:id", authMiddleware, requireAdmin, updateFeedback);
 router.delete("/:id", authMiddleware, requireAdmin, deleteFeedback);
 

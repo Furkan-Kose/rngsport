@@ -87,13 +87,13 @@ model User {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  photos        GalleryPhoto[]
-  orders        Order[]
-  reservations  Reservation[]
-  points        PointTransaction[]
-  shopOrders    ShopOrder[]
-  feedbacks     Feedback[]
-  galleryShares GalleryShare[]
+  photos           GalleryPhoto[]
+  orders           Order[]
+  reservations     Reservation[]
+  points           PointTransaction[]
+  shopOrders       ShopOrder[]
+  feedbacks        Feedback[]
+  galleryShares    GalleryShare[]
   galleryDownloads GalleryDownload[]
 
   @@map("users")
@@ -468,4 +468,26 @@ enum ShopOrderStatus {
   SHIPPED // Kargoda
   DELIVERED // Teslim edildi
   CANCELLED // İptal
+}
+
+// Admin menü rozetleri: her admin hesabının bölüm başına "son bakış" zamanı.
+// Ayrı tablo (User'a kolon değil): tablo henüz oluşmamışsa yalnızca rozetler devre dışı kalır.
+// seen = { orders, reservations, shopOrders, feedback } → ISO tarih
+model AdminSeen {
+  userId    String   @id
+  seen      Json     @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_seen")
+}
+
+// Müşteri galerisini / albümünü müşteriden gizleme (admin). album "" = tüm galeri.
+// Ayrı tablo: tablo henüz yoksa her şey görünür kalır (galeri asla yanlışlıkla kapanmaz).
+model GalleryHidden {
+  userId   String
+  album    String
+  hiddenAt DateTime @default(now())
+
+  @@id([userId, album])
+  @@map("gallery_hidden")
 }

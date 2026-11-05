@@ -7,6 +7,7 @@ import {
   presignPhotoUploads,
   confirmPhotoUploads,
   getUserPhotosAdmin,
+  setGalleryVisibility,
   deletePhoto,
   getMissingPreviews,
   saveMissingPreviews,
@@ -49,6 +50,7 @@ router.get("/shared/:token/:id/download", downloadSharedPhoto);
 router.post("/admin/presign", authMiddleware, requireAdmin, presignPhotoUploads);
 router.post("/admin/confirm", authMiddleware, requireAdmin, confirmPhotoUploads);
 router.get("/admin/user/:userId", authMiddleware, requireAdmin, getUserPhotosAdmin);
+router.put("/admin/user/:userId/visibility", authMiddleware, requireAdmin, setGalleryVisibility); // Galeriyi / albümü gizle-aç
 router.get("/admin/user/:userId/downloads", authMiddleware, requireAdmin, getUserDownloadsAdmin);
 router.get("/admin/albums", authMiddleware, requireAdmin, getRecentAlbums);
 // "Müşteri gözüyle gör" önizlemesi (Galerim sayfası müşterinin verisiyle, salt okunur)

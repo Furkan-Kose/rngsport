@@ -3,6 +3,7 @@ import multer from "multer";
 import {
   clearShootingList,
   exportShootingList,
+  getShootingExportColumns,
   getShootingList,
   resetShootingTimes,
   streamShootingList,
@@ -46,6 +47,7 @@ router.get("/", canViewList, getShootingList);
 router.patch("/:id", canViewList, updateShootingEntry);
 
 // Liste yönetimi sadece admin'de
+router.get("/export/columns", requireAdmin, getShootingExportColumns); // Excel sütun listesi
 router.get("/export", requireAdmin, exportShootingList);
 router.post("/upload", requireAdmin, upload.single("file"), uploadShootingList);
 router.delete("/", requireAdmin, clearShootingList);
