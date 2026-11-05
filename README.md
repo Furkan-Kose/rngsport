@@ -160,7 +160,7 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
 ### Çok dillilik
 
 - **Türkçe, İngilizce, Rusça.** Türkçe adresler öneksiz (`/rezervasyon`); diğer diller `/en/...` ve `/ru/...` ile.
-- Menüde dil seçici: dillerin kendi adlarıyla, bayraksız (Türkçe / English / Русский). Tarayıcı dili İngilizce/Rusça olan ziyaretçiye dil önerisi bandı çıkar; zorla yönlendirme yapılmaz.
+- Menüde dil seçici (Türkçe / English / Русский). Tarayıcı dili İngilizce/Rusça olan ziyaretçiye dil önerisi bandı çıkar; zorla yönlendirme yapılmaz.
 - **Neler çevriliyor:**
   - sabit metinler,
   - sunucu hata mesajları,
@@ -171,10 +171,16 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
 
 ### Yönetim paneli
 
-- **Dashboard:** Sipariş, rezervasyon ve gelir istatistikleri. Nakit rezervasyonlarda **onaylanan** (tahsil edilecek) ve **ödenen** (teslim edilenler dahil, tahsil edilmiş) tutarlar ayrı gösterilir.
-- **Rezervasyonlar ve Siparişler:**
+- **Dashboard:** Paket siparişleri, nakit rezervasyonlar ve ürün siparişleri (hazırlanacak, ödeme bekleyen, kargoda, gelir) tek ekranda; altında son kayıtlar ve son görüşler. Nakit rezervasyonlarda **onaylanan** (tahsil edilecek) ve **ödenen** (teslim edilenler dahil, tahsil edilmiş) tutarlar ayrı gösterilir. Son kayıtlara tıklayınca kaydın detayı açılır.
+- **Panel genelinde:**
+  - Menüde **yeni kayıt rozetleri:** her admin hesabı, bir sayfaya son bakışından beri gelen ödenmiş sipariş, rezervasyon, ürün siparişi ve görüş sayısını görür; sayfaya girince sıfırlanır.
+  - **Hızlı arama (Ctrl+K):** Sporcu, kulüp, telefon veya e-postayla paket siparişleri, rezervasyonlar, ürün siparişleri ve müşterilerde aynı anda arar.
+  - Açık kayıt, sekme ve arama adres çubuğunda tutulur; sayfa yenilense ya da link paylaşılsa da korunur.
+- **Rezervasyonlar ve Paket Siparişleri:**
   - Listeleme, arama ve durum filtresi.
   - Detay, düzenleme, silme ve durum yönetimi.
+  - **Toplu durum değişikliği:** Birden çok kayıt seçilip tek seferde Onaylandı / Ödendi / Teslim Edildi / İptal yapılır. Sadakat puanları ve teslim e-postaları tek tek işlemdeki kurala göre işler; onaydan önce kaç kişiye e-posta gideceği gösterilir.
+  - **Excel dışa aktarma:** Sütunlar tek tek seçilir; durum, arama ve tarih aralığıyla filtrelenir.
   - **Teslim paneli:** Fotoğraf / Video / Reels / Genel teslim ayrı ayrı işaretlenir, her biri kendi e-postasını bir kez gönderir (gerekirse tekrar gönderilebilir).
   - Admin panelden rezervasyon ekleme.
   - Sayfalar **sayfa yenilemeden** kendini günceller; açık bir form varsa bekler.
@@ -194,15 +200,13 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
   - Müşteri listesi ve müşteri detayı. Listede **son indirme** tarihi görünür; galerisi yüklenip hiç indirmeyenler hemen fark edilir.
   - Müşteriye özel galeri yükleme (fotoğraf ≤50 MB, video ≤1 GB, sayı sınırı yok, tarayıcıdan doğrudan R2'ye):
     - Yarışma adı listeden seçilir. Yazım farkı yeni albüm açmaz.
-    - Yükleme **arka planda** sürer. Panelde sayfa değiştirilebilir, ilerleme sağ altta görünür. Sunucu yeniden başlarken istekler otomatik tekrar denenir.
-  - **Albüm yönetimi:**
-    - Dosyalar seçilip başka albüme taşınabilir ya da toplu silinebilir. Albüm adı düzeltilebilir.
-    - Taşıma R2'de de dosyayı yeni yarışma klasörüne kopyalayıp eskisini siler.
-    - Albüm sekmelerinde dosya sayıları görünür.
+    - Yükleme **arka planda** sürer. Panelde sayfa değiştirilebilir, ilerleme sağ altta görünür.
+  - **Albüm yönetimi:** Dosyalar seçilip başka albüme taşınabilir ya da toplu silinebilir. Albüm adı düzeltilebilir.
+  - **Müşteri gözüyle gör:** Admin, müşterinin galerisini müşterinin gördüğü haliyle (gizli albümler hariç) salt okunur açar.
+  - **Galeriyi gizle / aç:** Galerinin tamamı ya da tek bir albüm müşteriden gizlenebilir (ör. yarışmanın fotoğrafları yüklenirken). Gizli kısım müşterinin galerisinde, indirmelerde ve paylaşım linklerinde görünmez; dosyalar silinmez, açılınca geri gelir.
   - **İndirme geçmişi:** Müşterinin neyi, ne zaman indirdiği (tümü, albüm, seçilenler, tek dosya, galeriye kaydet, paylaşım linkinden). IP ya da cihaz bilgisi tutulmaz.
-  - Eski fotoğraflar için tek tuşla önizleme üretimi.
   - Şifre belirleme bağlantısı gönderme, puan düzeltme.
-- **Mağaza:** Ürünler (fiyat, açıklama, çoklu fotoğraf, kişiselleştirme alanları, alet → poz fotoğrafları, EN/RU çeviri) ve ürün siparişleri (durum, kargo bilgisi, admin notu).
+- **Mağaza:** Ürünler (fiyat, açıklama, çoklu fotoğraf, kişiselleştirme alanları, alet → poz fotoğrafları, EN/RU çeviri) ve ürün siparişleri (durum, kargo bilgisi, teslimat adresi, admin notu; adres, kişiselleştirme ve poz bilgisiyle Excel dışa aktarma).
 - **Görüşler:** Galeri görüş formundan gelenler; okundu/okunmadı, silme, ortalama puan.
 - **Personel:** Admin, fotoğrafçı ve videocu hesapları. Son admin silinemez ve admin kendi yetkisini kaldıramaz.
 - **Sadakat:** Seviye tanımları (eşik puan, indirim yüzdesi, EN/RU ad).
@@ -223,7 +227,7 @@ Yarışma günü ekibin telefonlarda kullandığı, gecikmeye karşı optimize e
   - Çekilecek sporcuda yeşil **ÇEKİLİYOR**, çekilmeyecek sporcuda mor **SAHNEDE** gösterilir.
 - **Foto klasör numaraları:** Kameradaki klasör numarası (100, 101, ...) foto başlangıç sırasından otomatik türetilir. Tek satırda yapılan düzeltme sonrakileri kendiliğinden kaydırır.
 - **Anlık senkronizasyon (SSE):** Bir ekipteki her değişiklik diğer tüm açık ekranlara anında yansır. Butonlar iyimser güncellenir; hata olursa geri alınır.
-- **Admin araçları:** Excel dışa aktarma (iki iz birden, klasör ve öncelik bilgisiyle), günün sürelerini onaylı toplu sıfırlama, gün silme / yeniden yükleme.
+- **Admin araçları:** Excel dışa aktarma (sütun seçimi; foto / video ekibi, "sadece çekilecekler" ve sıralama filtresiyle; klasör ve öncelik bilgisi dahil), günün sürelerini onaylı toplu sıfırlama, gün silme / yeniden yükleme.
 
 ---
 
@@ -259,7 +263,7 @@ flowchart LR
 - **Dosyalar Express'ten geçmez.** Yükleme ve indirme tarayıcı ile R2 arasında, sunucunun ürettiği kısa ömürlü imzalı URL'lerle yapılır.
 - **Fiyat güvenliği.** İstemci yalnızca paket kimliği, seri sayısı, adet, alet ve öncelik seçimini gönderir. Bütün tutarlar sunucuda veritabanından hesaplanır, iyzico dönüşünde ödenen tutar yeniden doğrulanır.
 - **Gerçek zamanlı ekranlar.** Çekim listesi ve admin kayıt sayfaları Server-Sent Events ile beslenir. Süre yazımları yalnızca çekim listesini, sipariş/rezervasyon değişiklikleri ise her ikisini yeniler.
-- **Uzak veritabanına göre optimize edilmiş okuma.** Çekim listesi istatistikleri tek sorgudan bellekte hesaplanır; eşleşmeler yalnızca bir kayıt değiştiğinde yeniden kurulur. Liste okuma ~4,4 s'den ~0,35 s'ye indi.
+- **Uzak veritabanına göre optimize edilmiş okuma.** Çekim listesi istatistikleri tek sorgudan bellekte hesaplanır; eşleşmeler yalnızca bir kayıt değiştiğinde yeniden kurulur.
 
 ---
 
@@ -302,6 +306,8 @@ Monorepo; iki bağımsız uygulamadan oluşur ve her biri kendi dizininden çal�
 
 Ödeme, e-posta ve dosya depolama gibi dış servisler ortam değişkenleriyle bağlanır. Bir servis tanımlı değilse sunucu açılışta bunu loglar ve o özellik olmadan çalışmaya devam eder.
 
+Veritabanı şeması (`backend/prisma/schema.prisma`) değiştiğinde `backend` içinde `npm run db:push` çalıştırılır; yeni tablolar canlı veritabanına da bu komutla gider.
+
 ---
 
 ## Altyapı
@@ -328,6 +334,7 @@ Monorepo; iki bağımsız uygulamadan oluşur ve her biri kendi dizininden çal�
   - Paylaşım linkleri tahmin edilemez, 32 karakterlik rastgele token kullanır. Yalnızca linkin kapsamındaki dosyaları döndürür, hesap bilgisi vermez.
   - Paylaşım sayfası arama motorlarına kapalıdır (`noindex`) ve token'ı Referer başlığıyla sızdırmaz (`no-referrer`).
   - Paylaşılan galeride sunucu tarafı zip bilinçli olarak yoktur; sunucu trafiği harcanmaz.
+  - Galeri / albüm gizleme yalnızca ekranda değil **sunucuda** uygulanır: gizli dosyalar listeden, zip'ten ve paylaşım linklerinden düşer; dosyanın bağlantısı bilinse bile indirilemez.
 - **Paket görselleri:** Sepet görsel adreslerini tarayıcıda sakladığı için süresi dolmayan bir backend proxy'si üzerinden sunulur. Bu proxy kullanıcı klasörlerine erişimi engeller.
 - **Ödeme:** Tutar hiçbir zaman istemciden alınmaz. iyzico dönüşünde sonuç token ile yeniden sorgulanır; ödenen tutar ve sepet kimliği doğrulanır. Sadakat indirimi iyzico sepet kalemlerine oranlı dağıtılır. Paket ve ürün siparişlerinin dönüş adresleri ve tabloları ayrıdır.
 - **Hata yönetimi:** E-posta gönderimi hiçbir API isteğini bozmaz; hatalar loglanır. R2 yapılandırma eksikleri ve bağlantı hataları anlaşılır kodlarla raporlanır (503 / 502).
