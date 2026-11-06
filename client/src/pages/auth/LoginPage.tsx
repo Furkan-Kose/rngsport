@@ -45,6 +45,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
+        noindex
         title={t("auth.login.seoTitle")}
         description={t("auth.login.seoDescription")}
         keywords={t("auth.login.seoKeywords")}

@@ -20,6 +20,7 @@ import loyaltyRoutes from "./routes/loyalty.route.js";
 import shopRoutes from "./routes/shop.route.js";
 import feedbackRoutes from "./routes/feedback.route.js";
 import adminRoutes from "./routes/admin.route.js";
+import { getSitemap } from "./controllers/sitemap.controller.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { checkEnv } from "./utils/env.js";
 import { translateResponses } from "./utils/i18n.js";
@@ -55,6 +56,8 @@ app.use((req, res, next) => {
 });
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
+// Site haritası veritabanından üretilir; Netlify /sitemap.xml isteğini buraya yönlendirir
+app.get("/sitemap.xml", getSitemap);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);

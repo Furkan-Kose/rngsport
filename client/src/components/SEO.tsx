@@ -9,8 +9,11 @@ interface SEOProps {
   keywords?: string;
   image?: string;
   type?: string;
-  /** Arama motorları indekslemesin + Referer gönderilmesin (paylaşım linkleri) */
+  /** Arama motorları indekslemesin (giriş, profil, sepet, ödeme sonucu, galeri gibi kişisel sayfalar) */
   noindex?: boolean;
+  /** Referer gönderilmesin: adresinde gizli token olan sayfalar (paylaşım linki). Sepet/ödeme
+   *  sayfalarında kullanılmaz — iyzico gibi dış servislere giden istekleri etkileyebilir. */
+  noReferrer?: boolean;
 }
 
 const SITE_NAME = "RNG Sport";
@@ -31,6 +34,7 @@ const SEO = ({
   image = DEFAULT_IMAGE,
   type = "website",
   noindex = false,
+  noReferrer = false,
 }: SEOProps) => {
   const { t } = useTranslation();
   const lang = useLang();
@@ -55,7 +59,7 @@ const SEO = ({
       <meta name="description" content={desc} />
       <meta name="keywords" content={kw} />
       {noindex && <meta name="robots" content="noindex, nofollow" />}
-      {noindex && <meta name="referrer" content="no-referrer" />}
+      {noReferrer && <meta name="referrer" content="no-referrer" />}
       <link rel="canonical" href={url} />
       {LANGUAGES.map((l) => (
         <link key={l} rel="alternate" hrefLang={l} href={urlFor(l)} />

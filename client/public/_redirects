@@ -1,1 +1,5 @@
+# Site haritası backend'de veritabanından üretilir (yeni ödül törenleri / ürünler otomatik girer).
+# "200!" zorlar: aynı adlı statik dosya olsa bile proxy kullanılır.
+/sitemap.xml  https://api.rngsport.com/sitemap.xml  200!
+
 /* /index.html 200

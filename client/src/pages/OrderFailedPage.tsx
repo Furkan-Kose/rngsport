@@ -15,7 +15,7 @@ const OrderFailedPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
-      <SEO title={t("pages.orderFailed.title")} />
+      <SEO noindex title={t("pages.orderFailed.title")} />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[32rem] h-[32rem] bg-red-600/[0.07] rounded-full blur-3xl" />
       </div>

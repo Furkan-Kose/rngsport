@@ -56,7 +56,7 @@ const OrderSuccessPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16 relative overflow-hidden">
-      <SEO title={t("pages.orderSuccess.title")} />
+      <SEO noindex title={t("pages.orderSuccess.title")} />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[32rem] h-[32rem] bg-emerald-600/[0.07] rounded-full blur-3xl" />
       </div>

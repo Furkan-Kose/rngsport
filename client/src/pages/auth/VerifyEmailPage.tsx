@@ -41,7 +41,7 @@ const VerifyEmailPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO title={t("auth.verify.seoTitle")} description={t("auth.verify.seoDescription")} />
+      <SEO noindex title={t("auth.verify.seoTitle")} description={t("auth.verify.seoDescription")} />
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 

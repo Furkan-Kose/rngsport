@@ -31,7 +31,7 @@ const ShopOrderPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO title={t("pages.shop.order.seoTitle")} />
+      <SEO noindex title={t("pages.shop.order.seoTitle")} />
       <div className="container mx-auto px-4 max-w-2xl">
         <LocalizedLink
           to="/profil"

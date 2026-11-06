@@ -80,7 +80,7 @@ Site üç dilde (Türkçe, İngilizce, Rusça) çalışır; yabancı katılımc�
 - **Ödül törenleri:** Herkese açık, girişsiz tören galerileri. Tek tek veya toplu (zip) indirme.
 - **Galeri, Hakkımızda ve Ürünler** sayfaları (bkz. [Kişiye özel ürünler](#kişiye-özel-ürünler-e-ticaret)).
 - **Yasal metinler:** KVKK aydınlatma metni, gizlilik politikası, mesafeli satış sözleşmesi, iptal-iade koşulları. İngilizce ve Rusça çevirileri "bağlayıcı olan Türkçe metindir" notuyla sunulur.
-- **WhatsApp destek butonu**, mobil uyumlu tasarım, SEO (canonical, hreflang, Open Graph, çok dilli site haritası).
+- **WhatsApp destek butonu**, mobil uyumlu tasarım, SEO (canonical, hreflang, Open Graph; çok dilli, veritabanından otomatik üretilen site haritası; kişisel sayfalar arama motorlarına kapalı).
 
 ### Rezervasyon ve online ödeme
 
@@ -283,7 +283,7 @@ rngsport/
 │       ├── lib/                 # Prisma, R2, iyzico, Resend e-posta şablonları, olay yolu
 │       └── utils/               # Fiyatlama, sadakat defteri, i18n sözlüğü, doğrulayıcılar, roller
 └── client/                      # React 19 + Vite SPA (port 5173)
-    ├── public/                  # Statik görseller, videolar, sitemap.xml, _redirects
+    ├── public/                  # Statik görseller, videolar, robots.txt, _redirects
     └── src/
         ├── pages/               # Müşteri sayfaları, auth/, legal/, admin/
         ├── components/          # Ortak bileşenler ve admin/ bileşenleri

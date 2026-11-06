@@ -166,7 +166,7 @@ const MesafeliSatis = () => {
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <div className="text-gray-300">
                       <strong className="text-gray-100">Hizmetin Adı:</strong>{" "}
-                      International Ritmika Cup - Fotoğraf ve Video Dijital
+                      RNG Sport - Fotoğraf ve Video Dijital
                       İçerik Paketi
                     </div>
                   </div>

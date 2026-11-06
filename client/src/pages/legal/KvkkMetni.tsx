@@ -55,12 +55,9 @@ const KvkkMetni = () => {
               <p className="text-gray-300 leading-relaxed">
                 Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu
                 ("Kanun") uyarınca,{" "}
-                <strong className="text-emerald-400">
-                  International Ritmika Cup
-                </strong>{" "}
-                organizasyonu kapsamında; organizasyon sahibi{" "}
-                <strong className="text-gray-100">Ritmika Cimnastik</strong> ve
-                yetkili görüntüleme partneri{" "}
+                <strong className="text-emerald-400">RNG Sport</strong>{" "}
+                kapsamında yürütülen fotoğraf ve video çekimleri için; hizmet
+                sağlayıcı ve yetkili görüntüleme firması{" "}
                 <strong className="text-gray-100">
                   Range Media (Hakan Köse)
                 </strong>{" "}
@@ -139,7 +136,7 @@ const KvkkMetni = () => {
                   <li className="flex items-start gap-3 text-gray-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
-                      Ritmika Cimnastik ve Range Media'ya ait sosyal medya
+                      RNG Sport ve Range Media'ya ait sosyal medya
                       hesaplarında (Instagram, YouTube, vb.), web sitelerinde ve
                       tanıtım filmlerinde etkinlik haberi ve pazarlama materyali
                       olarak kullanılması
@@ -169,7 +166,7 @@ const KvkkMetni = () => {
               </h3>
               <p className="text-gray-300 leading-relaxed">
                 Elde edilen görsel ve işitsel kayıtlar; etkinliğin tanıtımı,
-                sporun teşviki ve hizmetin ifası amacıyla; Ritmika Cimnastik ve
+                sporun teşviki ve hizmetin ifası amacıyla; RNG Sport ve
                 Range Media'nın sosyal medya hesaplarında halka açık olarak
                 paylaşılabilir, iş ortakları ve yetkili mercilerle Kanun'un{" "}
                 <strong className="text-gray-100">8. ve 9. maddelerine</strong>{" "}
@@ -231,11 +228,9 @@ const KvkkMetni = () => {
                 <p className="text-gray-200 leading-relaxed">
                   Yukarıdaki aydınlatma metnini okudum ve anladım. Velisi/Vasisi
                   bulunduğum sporcunun{" "}
-                  <strong className="text-emerald-400">
-                    International Ritmika Cup
-                  </strong>{" "}
+                  <strong className="text-emerald-400">RNG Sport</strong>{" "}
                   kapsamındaki fotoğraf ve video çekimlerinin Range Media
-                  tarafından yapılmasına; bu görsellerin Ritmika Cimnastik ve
+                  tarafından yapılmasına; bu görsellerin RNG Sport ve
                   Range Media tarafından sosyal medya, internet siteleri ve
                   tanıtım materyallerinde ticari veya ticari olmayan amaçlarla
                   kullanılmasına, çoğaltılmasına ve yayınlanmasına hiçbir baskı

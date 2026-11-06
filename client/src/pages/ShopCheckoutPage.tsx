@@ -143,7 +143,7 @@ const ShopCheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO title={t("pages.shop.checkout.seoTitle", { name: product.name })} />
+      <SEO noindex title={t("pages.shop.checkout.seoTitle", { name: product.name })} />
       <div className="container mx-auto px-4">
         <LocalizedLink
           to={`/urunler/${product.slug}`}

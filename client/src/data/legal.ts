@@ -132,7 +132,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
         {
           title: "1. Data Controller and Processor",
           blocks: [
-            { type: "p", text: "This text has been prepared in accordance with the Personal Data Protection Law No. 6698 (the \"Law\") to inform you about, and obtain your explicit consent for, the personal data and image recordings that will be processed within the scope of the **International Ritmika Cup** event by the event owner **Ritmika Cimnastik** and the authorised imaging partner **Range Media (Hakan Köse)**." },
+            { type: "p", text: "This text has been prepared in accordance with the Personal Data Protection Law No. 6698 (the \"Law\") to inform you about, and obtain your explicit consent for, the personal data and image recordings that will be processed within the scope of the photo and video shoots carried out under **RNG Sport** by the service provider and authorised imaging company **Range Media (Hakan Köse)**." },
           ],
         },
         {
@@ -154,7 +154,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
               items: [
                 "Running and archiving the competition",
                 "Professionally recording athletes' performances and offering them for sale to parents/athletes who request them",
-                "Use as event news and marketing material on social media accounts (Instagram, YouTube, etc.), websites and promotional films belonging to Ritmika Cimnastik and Range Media",
+                "Use as event news and marketing material on social media accounts (Instagram, YouTube, etc.), websites and promotional films belonging to RNG Sport and Range Media",
                 "Creating a customer account in your name with the email address you provide during booking/ordering, so that purchased photos and videos can be delivered only to the person concerned, and storing your files in this private gallery",
               ],
             },
@@ -163,7 +163,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
         {
           title: "3. Transfer of Personal Data",
           blocks: [
-            { type: "p", text: "The visual and audio recordings obtained may be shared publicly on the social media accounts of Ritmika Cimnastik and Range Media for the promotion of the event, the encouragement of the sport and the performance of the service, and may be shared with business partners and competent authorities in accordance with **Articles 8 and 9** of the Law." },
+            { type: "p", text: "The visual and audio recordings obtained may be shared publicly on the social media accounts of RNG Sport and Range Media for the promotion of the event, the encouragement of the sport and the performance of the service, and may be shared with business partners and competent authorities in accordance with **Articles 8 and 9** of the Law." },
           ],
         },
         {
@@ -187,7 +187,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
             {
               type: "note",
               tone: "success",
-              text: "I have read and understood the privacy notice above. Without being under any pressure, **I GIVE MY EXPLICIT CONSENT** to photo and video recordings of the athlete of whom I am the parent/guardian being made by Range Media within the scope of the **International Ritmika Cup**, and to these images being used, reproduced and published by Ritmika Cimnastik and Range Media on social media, websites and promotional materials for commercial or non-commercial purposes.",
+              text: "I have read and understood the privacy notice above. Without being under any pressure, **I GIVE MY EXPLICIT CONSENT** to photo and video recordings of the athlete of whom I am the parent/guardian being made by Range Media within the scope of **RNG Sport**, and to these images being used, reproduced and published by RNG Sport and Range Media on social media, websites and promotional materials for commercial or non-commercial purposes.",
             },
           ],
         },
@@ -238,7 +238,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
             {
               type: "list",
               items: [
-                "**Name of the service:** International Ritmika Cup - Photo and Video Digital Content Package",
+                "**Name of the service:** RNG Sport - Photo and Video Digital Content Package",
                 "**Nature of the service:** Personalised photo and video shooting, editing and digital delivery carried out within the scope of a sports event.",
                 "**Delivery method:** Digital delivery (via email or download link)",
                 "**Total amount:** The amount stated on the payment page and approved by the BUYER.",
@@ -452,7 +452,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
         {
           title: "1. Оператор и обработчик данных",
           blocks: [
-            { type: "p", text: "Настоящий текст подготовлен в соответствии с Законом № 6698 о защите персональных данных («Закон»), чтобы проинформировать вас о персональных данных и видеоизображениях, которые будут обрабатываться в рамках турнира **International Ritmika Cup** его организатором **Ritmika Cimnastik** и уполномоченным партнёром по съёмке **Range Media (Hakan Köse)**, и получить ваше явное согласие." },
+            { type: "p", text: "Настоящий текст подготовлен в соответствии с Законом № 6698 о защите персональных данных («Закон»), чтобы проинформировать вас о персональных данных и видеоизображениях, которые будут обрабатываться в рамках фото- и видеосъёмки **RNG Sport** поставщиком услуг и уполномоченной съёмочной компанией **Range Media (Hakan Köse)**, и получить ваше явное согласие." },
           ],
         },
         {
@@ -474,7 +474,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
               items: [
                 "Проведение и архивирование соревнований",
                 "Профессиональная съёмка выступлений спортсменок и предложение материалов к продаже родителям/спортсменкам, которые их запрашивают",
-                "Использование в качестве новостей о мероприятии и маркетинговых материалов в соцсетях (Instagram, YouTube и др.), на сайтах и в рекламных роликах Ritmika Cimnastik и Range Media",
+                "Использование в качестве новостей о мероприятии и маркетинговых материалов в соцсетях (Instagram, YouTube и др.), на сайтах и в рекламных роликах RNG Sport и Range Media",
                 "Создание на ваше имя клиентского аккаунта по эл. почте, указанной при бронировании/заказе, чтобы купленные фото и видео были доступны только соответствующему лицу, и хранение материалов в этой личной галерее",
               ],
             },
@@ -483,7 +483,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
         {
           title: "3. Передача персональных данных",
           blocks: [
-            { type: "p", text: "Полученные визуальные и аудиозаписи могут публиковаться в соцсетях Ritmika Cimnastik и Range Media в целях продвижения мероприятия, популяризации спорта и оказания услуги, а также передаваться деловым партнёрам и компетентным органам в соответствии со **статьями 8 и 9** Закона." },
+            { type: "p", text: "Полученные визуальные и аудиозаписи могут публиковаться в соцсетях RNG Sport и Range Media в целях продвижения мероприятия, популяризации спорта и оказания услуги, а также передаваться деловым партнёрам и компетентным органам в соответствии со **статьями 8 и 9** Закона." },
           ],
         },
         {
@@ -507,7 +507,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
             {
               type: "note",
               tone: "success",
-              text: "Я прочитал(а) и понял(а) приведённое выше уведомление. Без какого-либо давления **Я ДАЮ ЯВНОЕ СОГЛАСИЕ** на фото- и видеосъёмку спортсменки, родителем/опекуном которой я являюсь, компанией Range Media в рамках **International Ritmika Cup**, а также на использование, воспроизведение и публикацию этих изображений компаниями Ritmika Cimnastik и Range Media в соцсетях, на сайтах и в рекламных материалах в коммерческих и некоммерческих целях.",
+              text: "Я прочитал(а) и понял(а) приведённое выше уведомление. Без какого-либо давления **Я ДАЮ ЯВНОЕ СОГЛАСИЕ** на фото- и видеосъёмку спортсменки, родителем/опекуном которой я являюсь, компанией Range Media в рамках **RNG Sport**, а также на использование, воспроизведение и публикацию этих изображений компаниями RNG Sport и Range Media в соцсетях, на сайтах и в рекламных материалах в коммерческих и некоммерческих целях.",
             },
           ],
         },
@@ -558,7 +558,7 @@ export const LEGAL_DOCS: Record<"en" | "ru", Record<LegalKey, LegalDoc>> = {
             {
               type: "list",
               items: [
-                "**Наименование услуги:** International Ritmika Cup — пакет цифрового фото- и видеоконтента",
+                "**Наименование услуги:** RNG Sport — пакет цифрового фото- и видеоконтента",
                 "**Характер услуги:** персональная фото- и видеосъёмка, монтаж и цифровая доставка в рамках спортивного мероприятия.",
                 "**Способ доставки:** цифровая доставка (по эл. почте или по ссылке для скачивания)",
                 "**Общая сумма:** сумма, указанная на странице оплаты и подтверждённая ПОКУПАТЕЛЕМ.",

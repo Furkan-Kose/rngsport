@@ -1,10 +1,11 @@
-# Robots.txt for International Ritmika Cup
+# Robots.txt — RNG Sport (rngsport.com)
 User-agent: *
 Allow: /
 
-# Sitemap
+# Site haritası (veritabanından otomatik üretilir)
 Sitemap: https://rngsport.com/sitemap.xml
 
-# Disallow admin pages
+# Yönetim paneli, API ve kişisel / işlem sayfaları
 Disallow: /admin/
 Disallow: /api/
+Disallow: /paylasim/

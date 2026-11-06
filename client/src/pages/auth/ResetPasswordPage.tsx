@@ -55,6 +55,7 @@ const ResetPasswordPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
+        noindex
         title={isFirstTime ? t("auth.reset.seoTitleFirst") : t("auth.reset.seoTitle")}
         description={t("auth.reset.seoDescription")}
       />

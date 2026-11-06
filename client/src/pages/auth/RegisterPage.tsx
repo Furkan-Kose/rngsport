@@ -79,6 +79,7 @@ const RegisterPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
+        noindex
         title={t("auth.register.seoTitle")}
         description={t("auth.register.seoDescription")}
         keywords={t("auth.register.seoKeywords")}

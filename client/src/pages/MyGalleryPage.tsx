@@ -190,7 +190,7 @@ const MyGalleryPage = ({
   if (invalidLink) {
     return (
       <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-        <SEO title={t("pages.share.seoTitle")} noindex />
+        <SEO title={t("pages.share.seoTitle")} noindex noReferrer />
         <div className="container mx-auto px-4 max-w-lg text-center">
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-10">
             <Link2Off className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
@@ -208,9 +208,9 @@ const MyGalleryPage = ({
   return (
     <div className={`min-h-screen bg-zinc-950 pt-28 ${selection.active ? "pb-56" : "pb-16"}`}>
       {isShared || isPreview ? (
-        <SEO title={isPreview ? "Müşteri görünümü" : t("pages.share.seoTitle")} noindex />
+        <SEO title={isPreview ? "Müşteri görünümü" : t("pages.share.seoTitle")} noindex noReferrer />
       ) : (
-        <SEO title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
+        <SEO noindex title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
       )}
 
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />

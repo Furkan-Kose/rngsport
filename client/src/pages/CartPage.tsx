@@ -410,6 +410,7 @@ const CartPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
       <SEO
+        noindex
         title={t("checkout.cart.seoTitle")}
         description={t("checkout.cart.seoDescription")}
       />
