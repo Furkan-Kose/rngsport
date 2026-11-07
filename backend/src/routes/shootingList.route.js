@@ -7,6 +7,7 @@ import {
   getShootingList,
   resetShootingTimes,
   streamShootingList,
+  updateShootingDay,
   updateShootingEntry,
   uploadShootingList,
 } from "../controllers/shootingList.controller.js";
@@ -44,6 +45,8 @@ const upload = multer({
 
 router.get("/stream", canViewList, streamShootingList);
 router.get("/", canViewList, getShootingList);
+// /days/:id, /:id'den önce (yoksa "days" kayıt id'si sanılır)
+router.patch("/days/:id", requireAdmin, updateShootingDay);
 router.patch("/:id", canViewList, updateShootingEntry);
 
 // Liste yönetimi sadece admin'de

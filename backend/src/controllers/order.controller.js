@@ -9,6 +9,13 @@ import {
 } from "../utils/validators.js";
 import { validateApparatuses } from "../utils/apparatuses.js";
 import { shootingListChecker } from "../utils/names.js";
+import { ROLES } from "../utils/roles.js";
+import {
+  resolveBookingTournament,
+  tournamentInclude,
+  tournamentView,
+  tournamentWhere,
+} from "../utils/tournaments.js";
 import { validateAndPriceItems } from "../utils/items.js";
 import {
   parsePaginationQuery,
@@ -32,7 +39,7 @@ import {
 
 const VALID_ORDER_STATUSES = ["PENDING", "PAID", "FAILED", "CANCELLED", "DELIVERED"];
 
-const formatOrderForResponse = (order) => ({
+const formatOrderForResponse = (order, locale = "tr") => ({
   id: order.id,
   athleteName: order.athleteName,
   clubName: order.clubName,
@@ -47,6 +54,7 @@ const formatOrderForResponse = (order) => ({
   status: order.status,
   deliveries: order.deliveries ?? null,
   createdAt: order.createdAt,
+  tournament: tournamentView(order.tournament, locale),
   items: order.items.map((item) => ({
     package: {
       id: item.packageId,
@@ -68,6 +76,9 @@ export const createOrder = async (req, res) => {
   }
 
   const customer = validateRequiredCustomerInfo(req.body);
+  // Yarışma: online sipariş yalnızca rezervasyona açık yarışmaya (tek açıksa otomatik)
+  const role = await requesterRole(req);
+  const tournament = await resolveBookingTournament(req.body.tournamentId, { admin: role === ROLES.ADMIN });
   const { items, totalPrice: subtotal } = await validateAndPriceItems(req.body.items, {
     reservationPricing: false,
     activeOnly: true,
@@ -85,12 +96,13 @@ export const createOrder = async (req, res) => {
   // Puan siparişte ÖDEME BAŞARILI olunca harcanır — terk edilen sepet puan yakmaz.
   const order = await createWithDiscount({
     model: "order",
-    discountUserId: discountAccountFor(await requesterRole(req), req.user?.id, account.userId),
+    discountUserId: discountAccountFor(role, req.user?.id, account.userId),
     subtotal,
     data: {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
       locale: req.locale, // mailler bu dilde gider
+      tournamentId: tournament.id,
       ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
@@ -108,6 +120,7 @@ export const createOrder = async (req, res) => {
       discountPercent: order.discountPercent,
       discountAmount: order.discountAmount,
       totalPrice: order.totalPrice,
+      tournament: tournamentView(tournament, req.locale),
       items: order.items.map((item) => ({
         package: { id: item.packageId, name: item.packageName },
         priority: item.priority,
@@ -123,12 +136,14 @@ const LIST_SORT_FIELDS = ["createdAt", "totalPrice", "athleteName", "clubName", 
 
 export const getAllOrders = async (req, res) => {
   const { page, limit, skip, status, search, id } = parsePaginationQuery(req);
-  const where = buildCustomerSearchWhere({ status, search, id });
+  // ?tournamentId= (yarışma seçici); ?id= ile tek kayıt açılırken yarışma filtresi uygulanmaz
+  const byTournament = id ? {} : tournamentWhere(req.query.tournamentId);
+  const where = { ...buildCustomerSearchWhere({ status, search, id }), ...byTournament };
 
   const [orders, total, checkList, grouped] = await Promise.all([
     prisma.order.findMany({
       where,
-      include: { items: true },
+      include: { items: true, ...tournamentInclude },
       orderBy: parseSort(req, LIST_SORT_FIELDS),
       skip,
       take: limit,
@@ -136,13 +151,17 @@ export const getAllOrders = async (req, res) => {
     prisma.order.count({ where }),
     shootingListChecker(),
     // Durum sekmelerindeki sayılar: aramaya uyar, seçili durumdan bağımsız
-    prisma.order.groupBy({ by: ["status"], where: buildCustomerSearchWhere({ search }), _count: true }),
+    prisma.order.groupBy({
+      by: ["status"],
+      where: { ...buildCustomerSearchWhere({ search }), ...byTournament },
+      _count: true,
+    }),
   ]);
   const counts = Object.fromEntries(grouped.map((g) => [g.status, g._count]));
 
   res.json({
     // listMatch + unmatchedApparatuses: çekim listesiyle isim+alet eşleşmesi (admin renklendirmesi)
-    data: orders.map((o) => ({ ...o, ...checkList(o) })),
+    data: orders.map((o) => ({ ...o, tournament: tournamentView(o.tournament, "tr"), ...checkList(o) })),
     counts,
     pagination: {
       page,
@@ -157,20 +176,20 @@ export const getAllOrders = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   const orders = await prisma.order.findMany({
     where: await ownRecordsWhere(req.user.id),
-    include: { items: true },
+    include: { items: true, ...tournamentInclude },
     orderBy: { createdAt: "desc" },
   });
 
   // Paket adları istek dilinde
   const localized = await localizeRecordItems(orders, req.locale);
-  res.json({ data: localized.map(formatOrderForResponse) });
+  res.json({ data: localized.map((o) => formatOrderForResponse(o, req.locale)) });
 };
 
 export const getOrder = async (req, res) => {
   const order = await prisma.order.findUnique({
     where: { id: req.params.id },
     // user: OrderSuccessPage'deki "hesabını tamamla" kartı için (bkz. accountStatus)
-    include: { items: true, user: { select: { role: true, password: true } } },
+    include: { items: true, ...tournamentInclude, user: { select: { role: true, password: true } } },
   });
 
   if (!order) {
@@ -182,7 +201,7 @@ export const getOrder = async (req, res) => {
   // Paket adları istek dilinde (sipariş başarı sayfası)
   const [shown] = await localizeRecordItems([order], req.locale);
   res.json({
-    ...formatOrderForResponse(shown),
+    ...formatOrderForResponse(shown, req.locale),
     account: { status: claimStatusFor(order), email: order.customerEmail },
   });
 };
@@ -207,6 +226,12 @@ export const updateOrder = async (req, res) => {
     ...(status && { status }),
     ...(paymentId && { paymentId: paymentId.trim() }),
   };
+  // Admin siparişi başka bir yarışmaya taşıyabilir (yanlış yarışmaya düşen kayıt için)
+  if (req.body.tournamentId !== undefined) {
+    data.tournamentId = req.body.tournamentId
+      ? (await resolveBookingTournament(req.body.tournamentId, { admin: true })).id
+      : null;
+  }
 
   // Teslimat maili için önceki durum; e-posta değişimi için müşteri bilgileri
   const existing = await prisma.order.findUnique({
@@ -299,12 +324,15 @@ export const deleteOrder = async (req, res) => {
 
 // Dashboard için sipariş istatistikleri
 export const getOrderStats = async (req, res) => {
+  // Dashboard yarışma seçicisi: ?tournamentId= (boş/all = tümü)
+  const tw = tournamentWhere(req.query.tournamentId);
   const [total, paid, pending, failed, recentOrders, revenue] = await Promise.all([
-    prisma.order.count(),
-    prisma.order.count({ where: { status: { in: ["PAID", "DELIVERED"] } } }),
-    prisma.order.count({ where: { status: "PENDING" } }),
-    prisma.order.count({ where: { status: "FAILED" } }),
+    prisma.order.count({ where: tw }),
+    prisma.order.count({ where: { ...tw, status: { in: ["PAID", "DELIVERED"] } } }),
+    prisma.order.count({ where: { ...tw, status: "PENDING" } }),
+    prisma.order.count({ where: { ...tw, status: "FAILED" } }),
     prisma.order.findMany({
+      where: tw,
       take: 5,
       orderBy: { createdAt: "desc" },
       select: {
@@ -317,7 +345,7 @@ export const getOrderStats = async (req, res) => {
       },
     }),
     prisma.order.aggregate({
-      where: { status: { in: ["PAID", "DELIVERED"] } },
+      where: { ...tw, status: { in: ["PAID", "DELIVERED"] } },
       _sum: { totalPrice: true },
     }),
   ]);

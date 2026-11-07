@@ -91,6 +91,7 @@ const deliveryOf = (r, type) => excelDate(r.deliveries?.[type]);
 
 /** Kayıt `{ ...record, listMatch, unmatchedApparatuses }` biçiminde gelir (shootingListChecker) */
 export const recordColumns = ({ withPaymentId = false } = {}) => [
+  { key: "tournament", label: "Yarışma", group: "Yarışma", get: (r) => r.tournament?.name ?? "" },
   { key: "athleteName", label: "Sporcu", group: "Sporcu", get: (r) => r.athleteName },
   { key: "clubName", label: "Kulüp", group: "Sporcu", get: (r) => r.clubName },
   { key: "birthYear", label: "Doğum Yılı", group: "Sporcu", get: (r) => r.birthYear },

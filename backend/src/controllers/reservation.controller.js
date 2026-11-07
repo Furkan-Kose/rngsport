@@ -26,6 +26,12 @@ import { sendReservationCreatedEmail } from "../lib/mail.js";
 import { deliverRecord, generalDeliveryOnStatus, notifyDelivery } from "../utils/delivery.js";
 import { ROLES } from "../utils/roles.js";
 import {
+  resolveBookingTournament,
+  tournamentInclude,
+  tournamentView,
+  tournamentWhere,
+} from "../utils/tournaments.js";
+import {
   applyDiscount,
   createWithDiscount,
   discountAccountFor,
@@ -47,7 +53,8 @@ const CUSTOMER_EDITABLE_STATUSES = ["PENDING", "CONFIRMED"];
 // belirlenir. Girişli müşteri kendi hesabına, misafir formdaki e-postaya göre kontrol
 // edilir — hesap açmadan ÖNCE, boşuna hesap açılmasın.
 // excludeId: müşteri düzenlemesinde kaydın kendisi sayılmasın.
-const assertNoActiveReservation = async (req, role, customerEmail, athleteName, excludeId) => {
+// tournamentId: kural yarışma içinde geçerli — aynı sporcu her yarışmaya ayrı rezervasyon yapabilir.
+const assertNoActiveReservation = async (req, role, customerEmail, athleteName, excludeId, tournamentId) => {
   let where;
   if (role === ROLES.CUSTOMER) {
     where = await ownRecordsWhere(req.user.id);
@@ -69,6 +76,7 @@ const assertNoActiveReservation = async (req, role, customerEmail, athleteName, 
       AND: [
         where,
         { status: { in: ACTIVE_STATUSES } },
+        { tournamentId: tournamentId ?? null },
         ...(excludeId ? [{ id: { not: excludeId } }] : []),
       ],
     },
@@ -99,7 +107,7 @@ const refundOnDelete = async (id) => {
 const findOwnEditableReservation = async (req) => {
   const reservation = await prisma.reservation.findFirst({
     where: { AND: [{ id: req.params.id }, await ownRecordsWhere(req.user.id)] },
-    select: { id: true, status: true, discountPercent: true },
+    select: { id: true, status: true, discountPercent: true, tournamentId: true },
   });
   if (!reservation) {
     throw new AppError("Rezervasyon bulunamadı", 404);
@@ -118,12 +126,14 @@ const LIST_SORT_FIELDS = ["createdAt", "totalPrice", "athleteName", "clubName", 
 
 export const getAllReservations = async (req, res) => {
   const { page, limit, skip, status, search, id } = parsePaginationQuery(req);
-  const where = buildCustomerSearchWhere({ status, search, id });
+  // ?tournamentId= (yarışma seçici); ?id= ile tek kayıt açılırken yarışma filtresi uygulanmaz
+  const byTournament = id ? {} : tournamentWhere(req.query.tournamentId);
+  const where = { ...buildCustomerSearchWhere({ status, search, id }), ...byTournament };
 
   const [reservations, total, checkList, grouped] = await Promise.all([
     prisma.reservation.findMany({
       where,
-      include: { items: true },
+      include: { items: true, ...tournamentInclude },
       orderBy: parseSort(req, LIST_SORT_FIELDS),
       skip,
       take: limit,
@@ -131,13 +141,18 @@ export const getAllReservations = async (req, res) => {
     prisma.reservation.count({ where }),
     shootingListChecker(),
     // Durum sekmelerindeki sayılar: aramaya uyar, seçili durumdan bağımsız
-    prisma.reservation.groupBy({ by: ["status"], where: buildCustomerSearchWhere({ search }), _count: true }),
+    prisma.reservation.groupBy({
+      by: ["status"],
+      where: { ...buildCustomerSearchWhere({ search }), ...byTournament },
+      _count: true,
+    }),
   ]);
   const counts = Object.fromEntries(grouped.map((g) => [g.status, g._count]));
 
   res.json({
     data: reservations.map((r) => ({
       ...r,
+      tournament: tournamentView(r.tournament, "tr"),
       ...checkList(r), // listMatch + unmatchedApparatuses (admin renklendirmesi)
     })),
     counts,
@@ -153,7 +168,7 @@ export const getAllReservations = async (req, res) => {
 export const getReservation = async (req, res) => {
   const reservation = await prisma.reservation.findUnique({
     where: { id: req.params.id },
-    include: { items: true },
+    include: { items: true, ...tournamentInclude },
   });
 
   if (!reservation) {
@@ -177,6 +192,7 @@ export const getReservation = async (req, res) => {
     totalPrice: reservation.totalPrice,
     status: reservation.status,
     createdAt: reservation.createdAt,
+    tournament: tournamentView(reservation.tournament, req.locale),
     items: shown.items.map((item) => ({
       package: {
         id: item.packageId,
@@ -198,15 +214,18 @@ export const createReservation = async (req, res) => {
   }
 
   const customer = validateRequiredCustomerInfo(req.body);
+  const role = await requesterRole(req);
+  // Yarışma: müşteri yalnızca açık yarışmaya (tek açık varsa otomatik); admin geçmiş yarışmayı da seçebilir.
+  // Hesap açmadan / fiyatlamadan ÖNCE — rezervasyon kapalıyken boşuna iş yapılmasın.
+  const tournament = await resolveBookingTournament(req.body.tournamentId, { admin: role === ROLES.ADMIN });
   const { items, totalPrice: subtotal } = await validateAndPriceItems(req.body.items, {
     reservationPricing: true,
     activeOnly: true,
   });
 
   // Admin panelden eklerken kural yok (kardeşler vb. özel durumlar için)
-  const role = await requesterRole(req);
   if (role !== ROLES.ADMIN) {
-    await assertNoActiveReservation(req, role, customer.customerEmail, customer.athleteName);
+    await assertNoActiveReservation(req, role, customer.customerEmail, customer.athleteName, null, tournament.id);
   }
 
   // Girişli müşteriyse kendi hesabı; misafir/admin ise e-postasından hesap açılır/bulunur
@@ -226,10 +245,12 @@ export const createReservation = async (req, res) => {
       ...customer,
       notes: sanitizeNotes(req.body.notes),
       locale: req.locale, // mailler bu dilde gider
+      tournamentId: tournament.id,
       ...(account.userId && { userId: account.userId }),
       items: { create: items },
     },
   });
+  reservation.tournament = tournament; // onay mailinde yarışma adı
 
   // Admin Rezervasyonlar sayfaları yeni kaydı canlı görsün (bekleyen kayıt çekim
   // listesini etkilemez, o yüzden "shooting-list-changed" değil)
@@ -257,6 +278,7 @@ export const createReservation = async (req, res) => {
       discountAmount: reservation.discountAmount,
       totalPrice: reservation.totalPrice,
       status: reservation.status,
+      tournament: tournamentView(tournament, req.locale),
       items: reservation.items.map((item) => ({
         package: { id: item.packageId, name: item.packageName },
         priority: item.priority,
@@ -271,7 +293,7 @@ export const createReservation = async (req, res) => {
 export const getMyReservations = async (req, res) => {
   const reservations = await prisma.reservation.findMany({
     where: await ownRecordsWhere(req.user.id),
-    include: { items: true },
+    include: { items: true, ...tournamentInclude },
     orderBy: { createdAt: "desc" },
   });
 
@@ -294,6 +316,7 @@ export const getMyReservations = async (req, res) => {
       status: r.status,
       deliveries: r.deliveries ?? null,
       createdAt: r.createdAt,
+      tournament: tournamentView(r.tournament, req.locale),
       items: r.items.map((item) => ({
         package: { id: item.packageId, name: item.packageName, category: item.category },
         seriesCount: item.seriesCount,
@@ -310,12 +333,12 @@ export const getMyReservations = async (req, res) => {
 // Müşteri: kendi rezervasyonunu günceller (ödeme öncesi). E-posta hesabın bağı
 // olduğu için değiştirilemez; fiyatlar her zaman DB'den yeniden hesaplanır.
 export const updateMyReservation = async (req, res) => {
-  const { id, discountPercent } = await findOwnEditableReservation(req);
+  const { id, discountPercent, tournamentId } = await findOwnEditableReservation(req);
   const { customerEmail: _ignored, ...input } = req.body;
   const data = buildPartialCustomerUpdate(input);
   // Sporcu adı kardeşinkine çevrilerek aynı sporcuya ikinci kayıt açılmasın
   if (data.athleteName) {
-    await assertNoActiveReservation(req, ROLES.CUSTOMER, null, data.athleteName, id);
+    await assertNoActiveReservation(req, ROLES.CUSTOMER, null, data.athleteName, id, tournamentId);
   }
   const { items: newItems, totalPrice: subtotal } = await validateAndPriceItems(req.body.items, {
     reservationPricing: true,
@@ -363,6 +386,12 @@ export const updateReservation = async (req, res) => {
     ...buildPartialCustomerUpdate(req.body),
     ...(status && { status }),
   };
+  // Admin kaydı başka bir yarışmaya taşıyabilir (yanlış yarışmaya düşen kayıt için)
+  if (req.body.tournamentId !== undefined) {
+    data.tournamentId = req.body.tournamentId
+      ? (await resolveBookingTournament(req.body.tournamentId, { admin: true })).id
+      : null;
+  }
 
   // Teslimat maili için önceki durumu bilmemiz gerekiyor
   const existing = await prisma.reservation.findUnique({
@@ -466,13 +495,16 @@ export const deleteReservation = async (req, res) => {
 
 // Dashboard için rezervasyon istatistikleri
 export const getReservationStats = async (req, res) => {
+  // Dashboard yarışma seçicisi: ?tournamentId= (boş/all = tümü)
+  const tw = tournamentWhere(req.query.tournamentId);
   const [total, confirmed, pending, paid, recentReservations, revenue, confirmedRevenue, paidRevenue] =
     await Promise.all([
-      prisma.reservation.count(),
-      prisma.reservation.count({ where: { status: "CONFIRMED" } }),
-      prisma.reservation.count({ where: { status: "PENDING" } }),
-      prisma.reservation.count({ where: { status: { in: ["PAID", "DELIVERED"] } } }),
+      prisma.reservation.count({ where: tw }),
+      prisma.reservation.count({ where: { ...tw, status: "CONFIRMED" } }),
+      prisma.reservation.count({ where: { ...tw, status: "PENDING" } }),
+      prisma.reservation.count({ where: { ...tw, status: { in: ["PAID", "DELIVERED"] } } }),
       prisma.reservation.findMany({
+        where: tw,
         take: 5,
         orderBy: { createdAt: "desc" },
         select: {
@@ -485,13 +517,13 @@ export const getReservationStats = async (req, res) => {
         },
       }),
       prisma.reservation.aggregate({
-        where: { status: { in: ["CONFIRMED", "PAID", "DELIVERED"] } },
+        where: { ...tw, status: { in: ["CONFIRMED", "PAID", "DELIVERED"] } },
         _sum: { totalPrice: true },
       }),
       // Dashboard ayrımı: onaylandı = henüz tahsil edilmedi; ödendi = teslim edilenler dahil
-      prisma.reservation.aggregate({ where: { status: "CONFIRMED" }, _sum: { totalPrice: true } }),
+      prisma.reservation.aggregate({ where: { ...tw, status: "CONFIRMED" }, _sum: { totalPrice: true } }),
       prisma.reservation.aggregate({
-        where: { status: { in: ["PAID", "DELIVERED"] } },
+        where: { ...tw, status: { in: ["PAID", "DELIVERED"] } },
         _sum: { totalPrice: true },
       }),
     ]);

@@ -99,6 +99,7 @@ export const globalSearch = async (req, res) => {
     totalPrice: true,
     status: true,
     createdAt: true,
+    tournament: { select: { name: true } }, // sonuçta hangi yarışma olduğu görünsün
   };
 
   const [orders, reservations, shopOrders, users] = await Promise.all([

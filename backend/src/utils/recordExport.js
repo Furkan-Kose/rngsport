@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { shootingListChecker } from "./names.js";
 import { buildCustomerSearchWhere, parseSort } from "./pagination.js";
+import { tournamentWhere } from "./tournaments.js";
 import { buildXlsx, columnList, pickColumns, recordColumns, sendXlsx } from "./excel.js";
 
 // Bir dosyada en fazla bu kadar satır (bellek + Railway süresi için güvenli sınır)
@@ -18,21 +19,24 @@ export const exportColumnsHandler = (kind) => (req, res) => {
 };
 
 /**
- * GET /api/{orders|reservations}/export?status=&search=&from=&to=&sort=&dir=&columns=a,b
+ * GET /api/{orders|reservations}/export?tournamentId=&status=&search=&from=&to=&sort=&dir=&columns=a,b
  * Listedeki filtrelerin aynısı + tarih aralığı. Sıra listedekiyle aynı.
  */
 export const exportRecordsHandler = (kind) => async (req, res) => {
   const config = CONFIG[kind];
-  const where = buildCustomerSearchWhere({
-    status: req.query.status ? String(req.query.status) : undefined,
-    search: req.query.search ? String(req.query.search).trim().slice(0, 100) : undefined,
-    from: req.query.from,
-    to: req.query.to,
-  });
+  const where = {
+    ...buildCustomerSearchWhere({
+      status: req.query.status ? String(req.query.status) : undefined,
+      search: req.query.search ? String(req.query.search).trim().slice(0, 100) : undefined,
+      from: req.query.from,
+      to: req.query.to,
+    }),
+    ...tournamentWhere(req.query.tournamentId), // yarışma seçici
+  };
   const [records, checkList] = await Promise.all([
     prisma[kind].findMany({
       where,
-      include: { items: true },
+      include: { items: true, tournament: { select: { name: true } } },
       orderBy: parseSort(req, SORT_FIELDS),
       take: MAX_EXPORT_ROWS,
     }),

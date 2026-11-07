@@ -6,6 +6,7 @@ import { parsePaginationQuery } from "../utils/pagination.js";
 import { buildXlsx, columnList, excelDateTime, pickColumns, sendXlsx } from "../utils/excel.js";
 import { normalizeApparatus } from "../utils/apparatuses.js";
 import { matchKey } from "../utils/names.js";
+import { openTournaments, resolveBookingTournament } from "../utils/tournaments.js";
 import {
   ROLES,
   TRACK_CATEGORIES,
@@ -117,26 +118,8 @@ const buildApparatusMap = (records, categories = null) => {
 };
 
 // Mevcut ödenmiş sipariş ve onaylı/ödenmiş rezervasyonlardan (ad+alet) → id haritası kur.
-// Tek sorgudan üç harita seti üretilir: hepsi / foto (photo+full) / video (video+full).
-const fetchMatchMaps = async () => {
-  const [orders, reservations] = await Promise.all([
-    prisma.order.findMany({
-      where: { status: { in: ["PAID", "DELIVERED"] } },
-      select: {
-        id: true,
-        athleteName: true,
-        items: { select: { apparatuses: true, category: true } },
-      },
-    }),
-    prisma.reservation.findMany({
-      where: { status: { in: ["PAID", "CONFIRMED", "DELIVERED"] } },
-      select: {
-        id: true,
-        athleteName: true,
-        items: { select: { apparatuses: true, category: true } },
-      },
-    }),
-  ]);
+// Harita seti: hepsi / foto (photo+full) / video (video+full).
+const buildMapSet = (orders, reservations) => {
   const pair = (categories) => ({
     orderMap: buildApparatusMap(orders, categories),
     resMap: buildApparatusMap(reservations, categories),
@@ -145,6 +128,35 @@ const fetchMatchMaps = async () => {
     all: pair(null),
     photo: pair(TRACK_CATEGORIES.photo),
     video: pair(TRACK_CATEGORIES.video),
+  };
+};
+
+// Yarışma bazlı eşleşme: bir gün yalnızca KENDİ yarışmasının kayıtlarıyla eşleşir
+// (Ekim'de ödeyen sporcu Şubat listesinde "Çekilecek" görünmesin). Tek sorgu çifti — kayıtlar
+// tournamentId ile okunur, yarışma başına harita JS'te ve gerektikçe (önbellekli) kurulur.
+// Dönen fonksiyon: mapsFor(tournamentId) — null = yarışması olmayan eski gün → tüm kayıtlar.
+const fetchMatchMaps = async () => {
+  const select = {
+    id: true,
+    athleteName: true,
+    tournamentId: true,
+    items: { select: { apparatuses: true, category: true } },
+  };
+  const [orders, reservations] = await Promise.all([
+    prisma.order.findMany({ where: { status: { in: ["PAID", "DELIVERED"] } }, select }),
+    prisma.reservation.findMany({
+      where: { status: { in: ["PAID", "CONFIRMED", "DELIVERED"] } },
+      select,
+    }),
+  ]);
+  const cache = new Map();
+  return (tournamentId) => {
+    const key = tournamentId ?? "";
+    if (!cache.has(key)) {
+      const pick = (rows) => (tournamentId ? rows.filter((r) => r.tournamentId === tournamentId) : rows);
+      cache.set(key, buildMapSet(pick(orders), pick(reservations)));
+    }
+    return cache.get(key);
   };
 };
 
@@ -213,15 +225,16 @@ const syncShootingListMatches = async () => {
       willBeShotVideo: true,
       orderId: true,
       reservationId: true,
+      day: { select: { tournamentId: true } },
     },
   });
   if (entries.length === 0) return;
 
-  const maps = await fetchMatchMaps();
+  const mapsFor = await fetchMatchMaps();
 
   const updates = [];
-  for (const entry of entries) {
-    const match = computeMatch(entry.athleteName, entry.category, maps);
+  for (const { day, ...entry } of entries) {
+    const match = computeMatch(entry.athleteName, entry.category, mapsFor(day?.tournamentId ?? null));
     if (MATCH_FIELDS.some((field) => entry[field] !== match[field])) {
       updates.push(
         prisma.shootingListEntry.update({ where: { id: entry.id }, data: match }),
@@ -329,7 +342,7 @@ const buildStats = (rows, track) => {
   };
 };
 
-// Sekmeler için günleri ve her günün toplam kayıt sayısını döndür
+// Sekmeler için günleri ve her günün toplam kayıt sayısını döndür (yarışmasıyla)
 const listDays = async () => {
   const days = await prisma.shootingDay.findMany({
     orderBy: { sortOrder: "asc" },
@@ -339,8 +352,23 @@ const listDays = async () => {
     id: d.id,
     label: d.label,
     sortOrder: d.sortOrder,
+    tournamentId: d.tournamentId,
     total: d._count.entries,
   }));
+};
+
+// Gösterilecek yarışma: ?tournamentId= → istenen gün varsa onun yarışması → rezervasyona açık
+// yarışma → en son yüklenen günün yarışması. Açık yarışmalar günlerle aynı anda okunur
+// (ek gidiş-dönüş yok). "all" → bütün günler (yarışma ayrımı olmadan).
+const pickTournament = (req, days, open) => {
+  const requested = req.query.tournamentId ? String(req.query.tournamentId) : null;
+  if (requested === "all") return "all";
+  if (requested) return requested === "none" ? null : requested;
+  const day = req.query.dayId && days.find((d) => d.id === String(req.query.dayId));
+  if (day) return day.tournamentId;
+  if (open.length) return open[0].id;
+  const last = [...days].sort((a, b) => b.sortOrder - a.sortOrder)[0];
+  return last ? last.tournamentId : null;
 };
 
 export const getShootingList = async (req, res) => {
@@ -352,7 +380,10 @@ export const getShootingList = async (req, res) => {
   // Sipariş/rezervasyon değiştiyse eşleşmeleri tazele (bkz. matchesDirty)
   await syncMatchesIfNeeded();
 
-  const days = await listDays();
+  const [allDays, open] = await Promise.all([listDays(), openTournaments()]);
+  const tournamentId = pickTournament(req, allDays, open);
+  const days =
+    tournamentId === "all" ? allDays : allDays.filter((d) => (d.tournamentId ?? null) === tournamentId);
 
   // Aktif gün: query'deki dayId geçerliyse onu, değilse ilk günü kullan
   const requestedDayId = req.query.dayId ? String(req.query.dayId) : null;
@@ -363,6 +394,7 @@ export const getShootingList = async (req, res) => {
   if (!activeDay) {
     return res.json({
       days,
+      tournamentId,
       activeDayId: null,
       track,
       data: [],
@@ -420,6 +452,7 @@ export const getShootingList = async (req, res) => {
 
   res.json({
     days,
+    tournamentId,
     activeDayId: activeDay.id,
     track,
     data: entries.map((entry) => formatEntry(entry, track, folders)),
@@ -710,7 +743,16 @@ export const uploadShootingList = async (req, res) => {
     throw new AppError("Excel'de geçerli sporcu satırı bulunamadı", 400);
   }
 
-  const maps = await fetchMatchMaps();
+  // Günün yarışması: mevcut günde onunki (gönderilmişse değiştirilebilir); yeni günde seçilen,
+  // seçim yoksa rezervasyona açık yarışma. Eşleşme yalnızca bu yarışmanın kayıtlarıyla.
+  const requestedTournament = req.body.tournamentId ? String(req.body.tournamentId) : null;
+  const tournamentId = requestedTournament
+    ? (await resolveBookingTournament(requestedTournament, { admin: true })).id
+    : targetDay
+      ? targetDay.tournamentId
+      : (await resolveBookingTournament(null, { admin: true })).id;
+
+  const maps = (await fetchMatchMaps())(tournamentId);
 
   const unmatched = [];
   const entries = parsed.map((row) => {
@@ -725,13 +767,17 @@ export const uploadShootingList = async (req, res) => {
     let id = targetDay?.id;
     if (id) {
       await tx.shootingListEntry.deleteMany({ where: { dayId: id } });
-      if (label && label !== targetDay.label) {
-        await tx.shootingDay.update({ where: { id }, data: { label } });
+      const dayData = {
+        ...(label && label !== targetDay.label && { label }),
+        ...(tournamentId !== targetDay.tournamentId && { tournamentId }),
+      };
+      if (Object.keys(dayData).length) {
+        await tx.shootingDay.update({ where: { id }, data: dayData });
       }
     } else {
       const last = await tx.shootingDay.findFirst({ orderBy: { sortOrder: "desc" } });
       const created = await tx.shootingDay.create({
-        data: { label, sortOrder: (last?.sortOrder ?? 0) + 1 },
+        data: { label, sortOrder: (last?.sortOrder ?? 0) + 1, tournamentId },
       });
       id = created.id;
     }
@@ -748,6 +794,7 @@ export const uploadShootingList = async (req, res) => {
   res.json({
     message: "Liste yüklendi",
     dayId: resolvedDayId,
+    tournamentId,
     summary: {
       total: entries.length,
       willBeShot: willBeShotCount,
@@ -755,6 +802,28 @@ export const uploadShootingList = async (req, res) => {
       unmatched,
     },
   });
+};
+
+// Admin: günü başka bir yarışmaya bağla (yanlış yarışmaya yüklenen gün için).
+// Eşleşmeler yeni yarışmanın kayıtlarıyla yeniden hesaplanır.
+export const updateShootingDay = async (req, res) => {
+  const data = {};
+  if (req.body.tournamentId !== undefined) {
+    data.tournamentId = req.body.tournamentId
+      ? (await resolveBookingTournament(req.body.tournamentId, { admin: true })).id
+      : null;
+  }
+  if (req.body.label !== undefined) {
+    const label = String(req.body.label).trim().slice(0, 100);
+    if (!label) throw new AppError("Gün adı gerekli", 400);
+    data.label = label;
+  }
+  const day = await prisma.shootingDay
+    .update({ where: { id: req.params.id }, data, select: { id: true, label: true, tournamentId: true } })
+    .catch(rethrowPrismaError({ notFound: "Gün bulunamadı" }));
+  // Eşleşmeler yarışmaya bağlı → bayrak kirlensin, açık ekranlar tazelensin
+  bus.emit("shooting-list-changed");
+  res.json({ message: "Gün güncellendi", day });
 };
 
 // Admin: bir günün (ortak) sürelerini toplu sıfırla (test ve hatalı başlangıçlar için).

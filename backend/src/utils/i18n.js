@@ -174,6 +174,12 @@ const MESSAGES = {
 
   // Rezervasyon / sipariş
   "Rezervasyon bulunamadı": { en: "Booking not found", ru: "Бронь не найдена" },
+  "Şu an rezervasyona açık yarışma yok": {
+    en: "There is no competition open for booking at the moment",
+    ru: "Сейчас нет соревнований, открытых для бронирования",
+  },
+  "Lütfen yarışma seçin": { en: "Please choose a competition", ru: "Пожалуйста, выберите соревнование" },
+  "Yarışma bulunamadı": { en: "Competition not found", ru: "Соревнование не найдено" },
   "Rezervasyon oluşturuldu": { en: "Booking created", ru: "Бронь создана" },
   "Rezervasyon güncellendi": { en: "Booking updated", ru: "Бронь обновлена" },
   "Rezervasyon silindi": { en: "Booking deleted", ru: "Бронь удалена" },

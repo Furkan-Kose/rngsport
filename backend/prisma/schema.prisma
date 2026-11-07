@@ -33,11 +33,16 @@ model Order {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
+  // Yarışma: sipariş hangi yarışma için verildi (çekim listesi eşleşmesi ve listeler buna göre)
+  tournamentId String?
+
   user                User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tournament          Tournament?         @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
   items               OrderItem[]
   shootingListEntries ShootingListEntry[]
 
   @@index([userId])
+  @@index([tournamentId])
   @@map("orders")
 }
 
@@ -168,11 +173,16 @@ model Reservation {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
+  // Yarışma: rezervasyon hangi yarışma için (sporcu başına tek aktif rezervasyon kuralı yarışma içinde)
+  tournamentId String?
+
   user                User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tournament          Tournament?         @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
   items               ReservationItem[]
   shootingListEntries ShootingListEntry[]
 
   @@index([userId])
+  @@index([tournamentId])
   @@map("reservations")
 }
 
@@ -261,30 +271,42 @@ model Feedback {
 }
 
 model Tournament {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
   date         String // Serbest metin: "18-21 Haziran 2026" (aralıklar için tarih tipi uygun değil)
   location     String
   flag         String? // /flags/tr.svg gibi public yolu (null = bayrak gösterilmez)
   flagAlt      String?
-  status       String   @default("upcoming") // finished | ongoing | upcoming
+  status       String    @default("upcoming") // finished | ongoing | upcoming
   translations Json? // { en: { name, date, location, flagAlt }, ru: {...} }
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  sortOrder    Int       @default(0)
+  // Rezervasyona / online satışa açık mı (genelde tek yarışma). Hiç açık yoksa rezervasyon kapalı.
+  bookingOpen  Boolean   @default(false)
+  // Gerçek başlangıç tarihi: ana sayfa geri sayımı ve sıralama (date alanı serbest metin kalır)
+  startDate    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  orders       Order[]
+  reservations Reservation[]
+  shootingDays ShootingDay[]
 
   @@map("tournaments")
 }
 
 model ShootingDay {
-  id        String   @id @default(cuid())
-  label     String
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  label        String
+  sortOrder    Int      @default(0)
+  // Günün yarışması: eşleşme yalnızca bu yarışmanın kayıtlarıyla yapılır
+  tournamentId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  entries ShootingListEntry[]
+  tournament Tournament?         @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  entries    ShootingListEntry[]
 
+  @@index([tournamentId])
   @@map("shooting_days")
 }
 

@@ -127,7 +127,7 @@ export const getCustomerStats = async (_req, res) => {
 // sayfası aynı ucu kullanır; detay sayfası tek istekle dolsun diye sipariş,
 // rezervasyon ve galeri özeti de burada döner.
 const detailRecordInclude = {
-  include: { items: true },
+  include: { items: true, tournament: { select: { id: true, name: true } } },
   orderBy: { createdAt: "desc" },
 };
 

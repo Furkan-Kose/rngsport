@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { env } from "../utils/env.js";
-import { localizeRecordItems, normalizeLocale } from "../utils/i18n.js";
+import prisma from "./prisma.js";
+import { localize, localizeRecordItems, normalizeLocale } from "../utils/i18n.js";
 
 // Panele .env'den kopyalanan değer tırnaklarıyla gelebiliyor ("RNG Sport <...>");
 // Railway bunları değerin parçası sayar ve Resend from alanını 422 ile reddeder.
@@ -364,7 +365,14 @@ const DELIVERY_TEXT = {
 };
 
 // type: photo | video | reels | general. moreLater: fotoğraf mailinde "videolar ayrıca gelecek" satırı.
-export const sendDeliveryEmail = (to, name, setPasswordToken = null, locale, { type = "general", moreLater = false } = {}) => {
+// tournamentId: hangi yarışmanın dosyaları olduğu yazılır (birden çok yarışmada karışmasın).
+export const sendDeliveryEmail = async (
+  to,
+  name,
+  setPasswordToken = null,
+  locale,
+  { type = "general", moreLater = false, tournamentId = null } = {}
+) => {
   const lang = normalizeLocale(locale);
   const t = TEXT[lang];
   const d = DELIVERY_TEXT[lang];
@@ -376,6 +384,7 @@ export const sendDeliveryEmail = (to, name, setPasswordToken = null, locale, { t
     html: layout(t, {
       title: part.subject,
       bodyHtml: `<p>${t.hello(name)}</p>
+        ${await tournamentLine({ tournamentId }, lang)}
         <p>${part.body} ${claimUrl ? t.delivery.bodyClaim : d.open}</p>${
           moreLater ? `
         <p style="color:#71717a;">⏳ ${d.moreLater}</p>` : ""
@@ -405,6 +414,22 @@ const itemsTable = (t, lang, items, totalPrice) => `
           </tr>
         </table>`;
 
+// Rezervasyon / siparişin yarışması: "Yarışma: III. International Ritmika Cup (11-14 Şubat 2027)".
+// Kayıtta yarışma yoksa satır çıkmaz. record.tournament yoksa id'den okunur (mail fire-and-forget,
+// bir sorgu daha isteği geciktirmez).
+const TOURNAMENT_LABEL = { tr: "Yarışma", en: "Competition", ru: "Соревнование" };
+const tournamentLine = async (record, lang) => {
+  let tournament = record.tournament;
+  if (!tournament && record.tournamentId) {
+    tournament = await prisma.tournament
+      .findUnique({ where: { id: record.tournamentId } })
+      .catch(() => null);
+  }
+  if (!tournament) return "";
+  const l = localize(tournament, lang, ["name", "date"]);
+  return `<p style="margin:0 0 12px;"><strong>${TOURNAMENT_LABEL[lang]}:</strong> ${l.name}${l.date ? ` (${l.date})` : ""}</p>`;
+};
+
 // Rezervasyon oluşturulduğunda gönderilir (elden nakit akışı — ödeme yarışma günü).
 // Dil: rezervasyonun yapıldığı dil (reservation.locale).
 export const sendReservationCreatedEmail = async (to, reservation, setPasswordToken = null) => {
@@ -420,6 +445,7 @@ export const sendReservationCreatedEmail = async (to, reservation, setPasswordTo
       title: t.reservation.title,
       bodyHtml: `<p>${t.hello(reservation.athleteName)}</p>
         <p>${t.reservation.body}</p>
+        ${await tournamentLine(reservation, lang)}
         ${itemsTable(t, lang, items, reservation.totalPrice)}
         <p>${claimUrl ? t.reservation.afterClaim : t.reservation.after}</p>`,
       buttonText: claimUrl ? t.reservation.setPassword : null,
@@ -443,6 +469,7 @@ export const sendOrderPaidEmail = async (to, order, setPasswordToken = null) => 
       title: t.order.title,
       bodyHtml: `<p>${t.hello(order.athleteName)}</p>
         <p>${t.order.body}</p>
+        ${await tournamentLine(order, lang)}
         ${itemsTable(t, lang, items, order.totalPrice)}
         <p>${t.order.after}${claimUrl ? t.order.afterClaim : ""}</p>`,
       buttonText: claimUrl ? t.order.setPassword : null,

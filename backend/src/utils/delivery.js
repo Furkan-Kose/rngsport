@@ -50,7 +50,11 @@ export const notifyDelivery = (record, type) => {
   const moreLater = type === "photo" && ((has.video && !done.video) || (has.reels && !done.reels));
   issueSetPasswordTokenIfUnclaimed(record.userId)
     .then((token) =>
-      sendDeliveryEmail(record.customerEmail, record.athleteName, token, record.locale, { type, moreLater })
+      sendDeliveryEmail(record.customerEmail, record.athleteName, token, record.locale, {
+        type,
+        moreLater,
+        tournamentId: record.tournamentId ?? null,
+      })
     )
     .catch((err) => console.error("[mail] Teslimat maili hatası:", err));
 };

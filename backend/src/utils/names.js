@@ -23,19 +23,34 @@ export const matchKey = (name) =>
 //             "none"    → isim listede yok (büyük olasılıkla yanlış yazılmış)
 //             null      → henüz liste yüklenmemiş
 //   unmatchedApparatuses → listede karşılığı olmayan alet slug'ları
+//
+// Yarışma bazlı: kayıt yalnızca KENDİ yarışmasının çekim günleriyle karşılaştırılır (Ekim'deki
+// bir kayıt Şubat listesinde "var" görünmesin). Yarışması olmayan eski kayıt tüm listeye bakar.
+// Tek sorgu: satırlar günün yarışmasıyla birlikte okunur, yarışma başına isim haritası kurulur.
 export const shootingListChecker = async () => {
   const entries = await prisma.shootingListEntry.findMany({
-    select: { athleteName: true, category: true },
+    select: { athleteName: true, category: true, day: { select: { tournamentId: true } } },
   });
-  const byName = new Map(); // nameKey → Set(alet slug)
+  const all = new Map(); // nameKey → Set(alet slug)
+  const byTournament = new Map(); // tournamentId → (nameKey → Set)
+  const add = (map, key, app) => {
+    if (!map.has(key)) map.set(key, new Set());
+    if (app) map.get(key).add(app);
+  };
   for (const e of entries) {
     const key = matchKey(e.athleteName);
-    if (!byName.has(key)) byName.set(key, new Set());
     const app = normalizeApparatus(e.category);
-    if (app) byName.get(key).add(app);
+    add(all, key, app);
+    const tid = e.day?.tournamentId;
+    if (tid) {
+      if (!byTournament.has(tid)) byTournament.set(tid, new Map());
+      add(byTournament.get(tid), key, app);
+    }
   }
 
   return (record) => {
+    // Kaydın yarışması varsa yalnızca o yarışmanın listesi; o yarışmaya henüz liste yüklenmediyse null
+    const byName = record.tournamentId ? byTournament.get(record.tournamentId) ?? new Map() : all;
     if (byName.size === 0) return { listMatch: null, unmatchedApparatuses: [] };
     const listed = byName.get(matchKey(record.athleteName));
     if (!listed) return { listMatch: "none", unmatchedApparatuses: [] };
