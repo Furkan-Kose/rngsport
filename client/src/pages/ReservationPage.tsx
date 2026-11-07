@@ -13,6 +13,8 @@ import {
   Plus,
   Package as PackageIcon,
   Mail,
+  Trophy,
+  MessageCircle,
 } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -38,6 +40,8 @@ import {
   isCustomerEditable,
   type MyReservation,
 } from "../lib/myReservations";
+import { useTournaments } from "../lib/tournaments";
+import { WHATSAPP_NUMBER } from "../data/products";
 
 interface Package {
   id: string;
@@ -110,12 +114,24 @@ const ReservationPage = () => {
   // Başarı ekranı: rezervasyon no + hesap durumu (şifre belirleme kartı için)
   const [result, setResult] = useState<{
     reservationId: string;
+    tournamentName?: string;
     account: AccountInfo;
   } | null>(null);
 
   const [form, setForm] = useState(emptyCustomerForm);
 
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
+
+  // Yarışma: rezervasyon açık yarışmaya yapılır (genelde tek → otomatik). Birden çok açıksa
+  // müşteri seçer. Düzenlemede rezervasyonun kendi yarışması (değiştirilemez).
+  const { open: openTournaments, loading: tournamentsLoading } = useTournaments();
+  const [pickedTournamentId, setPickedTournamentId] = useState<string | null>(null);
+  const [editingTournament, setEditingTournament] = useState<MyReservation["tournament"]>(null);
+  const bookingTournament = editingId
+    ? editingTournament
+    : openTournaments.length === 1
+      ? openTournaments[0]
+      : (openTournaments.find((tr) => tr.id === pickedTournamentId) ?? null);
 
   // Girişli kullanıcının profilinden boş alanları ön-doldur (yazılmış değeri ezme).
   // Sporcu adı da dolar: çekim listesi eşleşmesi tam isim eşitliğine bakıyor, her
@@ -181,6 +197,7 @@ const ReservationPage = () => {
         }
 
         setEditingId(target.id);
+        setEditingTournament(target.tournament ?? null);
         setEditDiscountPercent(target.discountPercent || 0);
         setKvkkAccepted(true); // ilk rezervasyonda zaten onaylandı
         setForm({
@@ -310,6 +327,11 @@ const ReservationPage = () => {
       return;
     }
 
+    if (!editingId && !bookingTournament) {
+      setError(t("checkout.tournament.choose"));
+      return;
+    }
+
     if (!selectedPackages || selectedPackages.length === 0) {
       setError(t("checkout.form.errors.noPackage"));
       return;
@@ -335,6 +357,8 @@ const ReservationPage = () => {
     try {
       const payload = {
         ...form,
+        // Yarışma yalnızca yeni rezervasyonda gönderilir (düzenlemede değişmez)
+        ...(!editingId && bookingTournament && { tournamentId: bookingTournament.id }),
         items: selectedPackages.map((sp) => {
           const pkg = packages.find((p) => p.id === sp.packageId);
           if (!pkg) {
@@ -370,6 +394,7 @@ const ReservationPage = () => {
       // şifresini belirleyip hesabına giriyor.
       setResult({
         reservationId: data.reservation.id,
+        tournamentName: data.reservation.tournament?.name,
         account: data.account,
       });
       toast.success(t("checkout.reservation.toastCreated"));
@@ -381,8 +406,13 @@ const ReservationPage = () => {
     }
   };
 
-  // Rezervasyonlar geçici olarak kapalı
-  const isReservationsClosed = false;
+  // "Mevcut rezervasyonlarınız": yalnızca bu yarışmanınkiler (geçmiş yarışmalar profilde)
+  const myActiveHere = bookingTournament
+    ? myActive.filter((r) => r.tournament?.id === bookingTournament.id)
+    : [];
+
+  // Rezervasyona açık yarışma yoksa form yerine bilgi + WhatsApp (düzenleme bağlantısı hariç)
+  const isReservationsClosed = !editParam && !tournamentsLoading && openTournaments.length === 0;
 
   if (isReservationsClosed) {
     return (
@@ -404,13 +434,24 @@ const ReservationPage = () => {
           <p className="text-zinc-400 mb-6 max-w-md">
             {t("checkout.reservation.closedText")}
           </p>
-          <LocalizedLink
-            to="/"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            {t("checkout.reservation.backHome")}
-          </LocalizedLink>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
+            >
+              <MessageCircle className="w-5 h-5" />
+              {t("checkout.reservation.closedContact")}
+            </a>
+            <LocalizedLink
+              to="/"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              {t("checkout.reservation.backHome")}
+            </LocalizedLink>
+          </div>
         </div>
       </div>
     );
@@ -461,6 +502,12 @@ const ReservationPage = () => {
             <p className="text-zinc-400 mb-3">
               {t("checkout.reservation.successText")}
             </p>
+            {result.tournamentName && (
+              <p className="text-sm text-zinc-300 mb-3">
+                <span className="text-zinc-500">{t("checkout.tournament.label")}:</span>{" "}
+                <span className="font-medium text-emerald-400">{result.tournamentName}</span>
+              </p>
+            )}
             <p className="text-xs text-zinc-600 font-mono break-all">
               {t("checkout.reservation.number", { id: result.reservationId })}
             </p>
@@ -528,17 +575,59 @@ const ReservationPage = () => {
               </p>
             </div>
           </div>
-          <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-3xl mb-10">
+          <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-3xl mb-6">
             {t("checkout.reservation.intro")}
           </p>
+
+          {/* Hangi yarışma için: tek açık yarışma (ya da düzenlenen kaydın yarışması) bilgi olarak,
+              birden çok açıksa seçim */}
+          {!editingId && openTournaments.length > 1 ? (
+            <div className="mb-8">
+              <p className="text-sm text-zinc-300 mb-2">{t("checkout.tournament.choose")}</p>
+              <div className="flex flex-wrap gap-2">
+                {openTournaments.map((tr) => (
+                  <button
+                    key={tr.id}
+                    type="button"
+                    onClick={() => setPickedTournamentId(tr.id)}
+                    className={`text-left px-4 py-2.5 rounded-xl border transition-colors ${
+                      bookingTournament?.id === tr.id
+                        ? "bg-emerald-500/15 border-emerald-500/60 text-white"
+                        : "bg-zinc-900/60 border-zinc-700 text-zinc-300 hover:border-emerald-500/40"
+                    }`}
+                  >
+                    <span className="block font-semibold text-sm">{tr.name}</span>
+                    <span className="block text-xs text-zinc-500">{tr.date}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            bookingTournament && (
+              <div className="mb-8 inline-flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                <Trophy className="w-5 h-5 text-emerald-400 shrink-0" />
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-emerald-400/80">
+                    {t("checkout.tournament.label")}
+                  </p>
+                  <p className="text-sm font-semibold text-white">
+                    {bookingTournament.name}
+                    {bookingTournament.date && (
+                      <span className="font-normal text-zinc-400"> · {bookingTournament.date}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )
+          )}
         </Reveal>
 
         {/* Mevcut rezervasyonlar (kardeş için yeni rezervasyon yapılabilir) */}
-        {!editingId && myActive.length > 0 && (
+        {!editingId && myActiveHere.length > 0 && (
           <div className="mb-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-5 py-4">
             <p className="text-sm text-zinc-300 mb-2">{t("checkout.reservation.existing")}</p>
             <div className="flex flex-wrap gap-2 mb-2">
-              {myActive.map((r) =>
+              {myActiveHere.map((r) =>
                 isCustomerEditable(r.status) ? (
                   <LocalizedLink
                     key={r.id}

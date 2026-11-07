@@ -27,6 +27,8 @@ import {
   StatCard,
 } from '../../components/admin/ui';
 import { tableBodyClass, tableHeadRowClass } from '../../lib/adminUi';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import TournamentSelect from '../../components/admin/TournamentSelect';
 
 interface RecentRecord {
   id: string;
@@ -152,12 +154,17 @@ const DashboardPage = () => {
   const [shop, setShop] = useState<ShopStats | null>(null);
   const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Paket siparişi + rezervasyon bölümleri seçili yarışmaya göre; ürün siparişi ve geri bildirim yarışmadan bağımsız
+  const tournament = useAdminTournament();
+  const tq = `?tournamentId=${encodeURIComponent(tournament.param)}`;
+  const tLink = tournament.value ? `?t=${encodeURIComponent(tournament.value)}` : '';
 
   useEffect(() => {
+    if (!tournament.ready) return;
     // allSettled: bir bölümün hatası diğerlerini göstermeye engel olmasın
     Promise.allSettled([
-      api.get('/api/orders/stats'),
-      api.get('/api/reservations/stats'),
+      api.get(`/api/orders/stats${tq}`),
+      api.get(`/api/reservations/stats${tq}`),
       api.get('/api/shop/admin/stats'),
       api.get('/api/feedback/summary'),
     ]).then(([o, r, s, f]) => {
@@ -170,7 +177,7 @@ const DashboardPage = () => {
       });
       setIsLoading(false);
     });
-  }, []);
+  }, [tournament.ready, tq]);
 
   if (isLoading) {
     return (
@@ -185,7 +192,19 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" icon={LayoutDashboard} description="Hoş geldiniz! İşte genel bakış." />
+      <PageHeader
+        title="Dashboard"
+        icon={LayoutDashboard}
+        description="Hoş geldiniz! İşte genel bakış."
+        actions={
+          <TournamentSelect
+            tournaments={tournament.tournaments}
+            value={tournament.value}
+            onChange={tournament.setValue}
+            className="w-full sm:w-auto"
+          />
+        }
+      />
 
       {/* Paket Siparişleri (online) */}
       <section>
@@ -193,7 +212,7 @@ const DashboardPage = () => {
           title="Paket Siparişleri (Online)"
           icon={ShoppingCart}
           iconClassName="text-blue-400"
-          action={<SeeAll to="/admin/orders" />}
+          action={<SeeAll to={`/admin/orders${tLink}`} />}
         />
         {orders ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -215,7 +234,7 @@ const DashboardPage = () => {
           title="Rezervasyonlar (Nakit)"
           icon={CalendarDays}
           iconClassName="text-violet-400"
-          action={<SeeAll to="/admin/reservations" />}
+          action={<SeeAll to={`/admin/reservations${tLink}`} />}
         />
         {reservations ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -306,7 +325,7 @@ const DashboardPage = () => {
             title="Son Paket Siparişleri"
             icon={ShoppingCart}
             iconClassName="text-blue-400"
-            action={<SeeAll to="/admin/orders" />}
+            action={<SeeAll to={`/admin/orders${tLink}`} />}
           />
           {orders ? (
             <RecentTable head={['Sporcu', 'Tutar', 'Durum', 'Tarih']} empty="Henüz paket siparişi yok.">
@@ -334,7 +353,7 @@ const DashboardPage = () => {
             title="Son Rezervasyonlar"
             icon={CalendarDays}
             iconClassName="text-violet-400"
-            action={<SeeAll to="/admin/reservations" />}
+            action={<SeeAll to={`/admin/reservations${tLink}`} />}
           />
           {reservations ? (
             <RecentTable head={['Sporcu', 'Tutar', 'Durum', 'Tarih']} empty="Henüz rezervasyon yok.">

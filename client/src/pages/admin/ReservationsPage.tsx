@@ -9,6 +9,8 @@ import StatusBadge from '../../lib/orderStatus';
 import ReservationFormModal from '../../components/admin/ReservationFormModal';
 import { useRecordsLiveRefresh } from '../../hooks/useRecordsLiveRefresh';
 import { useUrlState } from '../../hooks/useUrlState';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import TournamentSelect from '../../components/admin/TournamentSelect';
 import ExportModal from '../../components/admin/ExportModal';
 import PhoneLinks from '../../components/admin/PhoneLinks';
 import { getApparatusLabel } from '../../constants/apparatuses';
@@ -57,6 +59,8 @@ interface ReservationItem {
 
 interface Reservation extends ListMatchFields {
   id: string;
+  tournamentId?: string | null;
+  tournament?: { id: string; name: string } | null; // hangi yarışma
   athleteName: string;
   clubName: string;
   birthYear: string;
@@ -96,6 +100,8 @@ const ReservationsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   // Sekme, arama, sayfa, sıralama ve açık detay adres çubuğunda (yenileme / geri tuşu / link paylaşımı)
   const [url, setUrl] = useUrlState({ status: 'all', q: '', page: '1', sort: '', dir: 'desc', id: '', limit: String(ITEMS_PER_PAGE) });
+  // Yarışma seçici (?t=); hazır olmadan istek atılmaz (iki kez yüklenmesin)
+  const tournament = useAdminTournament();
   const pageSize = [10, 25, 50, 100].includes(Number(url.limit)) ? Number(url.limit) : ITEMS_PER_PAGE;
   const filterStatus = url.status;
   const setFilterStatus = (status: string) => setUrl({ status, page: '1' });
@@ -112,6 +118,7 @@ const ReservationsPage = () => {
 
   // silent: arka plan yenilemesi (canlı akış) — yükleniyor göstergesi çıkmaz
   const fetchReservations = useCallback(async (page: number = 1, silent = false) => {
+    if (!tournament.ready) return;
     if (!silent) setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -129,6 +136,7 @@ const ReservationsPage = () => {
         params.append('sort', url.sort);
         params.append('dir', url.dir);
       }
+      params.append('tournamentId', tournament.param);
 
       const { data } = await api.get(`/api/reservations?${params}`);
       setReservations(data.data);
@@ -139,7 +147,7 @@ const ReservationsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filterStatus, searchQuery, url.sort, url.dir, pageSize]);
+  }, [filterStatus, searchQuery, url.sort, url.dir, pageSize, tournament.ready, tournament.param]);
 
   useEffect(() => {
     fetchReservations(Math.max(1, Number(url.page) || 1));
@@ -327,6 +335,12 @@ const ReservationsPage = () => {
       />
 
       <Toolbar>
+        <TournamentSelect
+          tournaments={tournament.tournaments}
+          value={tournament.value}
+          onChange={tournament.setValue}
+          className="w-full sm:w-auto"
+        />
         <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Sporcu, kulüp veya telefon ara..." />
         <FilterTabs
           tabs={STATUS_TABS.map((t) => ({
@@ -471,6 +485,9 @@ const ReservationsPage = () => {
                         <div>
                           <p className="text-white font-medium">{reservation.athleteName}</p>
                           <p className="text-gray-400 text-xs">{reservation.birthYear}</p>
+                          {tournament.value === 'all' && reservation.tournament && (
+                            <p className="text-amber-400/70 text-xs">{reservation.tournament.name}</p>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-300">{reservation.clubName}</td>
@@ -537,6 +554,10 @@ const ReservationsPage = () => {
                 <div>
                   <p className="text-gray-400 text-sm">Durum</p>
                   <div className="mt-1"><StatusBadge status={selectedReservation.status} /></div>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Yarışma</p>
+                  <p className="text-white">{selectedReservation.tournament?.name ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Sporcu Adı</p>
@@ -674,6 +695,7 @@ const ReservationsPage = () => {
         isOpen={formModalOpen}
         mode={formMode}
         initialData={editTarget}
+        defaultTournamentId={tournament.value}
         onClose={() => setFormModalOpen(false)}
         onSaved={handleFormSaved}
       />
@@ -716,8 +738,17 @@ const ReservationsPage = () => {
         exportUrl="/api/reservations/export"
         storageKey="reservations"
         fallbackFileName="rezervasyonlar.xlsx"
-        initialValues={{ status: filterStatus, search: searchQuery, from: '', to: '', sort: url.sort, dir: url.dir }}
+        initialValues={{ tournamentId: tournament.param, status: filterStatus, search: searchQuery, from: '', to: '', sort: url.sort, dir: url.dir }}
         fields={[
+          {
+            key: 'tournamentId',
+            label: 'Yarışma',
+            type: 'select',
+            options: [
+              { value: 'all', label: 'Tüm yarışmalar' },
+              ...tournament.tournaments.map((t) => ({ value: t.id, label: t.name })),
+            ],
+          },
           {
             key: 'status',
             label: 'Durum',

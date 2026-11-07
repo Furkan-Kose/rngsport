@@ -1,3 +1,5 @@
+import type { TournamentRef } from "./tournaments";
+
 // GET /api/reservations/my yanıtı — profil listesi ve rezervasyon düzenleme formu ortak
 
 export interface MyReservationItem {
@@ -23,6 +25,7 @@ export interface MyReservation {
   totalPrice: number;
   status: string;
   createdAt: string;
+  tournament?: TournamentRef | null; // hangi yarışma için
   items: MyReservationItem[];
 }
 

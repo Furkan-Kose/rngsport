@@ -1,4 +1,8 @@
 {
+  "tournament": {
+    "label": "Booking for",
+    "choose": "Please choose the competition you are booking for"
+  },
   "form": {
     "athleteName": "Athlete Full Name",
     "athleteNamePlaceholder": "Athlete's full name",
@@ -57,8 +61,9 @@
     "seoTitle": "Booking",
     "seoDescription": "Book photo and video coverage for your competitions and tournaments with RNG Sport. Our professional team captures your performance.",
     "seoKeywords": "rng sport booking, sports photo booking, rhythmic gymnastics photography, competition video, tournament photos",
-    "closedTitle": "Bookings Are Currently Closed",
-    "closedText": "The booking system is temporarily closed. Please try again later.",
+    "closedTitle": "No competition is open for booking right now",
+    "closedText": "You can book here as soon as bookings open for upcoming competitions. For questions, message us on WhatsApp.",
+    "closedContact": "Message us on WhatsApp",
     "lockedTitle": "You already have a booking",
     "lockedText": "Payment for your booking for {{name}} has been received. Please contact us if you need any changes.",
     "viewMine": "View My Booking",

@@ -58,9 +58,9 @@
 
 RNG Sport; yarışmalarda sporcuların performanslarını fotoğraf ve videoyla kaydeden bir spor medya ekibinin uçtan uca iş akışını yürütür:
 
-1. **Veli / sporcu** siteden paket seçer; **ön rezervasyon** (yarışma günü standda nakit/kart) ya da **online ödeme** (iyzico) ile kaydını oluşturur.
+1. **Veli / sporcu** siteden paket seçer; rezervasyona açık **yarışma** için **ön rezervasyon** (yarışma günü standda nakit/kart) ya da **online ödeme** (iyzico) ile kaydını oluşturur. Her kayıt bir yarışmaya bağlıdır; geçmiş yarışmaların kayıtları silinmez, yarışma yarışma ayrı tutulur.
 2. Kayıtla birlikte otomatik olarak bir **müşteri hesabı** açılır.
-3. Yarışmanın resmi **çıkış listesi** Excel olarak panele yüklenir; sistem ödenmiş/onaylanmış kayıtları sporcu adı + alet bazında listeyle **otomatik eşleştirir**.
+3. Yarışmanın resmi **çıkış listesi** Excel olarak panele yüklenir; sistem **o yarışmanın** ödenmiş/onaylanmış kayıtlarını sporcu adı + alet bazında listeyle **otomatik eşleştirir**.
 4. Sahada **fotoğrafçı ve videocu** telefonlarından çekim listesini anlık takip eder, her çıkışın başlangıç/bitiş saatini tek dokunuşla işaretler.
 5. Çekimler düzenlendikten sonra dosyalar müşterinin **kişisel, özel galerisine** yüklenir ve müşteriye e-postayla haber verilir. Fotoğraflar önce, videolar birkaç gün sonra **parça parça teslim** edilebilir.
 6. Müşteri, sporcunun pozundan üretilen **kişiye özel ürünleri** (ör. 3D sporcu figürü) siteden online sipariş edebilir.
@@ -73,7 +73,7 @@ Site üç dilde (Türkçe, İngilizce, Rusça) çalışır; yabancı katılımc�
 
 ### Ziyaretçi ve müşteri tarafı
 
-- **Ana sayfa:** Video arka planlı hero, geri sayımlı yaklaşan yarışma kampanyası, turnuva takvimi, paketler, ödül törenleri, kişiye özel ürünler, galeri, süreç anlatımı ve SSS.
+- **Ana sayfa:** Video arka planlı hero, rezervasyona açık yarışmanın başlangıcına **geri sayım**, turnuva takvimi (rezervasyona açık yarışma işaretli), paketler, ödül törenleri, kişiye özel ürünler, galeri, süreç anlatımı ve SSS.
 - **Paketler:** Fotoğraf, video ve "Full Event" paketleri. Seri sayısına göre (1/2/3 seri) kademeli fiyat. Online ve nakit rezervasyon için ayrı fiyat listesi.
 - **Öncelikli teslim:** Pakete göre seri başına ek ücretle 7 günde teslim seçeneği.
 - **Alet seçimi:** Her paket satırında seri sayısı kadar alet seçilir (Top, Labut, İp, Kurdele, Çember, Serbest). Çekim listesi eşleşmesi buna dayanır.
@@ -84,10 +84,15 @@ Site üç dilde (Türkçe, İngilizce, Rusça) çalışır; yabancı katılımc�
 
 ### Rezervasyon ve online ödeme
 
+- **Yarışma bazlı kayıt:**
+  - Admin, Turnuvalar sayfasında bir yarışmayı tek tıkla **rezervasyona açar**; rezervasyon ve online siparişler o yarışmaya kaydedilir. Genelde tek yarışma açıktır; birden çok açıksa müşteri formda ve sepette yarışmayı seçer.
+  - Açık yarışma yoksa rezervasyon sayfası "şu an rezervasyona açık yarışma yok" mesajı ve WhatsApp butonu gösterir, sepette ödeme kapanır.
+  - Eski yarışmaların kayıtları silinmez; panelde ve başarı ekranlarında hangi yarışmaya ait olduğu görünür, müşteri profilinde kayıtlar yarışmaya göre gruplanır. Onay ve teslim e-postalarında yarışma adı yer alır.
+  - Sitede belirli bir yarışma adı koda yazılı değildir: Hakkımızda çağrısı ve geri sayım açık yarışmadan beslenir.
 - **Ön rezervasyon (nakit akışı):**
   - Misafir veya girişli kullanıcı rezervasyon yapabilir.
   - Girişli müşterinin bilgileri forma ön-dolu gelir.
-  - Aynı hesaptan kardeş/ikiz sporcular için ayrı rezervasyonlar yapılabilir. Aynı sporcuya ikinci aktif rezervasyon açılamaz; isimler büyük-küçük harf ve Türkçe karakterden bağımsız karşılaştırılır.
+  - Aynı hesaptan kardeş/ikiz sporcular için ayrı rezervasyonlar yapılabilir. Aynı sporcuya **aynı yarışmada** ikinci aktif rezervasyon açılamaz (her yarışmaya ayrı rezervasyon yapılabilir); isimler büyük-küçük harf ve Türkçe karakterden bağımsız karşılaştırılır.
   - Müşteri, ödeme alınana kadar rezervasyonunu profilinden düzenleyip silebilir.
 - **Online ödeme (iyzico):**
   - Sepet ile çalışır.
@@ -171,6 +176,7 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
 
 ### Yönetim paneli
 
+- **Yarışma seçici:** Dashboard, Paket Siparişleri, Rezervasyonlar ve Çekim Listesi bir yarışmaya göre (ya da "Tüm yarışmalar") görüntülenir. Varsayılan, rezervasyona açık yarışmadır; seçim adres çubuğunda tutulur.
 - **Dashboard:** Paket siparişleri, nakit rezervasyonlar ve ürün siparişleri (hazırlanacak, ödeme bekleyen, kargoda, gelir) tek ekranda; altında son kayıtlar ve son görüşler. Nakit rezervasyonlarda **onaylanan** (tahsil edilecek) ve **ödenen** (teslim edilenler dahil, tahsil edilmiş) tutarlar ayrı gösterilir. Son kayıtlara tıklayınca kaydın detayı açılır.
 - **Panel genelinde:**
   - Menüde **yeni kayıt rozetleri:** her admin hesabı, bir sayfaya son bakışından beri gelen ödenmiş sipariş, rezervasyon, ürün siparişi ve görüş sayısını görür; sayfaya girince sıfırlanır.
@@ -180,7 +186,7 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
   - Listeleme, arama ve durum filtresi.
   - Detay, düzenleme, silme ve durum yönetimi.
   - **Toplu durum değişikliği:** Birden çok kayıt seçilip tek seferde Onaylandı / Ödendi / Teslim Edildi / İptal yapılır. Sadakat puanları ve teslim e-postaları tek tek işlemdeki kurala göre işler; onaydan önce kaç kişiye e-posta gideceği gösterilir.
-  - **Excel dışa aktarma:** Sütunlar tek tek seçilir; durum, arama ve tarih aralığıyla filtrelenir.
+  - **Excel dışa aktarma:** Sütunlar tek tek seçilir (yarışma adı dahil); yarışma, durum, arama ve tarih aralığıyla filtrelenir.
   - **Teslim paneli:** Fotoğraf / Video / Reels / Genel teslim ayrı ayrı işaretlenir, her biri kendi e-postasını bir kez gönderir (gerekirse tekrar gönderilebilir).
   - Admin panelden rezervasyon ekleme.
   - Sayfalar **sayfa yenilemeden** kendini günceller; açık bir form varsa bekler.
@@ -195,7 +201,8 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
   - Öncelik ücreti, sadakat puanı, sıralama, aktif/pasif.
   - R2'ye görsel yükleme.
   - EN/RU çeviriler.
-- **Turnuvalar** (ana sayfa takvimi) ve **Ödül törenleri** (tören oluşturma, sürükle-bırak toplu yükleme). Her ikisi de çeviri sekmeli.
+- **Turnuvalar:** Ana sayfa takvimi; ayrıca rezervasyona açma/kapama ve geri sayım için başlangıç tarihi. Kaydı olan bir yarışma silinemez (durumu "Tamamlandı" yapılır).
+- **Ödül törenleri** (tören oluşturma, sürükle-bırak toplu yükleme). Turnuvalar ve törenler çeviri sekmeli.
 - **Kullanıcılar:**
   - Müşteri listesi ve müşteri detayı. Listede **son indirme** tarihi görünür; galerisi yüklenip hiç indirmeyenler hemen fark edilir.
   - Müşteriye özel galeri yükleme (fotoğraf ≤50 MB, video ≤1 GB, sayı sınırı yok, tarayıcıdan doğrudan R2'ye):
@@ -215,8 +222,8 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
 
 Yarışma günü ekibin telefonlarda kullandığı, gecikmeye karşı optimize edilmiş canlı ekran:
 
-- **Excel yükleme:** Resmi çıkış listesi gün gün yüklenir.
-- **Otomatik eşleşme:** Her çıkış (sporcu + alet), ödenmiş sipariş ve onaylı rezervasyonlarla eşleştirilir. "Çekilecek / Çekilmeyecek" işaretleri **fotoğraf ve video izi için ayrı** hesaplanır; Full Event paketi iki izi de kapsar.
+- **Excel yükleme:** Resmi çıkış listesi gün gün, bir yarışmaya bağlı olarak yüklenir. Gün sekmeleri seçili yarışmanın günleridir.
+- **Otomatik eşleşme:** Her çıkış (sporcu + alet), **günün yarışmasına ait** ödenmiş sipariş ve onaylı rezervasyonlarla eşleştirilir; önceki yarışmalarda ödeme yapmış sporcular yeni listede yanlışlıkla "Çekilecek" görünmez. "Çekilecek / Çekilmeyecek" işaretleri **fotoğraf ve video izi için ayrı** hesaplanır; Full Event paketi iki izi de kapsar.
 - **Rol bazlı görünüm:**
   - Fotoğrafçı yalnızca foto izini, videocu yalnızca video izini görür ve yönetir.
   - Admin Tümü / Fotoğraf / Video arasında geçiş yapar.

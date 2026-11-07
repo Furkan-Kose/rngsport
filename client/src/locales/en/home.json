@@ -33,7 +33,8 @@
     "active": "Live",
     "soon": "Soon",
     "finished": "Finished",
-    "reserve": "Book Now"
+    "reserve": "Book Now",
+    "bookingOpen": "Booking open"
   },
   "packages": {
     "eyebrow": "Pricing",
@@ -48,9 +49,9 @@
   },
   "awards": {
     "eyebrow": "Award Ceremonies",
-    "title": "Baby Games Award Ceremony Photos",
-    "imageAlt": "Baby Games award ceremony",
-    "description": "Share the excitement of our little stars on the podium! Baby Games award ceremony photos will be uploaded during competition day. You can access the photos of your child's special moments free of charge.",
+    "title": "Award Ceremony Photos",
+    "imageAlt": "Award ceremony",
+    "description": "Share the excitement of our little stars on the podium! Award ceremony photos are uploaded during competition day. You can access the photos of your child's special moments free of charge.",
     "point1": "A separate gallery for each ceremony",
     "point2": "Download one by one or all at once",
     "cta": "Browse the Photos"

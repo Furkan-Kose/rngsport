@@ -16,6 +16,7 @@ import {
   Trash2,
   Loader2,
   RotateCw,
+  Trophy,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
@@ -45,6 +46,7 @@ interface MyRecord {
   status: string;
   deliveries?: Deliveries;
   createdAt: string;
+  tournament?: { id: string; name: string; date?: string } | null; // hangi yarışma için
   items: MyItem[];
 }
 
@@ -215,6 +217,19 @@ const useMyRecords = (url: string) => {
   return { records, setRecords, status, reload };
 };
 
+// Kayıtları yarışmaya göre gruplar. Liste en yeni kayıt önce geldiği için gruplar da en yeni
+// yarışma önce sıralanır. Tek grup varsa başlık verilmez (görünüm eskisi gibi kalır).
+const groupByTournament = (records: MyRecord[]) => {
+  const groups = new Map<string, { key: string; name: string; records: MyRecord[] }>();
+  for (const r of records) {
+    const key = r.tournament?.id ?? "";
+    if (!groups.has(key)) groups.set(key, { key, name: r.tournament?.name ?? "", records: [] });
+    groups.get(key)!.records.push(r);
+  }
+  const list = [...groups.values()];
+  return list.map((g) => ({ ...g, title: list.length > 1 ? g.name || null : null }));
+};
+
 const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListProps) => {
   const { t } = useTranslation();
   return (
@@ -242,14 +257,29 @@ const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListPro
       ) : records.length === 0 ? (
         <p className="text-sm text-zinc-500">{t("account.profile.empty")}</p>
       ) : (
-      <div className="space-y-3">
-        {records.map((r) => (
+      <div className="space-y-5">
+        {groupByTournament(records).map((group) => (
+          <div key={group.key} className="space-y-3">
+            {/* Birden çok yarışma varsa yarışma başlığı; tek yarışmada başlık yok (etiket kartta) */}
+            {group.title && (
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                <Trophy className="w-4 h-4" />
+                {group.title}
+              </h3>
+            )}
+        {group.records.map((r) => (
           <div
             key={r.id}
             className="bg-zinc-800/40 border border-zinc-700/50 rounded-xl p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
               <div>
+                {r.tournament && !group.title && (
+                  <p className="flex items-center gap-1.5 text-xs text-emerald-400/90 mb-1">
+                    <Trophy className="w-3.5 h-3.5" />
+                    {r.tournament.name}
+                  </p>
+                )}
                 <p className="text-white font-medium">{r.athleteName}</p>
                 <p className="text-sm text-zinc-500">{r.clubName}</p>
               </div>
@@ -277,6 +307,8 @@ const RecordList = ({ title, records, status, onRetry, onDelete }: RecordListPro
               {formatDate(r.createdAt, { day: "numeric", month: "long", year: "numeric" })}
             </p>
             {onDelete && <ReservationActions record={r} onDelete={onDelete} />}
+          </div>
+        ))}
           </div>
         ))}
       </div>

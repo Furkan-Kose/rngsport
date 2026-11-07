@@ -1,4 +1,8 @@
 {
+  "tournament": {
+    "label": "Rezervasyon yapılan yarışma",
+    "choose": "Lütfen rezervasyon yapacağınız yarışmayı seçin"
+  },
   "form": {
     "athleteName": "Sporcu Adı Soyadı",
     "athleteNamePlaceholder": "Sporcu adı soyadı",
@@ -57,8 +61,9 @@
     "seoTitle": "Rezervasyon",
     "seoDescription": "RNG Sport ile yarışma ve turnuvalarınız için fotoğraf ve video çekim rezervasyonunuzu yapın. Profesyonel ekibimizle performansınızı ölümsüzleştirin.",
     "seoKeywords": "rng sport rezervasyon, spor fotoğraf rezervasyon, ritmik cimnastik çekim, yarışma video çekim, turnuva fotoğraf",
-    "closedTitle": "Rezervasyonlar Şu Anda Kapalı",
-    "closedText": "Rezervasyon sistemi geçici olarak kapatılmıştır. Lütfen daha sonra tekrar deneyiniz.",
+    "closedTitle": "Şu an rezervasyona açık yarışma yok",
+    "closedText": "Yeni yarışmalar için rezervasyon açıldığında buradan yapabilirsiniz. Sorularınız için WhatsApp'tan bize yazın.",
+    "closedContact": "WhatsApp'tan yazın",
     "lockedTitle": "Zaten bir rezervasyonunuz var",
     "lockedText": "{{name}} adına yaptığınız rezervasyonun ödemesi alındı. Değişiklik için bizimle iletişime geçebilirsiniz.",
     "viewMine": "Rezervasyonumu Gör",

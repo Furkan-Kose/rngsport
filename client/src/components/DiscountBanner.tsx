@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
 import Reveal from "./ui/Reveal";
+import { useTournaments, type Tournament } from "../lib/tournaments";
 
 const PROMO_VIDEO = "/baby_games.mp4";
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -87,9 +88,19 @@ const TimeBlock = ({ value, label }: { value: number; label: string }) => {
   );
 };
 
+// Geri sayım rezervasyona açık yarışmanın başlangıç tarihine (admin → Turnuvalar). Açık yarışma
+// yoksa ya da tarihi geçtiyse bant hiç gösterilmez — artık koda tarih yazılmıyor.
 const DiscountBanner = () => {
+  const { open } = useTournaments();
+  const [now] = useState(() => Date.now()); // sayfa açılış anı (render saf kalsın)
+  const next = open.find((t) => t.startDate && Date.parse(t.startDate) > now);
+  if (!next) return null;
+  return <CountdownBanner key={next.id} tournament={next} />;
+};
+
+const CountdownBanner = ({ tournament }: { tournament: Tournament }) => {
   const { t } = useTranslation();
-  const targetDate = new Date("2026-10-22T00:00:00").getTime();
+  const targetDate = Date.parse(tournament.startDate!);
 
   const calculateTimeLeft = () => {
     const now = new Date().getTime();
@@ -188,7 +199,7 @@ const DiscountBanner = () => {
           >
             <div className="inline-flex items-center gap-2 text-emerald-400 text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-4">
               <CalendarCheck className="w-4 h-4" />
-              {t("home.discount.eyebrow")}
+              {tournament.name}
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold text-white mb-4 leading-tight">
@@ -202,7 +213,9 @@ const DiscountBanner = () => {
             <div className="mb-8">
               <div className="flex items-center justify-center md:justify-start gap-1.5 text-zinc-500 text-xs mb-3">
                 <Clock className="w-3.5 h-3.5" />
-                <span className="uppercase tracking-wider">{t("home.discount.date")}</span>
+                <span className="uppercase tracking-wider">
+                  {t("home.discount.date")} · {tournament.date}
+                </span>
               </div>
 
               <div className="flex items-center justify-center md:justify-start gap-1.5 sm:gap-2">

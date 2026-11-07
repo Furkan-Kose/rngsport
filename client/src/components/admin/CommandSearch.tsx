@@ -18,6 +18,7 @@ interface RecordHit {
   customerPhone: string;
   totalPrice: number;
   status: string;
+  tournament?: { name: string } | null;
 }
 interface ShopHit {
   id: string;
@@ -107,7 +108,7 @@ const CommandSearch = ({ open, onClose }: { open: boolean; onClose: () => void }
           key: `o-${o.id}`,
           to: `/admin/orders?id=${o.id}`,
           title: o.athleteName,
-          subtitle: `${o.clubName} · ${o.customerPhone} · ${formatPrice(o.totalPrice)}`,
+          subtitle: [o.tournament?.name, o.clubName, o.customerPhone, formatPrice(o.totalPrice)].filter(Boolean).join(' · '),
           right: <StatusBadge status={o.status} />,
         })),
       },
@@ -118,7 +119,7 @@ const CommandSearch = ({ open, onClose }: { open: boolean; onClose: () => void }
           key: `r-${r.id}`,
           to: `/admin/reservations?id=${r.id}`,
           title: r.athleteName,
-          subtitle: `${r.clubName} · ${r.customerPhone} · ${formatPrice(r.totalPrice)}`,
+          subtitle: [r.tournament?.name, r.clubName, r.customerPhone, formatPrice(r.totalPrice)].filter(Boolean).join(' · '),
           right: <StatusBadge status={r.status} />,
         })),
       },

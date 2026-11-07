@@ -44,12 +44,6 @@ const AwardCeremoniesPage = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <Reveal>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm font-medium">
-                <Award className="w-4 h-4" />
-                {t("pages.awards.badge")}
-              </div>
-            </Reveal>
-            <Reveal delay={0.05}>
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
                 {t("pages.awards.titleBefore")}
                 <span className="text-gradient-brand">{t("pages.awards.titleHighlight")}</span>

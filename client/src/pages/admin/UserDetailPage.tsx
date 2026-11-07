@@ -39,6 +39,7 @@ interface CustomerRecord {
   totalPrice: number;
   status: string;
   createdAt: string;
+  tournament?: { id: string; name: string } | null;
   items: RecordItem[];
 }
 
@@ -91,6 +92,7 @@ const RecordList = ({ title, records }: { title: string; records: CustomerRecord
           <div key={r.id} className="bg-gray-900/50 border border-gray-700/50 rounded-xl p-4">
             <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
               <div>
+                {r.tournament && <p className="text-xs text-amber-400/80 mb-0.5">{r.tournament.name}</p>}
                 <p className="text-white font-medium">{r.athleteName}</p>
                 <p className="text-sm text-gray-500">{r.clubName}</p>
               </div>

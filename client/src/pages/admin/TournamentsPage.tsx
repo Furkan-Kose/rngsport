@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, X, Trophy, Save, MapPin, Calendar } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Trophy, Save, MapPin, Calendar, CalendarCheck, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../lib/api';
+import { invalidateTournaments } from '../../lib/tournaments';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import { Button, EmptyState, IconButton, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
@@ -16,6 +17,8 @@ interface Tournament {
   flagAlt: string | null;
   status: string;
   sortOrder: number;
+  bookingOpen: boolean;
+  startDate: string | null;
   translations?: Translations;
 }
 
@@ -26,6 +29,8 @@ interface TournamentFormData {
   flag: string; // '' = bayrak yok
   status: string;
   sortOrder: number;
+  bookingOpen: boolean;
+  startDate: string; // YYYY-MM-DD, '' = yok
   translations: Translations;
 }
 
@@ -36,8 +41,14 @@ const initialFormData: TournamentFormData = {
   flag: '/flags/tr.svg',
   status: 'upcoming',
   sortOrder: 0,
+  bookingOpen: false,
+  startDate: '',
   translations: {},
 };
+
+// ISO → <input type="date"> değeri (Türkiye günü)
+const toDateInput = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }) : '';
 
 // Bayrak seçenekleri: value → flagAlt eşlemesi
 const FLAG_OPTIONS = [
@@ -111,6 +122,8 @@ const TournamentsPage = () => {
       flag: tournament.flag || '',
       status: tournament.status,
       sortOrder: tournament.sortOrder,
+      bookingOpen: tournament.bookingOpen,
+      startDate: toDateInput(tournament.startDate),
       translations: tournament.translations ?? {},
     });
     setEditingId(tournament.id);
@@ -139,6 +152,8 @@ const TournamentsPage = () => {
       flagAlt: flagOption?.alt || null,
       status: formData.status,
       sortOrder: formData.sortOrder,
+      bookingOpen: formData.bookingOpen,
+      startDate: formData.startDate || null,
       translations: formData.translations,
     };
 
@@ -148,6 +163,7 @@ const TournamentsPage = () => {
       } else {
         await api.post('/api/tournaments', payload);
       }
+      invalidateTournaments();
       await fetchTournaments();
       closeModal();
     } catch (err: unknown) {
@@ -158,6 +174,25 @@ const TournamentsPage = () => {
     }
   };
 
+  // Rezervasyona aç / kapat (tek tık). Müşteri yalnızca açık yarışmaya rezervasyon yapabilir.
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const toggleBooking = async (tournament: Tournament) => {
+    setTogglingId(tournament.id);
+    try {
+      await api.put(`/api/tournaments/${tournament.id}`, { bookingOpen: !tournament.bookingOpen });
+      setTournaments((prev) =>
+        prev.map((t) => (t.id === tournament.id ? { ...t, bookingOpen: !tournament.bookingOpen } : t)),
+      );
+      invalidateTournaments();
+      toast.success(tournament.bookingOpen ? 'Rezervasyon kapatıldı' : 'Rezervasyona açıldı');
+    } catch {
+      toast.error('Güncellenemedi');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+  const openCount = tournaments.filter((t) => t.bookingOpen).length;
+
   const handleDelete = async () => {
     if (!toDelete) return;
     setIsDeleting(true);
@@ -165,10 +200,13 @@ const TournamentsPage = () => {
       await api.delete(`/api/tournaments/${toDelete.id}`);
       setTournaments((prev) => prev.filter((t) => t.id !== toDelete.id));
       setToDelete(null);
+      invalidateTournaments();
       toast.success('Turnuva silindi');
     } catch (error) {
-      console.error('Turnuva silinemedi:', error);
-      toast.error('Turnuva silinemedi');
+      // Kaydı olan yarışma silinemez (409) — sunucu nedenini yazıyor
+      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
+      toast.error(message || 'Turnuva silinemedi');
+      setToDelete(null);
     } finally {
       setIsDeleting(false);
     }
@@ -186,6 +224,16 @@ const TournamentsPage = () => {
           </Button>
         }
       />
+
+      {/* Rezervasyon durumu: hiç açık yoksa site rezervasyon/sipariş almaz; birden çok açıksa müşteri seçer */}
+      {!isLoading && tournaments.length > 0 && openCount !== 1 && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-sm text-amber-200">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+          {openCount === 0
+            ? 'Rezervasyona açık yarışma yok: sitede rezervasyon ve online paket siparişi şu an kapalı.'
+            : `${openCount} yarışma aynı anda rezervasyona açık: müşteri rezervasyon ve sepette yarışma seçmek zorunda.`}
+        </div>
+      )}
 
       {/* Liste */}
       {isLoading ? (
@@ -210,6 +258,12 @@ const TournamentsPage = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-white font-semibold truncate">{tournament.name}</h3>
                     {getStatusBadge(tournament.status)}
+                    {tournament.bookingOpen && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+                        <CalendarCheck className="w-3 h-3" />
+                        Rezervasyona açık
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400 mt-1">
                     <span className="flex items-center gap-1.5">
@@ -226,6 +280,15 @@ const TournamentsPage = () => {
               </div>
 
               <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant={tournament.bookingOpen ? 'secondary' : 'primary'}
+                  icon={CalendarCheck}
+                  loading={togglingId === tournament.id}
+                  onClick={() => toggleBooking(tournament)}
+                >
+                  {tournament.bookingOpen ? 'Rezervasyonu kapat' : 'Rezervasyona aç'}
+                </Button>
                 <IconButton icon={Pencil} title="Düzenle" onClick={() => openEditModal(tournament)} />
                 <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setToDelete(tournament)} />
               </div>
@@ -325,6 +388,33 @@ const TournamentsPage = () => {
                     className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Başlangıç tarihi</label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
+                    className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Ana sayfadaki geri sayım bu tarihe sayar.</p>
+                </div>
+                <label className="flex items-start gap-3 sm:mt-6 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.bookingOpen}
+                    onChange={(e) => setFormData((p) => ({ ...p, bookingOpen: e.target.checked }))}
+                    className="mt-1 w-4 h-4 accent-amber-500"
+                  />
+                  <span>
+                    <span className="block text-sm text-white">Rezervasyona açık</span>
+                    <span className="block text-xs text-gray-500">
+                      Yeni rezervasyon ve paket siparişleri bu yarışmaya kaydedilir.
+                    </span>
+                  </span>
+                </label>
               </div>
 
               {/* EN/RU çevirileri — boş alan sitede Türkçe görünür */}

@@ -19,6 +19,8 @@ import { toast } from 'react-toastify';
 import api, { API_URL } from '../../lib/api';
 import { getApparatusLabel } from '../../constants/apparatuses';
 import UploadDayModal from '../../components/admin/UploadDayModal';
+import TournamentSelect from '../../components/admin/TournamentSelect';
+import { useTournaments } from '../../lib/tournaments';
 import ShootingTimeEditModal from '../../components/admin/ShootingTimeEditModal';
 import PhotoFolderModal from '../../components/admin/PhotoFolderModal';
 import { useAuth } from '../../context/AuthContext';
@@ -86,6 +88,7 @@ interface Day {
   id: string;
   label: string;
   sortOrder: number;
+  tournamentId: string | null;
   total: number;
 }
 
@@ -275,6 +278,11 @@ const ShootingListPage = () => {
   // fetchList içinde state yerine bu okunur — bkz. fetchList'teki not
   const activeDayRef = useRef(activeDayId);
   activeDayRef.current = activeDayId;
+  // Yarışma: gün sekmeleri yalnızca seçili yarışmanın günleri. null = sunucu seçer (açık yarışma /
+  // son yüklenen gün); sunucunun seçtiği cevapta gelir. activeDayRef ile aynı nedenle ref'ten okunur.
+  const { tournaments } = useTournaments();
+  const [tournamentId, setTournamentId] = useState<string | null>(null);
+  const tournamentRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -286,7 +294,7 @@ const ShootingListPage = () => {
   const [exportOpen, setExportOpen] = useState(false);
   // Yükleme modalı: null = yeni gün; dolu = o günün üzerine yaz
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadExisting, setUploadExisting] = useState<{ id: string; label: string } | null>(null);
+  const [uploadExisting, setUploadExisting] = useState<{ id: string; label: string; tournamentId: string | null } | null>(null);
 
   const fetchList = useCallback(
     async (
@@ -309,12 +317,15 @@ const ShootingListPage = () => {
         });
         if (searchQuery) params.append('search', searchQuery);
         if (effectiveDay) params.append('dayId', effectiveDay);
+        if (tournamentRef.current) params.append('tournamentId', tournamentRef.current);
 
         const { data } = await api.get(`/api/shooting-list?${params}`);
         setEntries(data.data);
         setPagination(data.pagination);
         setStats(data.stats);
         setDays(data.days ?? []);
+        tournamentRef.current = data.tournamentId ?? null;
+        setTournamentId(data.tournamentId ?? null);
         // Backend'in döndürdüğü aktif günü senkronla (ilk yükleme / silme sonrası)
         const nextActive = data.activeDayId ?? null;
         if (nextActive !== activeDayRef.current) setActiveDayId(nextActive);
@@ -384,7 +395,7 @@ const ShootingListPage = () => {
 
   const openReupload = () => {
     if (!activeDay) return;
-    setUploadExisting({ id: activeDay.id, label: activeDay.label });
+    setUploadExisting({ id: activeDay.id, label: activeDay.label, tournamentId: activeDay.tournamentId });
     setUploadOpen(true);
   };
 
@@ -396,9 +407,20 @@ const ShootingListPage = () => {
     fetchList(1, false, dayId);
   };
 
-  const handleUploaded = (dayId: string) => {
+  // Yüklenen gün başka bir yarışmaya ait olabilir → o yarışmaya geç
+  const handleUploaded = (dayId: string, dayTournamentId: string | null) => {
+    tournamentRef.current = dayTournamentId;
     setActiveDayId(dayId);
     fetchList(1, false, dayId);
+  };
+
+  // Yarışma değişince o yarışmanın ilk günü açılır
+  const handleTournamentChange = (id: string) => {
+    if (id === tournamentId) return;
+    tournamentRef.current = id;
+    setTournamentId(id);
+    setActiveDayId(null);
+    fetchList(1, false, null);
   };
 
   // Admin: seçili iz görünümüne göre günün sürelerini toplu sıfırla (Tümü → foto + video)
@@ -521,6 +543,13 @@ const ShootingListPage = () => {
           <>
             {isAdmin && (
               <>
+                <TournamentSelect
+                  tournaments={tournaments}
+                  value={tournamentId ?? ''}
+                  onChange={handleTournamentChange}
+                  allowAll={false}
+                  className="w-full sm:w-auto"
+                />
                 {/* İz seçici: hangi ekibin gözünden bakıldığı */}
                 <div className="inline-flex h-10 items-center rounded-lg border border-gray-700 bg-gray-800/50 p-0.5">
                   {(['all', 'photo', 'video'] as Track[]).map((option) => (
@@ -880,6 +909,7 @@ const ShootingListPage = () => {
       <UploadDayModal
         open={uploadOpen}
         existingDay={uploadExisting}
+        defaultTournamentId={tournamentId}
         onClose={() => setUploadOpen(false)}
         onUploaded={handleUploaded}
       />

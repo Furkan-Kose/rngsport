@@ -20,6 +20,7 @@ interface OrderData {
   athleteName: string;
   clubName: string;
   totalPrice: number;
+  tournament?: { name: string } | null; // hangi yarışma için
   items: Array<{
     package: { name: string };
     seriesCount: number;
@@ -115,6 +116,12 @@ const OrderSuccessPage = () => {
                             #{order.id.slice(-8).toUpperCase()}
                           </span>
                         </div>
+                        {order.tournament && (
+                          <div className="flex justify-between gap-4">
+                            <span className="text-zinc-500 shrink-0">{t("checkout.tournament.label")}</span>
+                            <span className="text-zinc-200 text-right">{order.tournament.name}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
                           <span className="text-zinc-500">{t("pages.orderSuccess.athlete")}</span>
                           <span className="text-zinc-200">

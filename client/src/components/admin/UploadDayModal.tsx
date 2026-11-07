@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FileSpreadsheet, Loader2, Upload, X } from 'lucide-react';
 import api from '../../lib/api';
 import { toast } from 'react-toastify';
+import { useTournaments } from '../../lib/tournaments';
 
 interface UploadSummary {
   total: number;
@@ -13,12 +14,17 @@ interface UploadSummary {
 interface Props {
   open: boolean;
   // Doluysa mevcut günün üzerine yazma modu; boşsa yeni gün oluşturma modu
-  existingDay: { id: string; label: string } | null;
+  existingDay: { id: string; label: string; tournamentId?: string | null } | null;
+  /** Yeni günün varsayılan yarışması (sayfada seçili olan) */
+  defaultTournamentId?: string | null;
   onClose: () => void;
-  onUploaded: (dayId: string) => void;
+  onUploaded: (dayId: string, tournamentId: string | null) => void;
 }
 
-const UploadDayModal = ({ open, existingDay, onClose, onUploaded }: Props) => {
+const UploadDayModal = ({ open, existingDay, defaultTournamentId, onClose, onUploaded }: Props) => {
+  // Gün bir yarışmaya bağlıdır: eşleşme yalnızca o yarışmanın sipariş/rezervasyonlarıyla yapılır
+  const { tournaments } = useTournaments();
+  const [tournamentId, setTournamentId] = useState('');
   const [label, setLabel] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,16 +34,21 @@ const UploadDayModal = ({ open, existingDay, onClose, onUploaded }: Props) => {
   useEffect(() => {
     if (!open) return;
     setLabel(existingDay?.label ?? '');
+    setTournamentId(existingDay?.tournamentId ?? defaultTournamentId ?? '');
     setFile(null);
     setError('');
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [open, existingDay]);
+  }, [open, existingDay, defaultTournamentId]);
 
   if (!open) return null;
 
   const handleSubmit = async () => {
     if (!label.trim()) {
       setError('Gün adı gerekli');
+      return;
+    }
+    if (!tournamentId) {
+      setError('Yarışma seçin');
       return;
     }
     if (!file) {
@@ -50,6 +61,7 @@ const UploadDayModal = ({ open, existingDay, onClose, onUploaded }: Props) => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('label', label.trim());
+      formData.append('tournamentId', tournamentId);
       if (existingDay) formData.append('dayId', existingDay.id);
 
       const { data } = await api.post('/api/shooting-list/upload', formData);
@@ -57,7 +69,7 @@ const UploadDayModal = ({ open, existingDay, onClose, onUploaded }: Props) => {
       toast.success(
         `${summary.total} sporcu yüklendi · ${summary.willBeShot} çekilecek · ${summary.willNotBeShot} çekilmeyecek`,
       );
-      onUploaded(data.dayId);
+      onUploaded(data.dayId, data.tournamentId ?? null);
       onClose();
     } catch (err) {
       const message =
@@ -98,6 +110,26 @@ const UploadDayModal = ({ open, existingDay, onClose, onUploaded }: Props) => {
               {error}
             </div>
           )}
+
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Yarışma</label>
+            <select
+              value={tournamentId}
+              onChange={(e) => setTournamentId(e.target.value)}
+              className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+            >
+              <option value="">Yarışma seçin</option>
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                  {t.bookingOpen ? ' — rezervasyon açık' : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Liste yalnızca bu yarışmanın sipariş ve rezervasyonlarıyla eşleştirilir.
+            </p>
+          </div>
 
           <div>
             <label className="text-xs text-gray-400 mb-1 block">Gün Adı</label>

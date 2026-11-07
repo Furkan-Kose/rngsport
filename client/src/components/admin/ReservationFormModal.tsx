@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTournaments } from '../../lib/tournaments';
 import { Loader2, Plus, Trash2, X, Package as PackageIcon, Save } from 'lucide-react';
 import api from '../../lib/api';
 import { SkeletonRows } from './ui';
@@ -30,6 +31,7 @@ export interface ReservationFormPayload {
   customerEmail: string;
   notes: string;
   status?: string;
+  tournamentId?: string;
   items: {
     packageId: string;
     seriesCount: number;
@@ -48,6 +50,7 @@ interface ExistingReservation {
   customerEmail: string;
   notes: string | null;
   status: string;
+  tournamentId?: string | null;
   items: {
     packageId: string;
     seriesCount: number;
@@ -61,6 +64,8 @@ interface Props {
   isOpen: boolean;
   mode: 'create' | 'edit';
   initialData?: ExistingReservation | null;
+  /** Yeni kayıtta seçili gelecek yarışma (listedeki seçim; yoksa rezervasyona açık yarışma) */
+  defaultTournamentId?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -81,9 +86,14 @@ const emptyForm = {
   customerEmail: '',
   notes: '',
   status: 'PENDING',
+  tournamentId: '',
 };
 
-const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: Props) => {
+const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, onClose, onSaved }: Props) => {
+  // Admin geçmiş (kapalı) bir yarışmaya da kayıt ekleyebilir
+  const { tournaments, open: openTournaments } = useTournaments();
+  const initialTournament =
+    defaultTournamentId && defaultTournamentId !== 'all' ? defaultTournamentId : (openTournaments[0]?.id ?? '');
   const [packages, setPackages] = useState<PackageOption[]>([]);
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,6 +140,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
         customerEmail: initialData.customerEmail,
         notes: initialData.notes ?? '',
         status: initialData.status,
+        tournamentId: initialData.tournamentId ?? '',
       });
       setItems(
         initialData.items.map((it, idx) => ({
@@ -142,10 +153,18 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
         })),
       );
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, tournamentId: initialTournament });
       setItems([]);
     }
+    // initialTournament bilerek dışarıda: yarışma listesi geç gelirse doldurulmuş formu sıfırlamasın
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mode, initialData]);
+
+  // Yarışma listesi form açıldıktan sonra gelirse boş yarışma alanını doldur
+  useEffect(() => {
+    if (!isOpen || mode !== 'create' || !initialTournament) return;
+    setForm((p) => (p.tournamentId ? p : { ...p, tournamentId: initialTournament }));
+  }, [isOpen, mode, initialTournament]);
 
   if (!isOpen) return null;
 
@@ -255,6 +274,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
     if (mode === 'edit') {
       payload.status = form.status;
     }
+    if (form.tournamentId) payload.tournamentId = form.tournamentId;
 
     setIsSubmitting(true);
     try {
@@ -297,6 +317,27 @@ const ReservationFormModal = ({ isOpen, mode, initialData, onClose, onSaved }: P
               {error}
             </div>
           )}
+
+          {/* Yarışma */}
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">
+              Yarışma <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={form.tournamentId}
+              onChange={(e) => setForm((p) => ({ ...p, tournamentId: e.target.value }))}
+              required
+              className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+            >
+              <option value="">Yarışma seçin</option>
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                  {t.bookingOpen ? ' — rezervasyon açık' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Sporcu Bilgileri */}
           <div>

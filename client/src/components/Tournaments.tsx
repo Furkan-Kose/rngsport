@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   MapPin,
   Calendar,
@@ -9,21 +8,9 @@ import {
 } from "lucide-react";
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
-import api from "../lib/api";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
-
-type TournamentStatus = "finished" | "ongoing" | "upcoming";
-
-interface Tournament {
-  id: string;
-  name: string;
-  date: string;
-  location: string;
-  flag: string | null; // /flags/*.svg yolu (null = bayrak gösterilmez)
-  flagAlt: string | null;
-  status: TournamentStatus;
-}
+import { useTournaments, type TournamentStatus } from "../lib/tournaments";
 
 const StatusBadge = ({ status }: { status: TournamentStatus }) => {
   const { t } = useTranslation();
@@ -57,20 +44,8 @@ const StatusBadge = ({ status }: { status: TournamentStatus }) => {
 };
 
 const Tournaments = () => {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const { t, i18n } = useTranslation();
-
-  useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        const { data } = await api.get("/api/tournaments");
-        setTournaments(data);
-      } catch (error) {
-        console.error("Turnuvalar yüklenemedi:", error);
-      }
-    };
-    fetchTournaments();
-  }, [i18n.language]);
+  const { tournaments } = useTournaments();
+  const { t } = useTranslation();
 
   // Yüklenene kadar / hiç turnuva yoksa bölümü tamamen gizle
   if (tournaments.length === 0) return null;
@@ -88,7 +63,8 @@ const Tournaments = () => {
 
         <div className="max-w-4xl mx-auto space-y-4">
           {tournaments.map((tournament, index) => {
-            const isActive = tournament.status === "ongoing";
+            // Rezervasyona açık yarışma da vurgulanır (buton + yeşil çerçeve)
+            const isActive = tournament.status === "ongoing" || tournament.bookingOpen;
             return (
             <Reveal key={tournament.id} delay={index * 0.1}>
               <div
@@ -132,7 +108,14 @@ const Tournaments = () => {
                           >
                             {tournament.name}
                           </h3>
-                          <StatusBadge status={tournament.status} />
+                          {tournament.bookingOpen && tournament.status !== "finished" ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-semibold uppercase tracking-wider">
+                              <CalendarCheck className="w-3 h-3" />
+                              {t("home.tournaments.bookingOpen")}
+                            </span>
+                          ) : (
+                            <StatusBadge status={tournament.status} />
+                          )}
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-400 text-sm">
                           <div className="flex items-center gap-1.5">
@@ -147,7 +130,7 @@ const Tournaments = () => {
                       </div>
                     </div>
 
-                    {tournament.status === "ongoing" && (
+                    {tournament.bookingOpen && tournament.status !== "finished" && (
                       <LocalizedLink
                         to="/rezervasyon"
                         className="flex items-center justify-center md:justify-start gap-2 text-emerald-400 font-semibold hover:gap-4 transition-all whitespace-nowrap"
@@ -157,7 +140,7 @@ const Tournaments = () => {
                       </LocalizedLink>
                     )}
 
-                    {tournament.status === "upcoming" && (
+                    {tournament.status === "upcoming" && !tournament.bookingOpen && (
                       <span className="flex items-center justify-center md:justify-start gap-2 text-amber-400/80 font-medium whitespace-nowrap">
                         <Clock className="w-4 h-4" />
                         {t("home.tournaments.soon")}

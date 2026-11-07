@@ -8,6 +8,8 @@ import { APPARATUSES, getApparatusLabel } from '../../constants/apparatuses';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import { useRecordsLiveRefresh } from '../../hooks/useRecordsLiveRefresh';
 import { useUrlState } from '../../hooks/useUrlState';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import TournamentSelect from '../../components/admin/TournamentSelect';
 import { useBulkSelection } from '../../hooks/useBulkSelection';
 import BulkStatusBar from '../../components/admin/BulkStatusBar';
 import ExportModal from '../../components/admin/ExportModal';
@@ -57,6 +59,8 @@ interface OrderItem {
 
 interface Order extends ListMatchFields {
   id: string;
+  tournamentId?: string | null;
+  tournament?: { id: string; name: string } | null; // hangi yarışma
   athleteName: string;
   clubName: string;
   birthYear: string;
@@ -110,6 +114,8 @@ const OrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   // Sekme, arama, sayfa, sıralama ve açık detay adres çubuğunda (yenileme / geri tuşu / link paylaşımı)
   const [url, setUrl] = useUrlState({ status: 'all', q: '', page: '1', sort: '', dir: 'desc', id: '', limit: String(ITEMS_PER_PAGE) });
+  // Yarışma seçici (?t=); hazır olmadan istek atılmaz (iki kez yüklenmesin)
+  const tournament = useAdminTournament();
   const pageSize = [10, 25, 50, 100].includes(Number(url.limit)) ? Number(url.limit) : ITEMS_PER_PAGE;
   // Toplu işlem: Seç → işaretle → durum
   const bulk = useBulkSelection();
@@ -132,6 +138,7 @@ const OrdersPage = () => {
 
   // silent: arka plan yenilemesi (canlı akış) — yükleniyor göstergesi çıkmaz
   const fetchOrders = useCallback(async (page: number = 1, silent = false) => {
+    if (!tournament.ready) return;
     if (!silent) setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -149,6 +156,7 @@ const OrdersPage = () => {
         params.append('sort', url.sort);
         params.append('dir', url.dir);
       }
+      params.append('tournamentId', tournament.param);
 
       const { data } = await api.get(`/api/orders?${params}`);
       setOrders(data.data);
@@ -159,7 +167,7 @@ const OrdersPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [filterStatus, searchQuery, url.sort, url.dir, pageSize]);
+  }, [filterStatus, searchQuery, url.sort, url.dir, pageSize, tournament.ready, tournament.param]);
 
   useEffect(() => {
     fetchOrders(Math.max(1, Number(url.page) || 1));
@@ -356,6 +364,12 @@ const OrdersPage = () => {
       />
 
       <Toolbar>
+        <TournamentSelect
+          tournaments={tournament.tournaments}
+          value={tournament.value}
+          onChange={tournament.setValue}
+          className="w-full sm:w-auto"
+        />
         <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Sporcu, kulüp veya telefon ara..." />
         <FilterTabs
           tabs={STATUS_TABS.map((t) => ({
@@ -523,6 +537,9 @@ const OrdersPage = () => {
                         <div>
                           <p className="text-white font-medium">{order.athleteName}</p>
                           <p className="text-gray-400 text-xs">{order.birthYear}</p>
+                          {tournament.value === 'all' && order.tournament && (
+                            <p className="text-amber-400/70 text-xs">{order.tournament.name}</p>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-300">{order.clubName}</td>
@@ -628,6 +645,10 @@ const OrdersPage = () => {
                 <div>
                   <p className="text-gray-400 text-sm">Durum</p>
                   <div className="mt-1"><StatusBadge status={selectedOrder.status} /></div>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Yarışma</p>
+                  <p className="text-white">{selectedOrder.tournament?.name ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Sporcu Adı</p>
@@ -840,8 +861,17 @@ const OrdersPage = () => {
         exportUrl="/api/orders/export"
         storageKey="orders"
         fallbackFileName="paket-siparisleri.xlsx"
-        initialValues={{ status: filterStatus, search: searchQuery, from: '', to: '', sort: url.sort, dir: url.dir }}
+        initialValues={{ tournamentId: tournament.param, status: filterStatus, search: searchQuery, from: '', to: '', sort: url.sort, dir: url.dir }}
         fields={[
+          {
+            key: 'tournamentId',
+            label: 'Yarışma',
+            type: 'select',
+            options: [
+              { value: 'all', label: 'Tüm yarışmalar' },
+              ...tournament.tournaments.map((t) => ({ value: t.id, label: t.name })),
+            ],
+          },
           {
             key: 'status',
             label: 'Durum',

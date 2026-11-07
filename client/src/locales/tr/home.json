@@ -33,7 +33,8 @@
     "active": "Aktif",
     "soon": "Yakında",
     "finished": "Tamamlandı",
-    "reserve": "Rezervasyon Yap"
+    "reserve": "Rezervasyon Yap",
+    "bookingOpen": "Rezervasyon açık"
   },
   "packages": {
     "eyebrow": "Fiyatlandırma",
@@ -48,9 +49,9 @@
   },
   "awards": {
     "eyebrow": "Ödül Törenleri",
-    "title": "Baby Games Ödül Töreni Fotoğrafları",
-    "imageAlt": "Baby Games ödül töreni",
-    "description": "Minik yıldızların kürsü heyecanına ortak olun! Baby Games ödül töreni fotoğrafları yarışma günü içerisinde yüklenecektir. Çocuğunuzun bu özel anlarına ait fotoğraflara ücretsiz olarak ulaşabilirsiniz.",
+    "title": "Ödül Töreni Fotoğrafları",
+    "imageAlt": "Ödül töreni",
+    "description": "Minik yıldızların kürsü heyecanına ortak olun! Ödül töreni fotoğrafları yarışma günü içerisinde yüklenir. Çocuğunuzun bu özel anlarına ait fotoğraflara ücretsiz olarak ulaşabilirsiniz.",
     "point1": "Her tören için ayrı galeri",
     "point2": "Tek tek veya hepsini birden indirin",
     "cta": "Fotoğraflara Göz At"

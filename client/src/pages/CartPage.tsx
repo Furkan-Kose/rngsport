@@ -34,6 +34,7 @@ import api from "../lib/api";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { APPARATUSES } from "../constants/apparatuses";
+import { useTournaments } from "../lib/tournaments";
 import {
   emptyCustomerForm,
   customerFormFromUser,
@@ -235,6 +236,16 @@ const CartPage = () => {
   const [searchParams] = useSearchParams();
   const isEmpty = items.length === 0;
 
+  // Yarışma: sipariş rezervasyona açık yarışmaya bağlanır (tek açıksa otomatik, birden çoksa seçim).
+  // Hiç açık yarışma yoksa ödeme kapalı.
+  const { open: openTournaments, loading: tournamentsLoading } = useTournaments();
+  const [pickedTournamentId, setPickedTournamentId] = useState<string | null>(null);
+  const orderTournament =
+    openTournaments.length === 1
+      ? openTournaments[0]
+      : (openTournaments.find((tr) => tr.id === pickedTournamentId) ?? null);
+  const bookingClosed = !tournamentsLoading && openTournaments.length === 0;
+
   const [showCheckout, setShowCheckout] = useState(false);
   const [step, setStep] = useState<"form" | "payment">("form");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -322,6 +333,11 @@ const CartPage = () => {
       return;
     }
 
+    if (!orderTournament) {
+      setError(bookingClosed ? t("checkout.reservation.closedTitle") : t("checkout.tournament.choose"));
+      return;
+    }
+
     const incompleteItem = items.find(
       (it) => (itemApparatuses[itemKey(it)] ?? []).length !== it.seriesCount,
     );
@@ -336,6 +352,7 @@ const CartPage = () => {
       // 1. Sipariş oluştur
       const { data: orderData } = await api.post("/api/orders", {
         ...form,
+        tournamentId: orderTournament.id,
         items: items.map((item) => ({
           package: {
             id: item.package.id,
@@ -565,6 +582,37 @@ const CartPage = () => {
                       </div>
                     ))}
 
+                    {/* Hangi yarışma için */}
+                    {openTournaments.length > 1 ? (
+                      <div className="border-t border-zinc-800 pt-4 mt-4">
+                        <label className="block text-xs text-zinc-400 mb-1.5">
+                          {t("checkout.tournament.label")}
+                        </label>
+                        <select
+                          value={orderTournament?.id ?? ""}
+                          onChange={(e) => setPickedTournamentId(e.target.value || null)}
+                          className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white focus:outline-none focus:border-emerald-500"
+                        >
+                          <option value="">{t("checkout.tournament.choose")}</option>
+                          {openTournaments.map((tr) => (
+                            <option key={tr.id} value={tr.id}>
+                              {tr.name} · {tr.date}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      orderTournament && (
+                        <div className="border-t border-zinc-800 pt-4 mt-4 text-sm">
+                          <span className="block text-xs text-zinc-500">{t("checkout.tournament.label")}</span>
+                          <span className="text-zinc-200">
+                            {orderTournament.name}
+                            <span className="text-zinc-500"> · {orderTournament.date}</span>
+                          </span>
+                        </div>
+                      )
+                    )}
+
                     <div className="border-t border-zinc-800 pt-4 mt-4">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-white">{t("checkout.form.total")}</span>
@@ -575,13 +623,24 @@ const CartPage = () => {
                     </div>
                   </div>
 
+                  {bookingClosed ? (
+                    <p className="text-xs text-amber-400 mb-2 text-center">
+                      {t("checkout.reservation.closedTitle")}
+                    </p>
+                  ) : (
+                    !orderTournament && !tournamentsLoading && (
+                      <p className="text-xs text-amber-400 mb-2 text-center">
+                        {t("checkout.tournament.choose")}
+                      </p>
+                    )
+                  )}
                   {apparatusMissing && (
                     <p className="text-xs text-amber-400 mb-2 text-center">
                       {t("checkout.cart.pickApparatusFirst")}
                     </p>
                   )}
                   <button
-                    disabled={isSubmitting || apparatusMissing}
+                    disabled={isSubmitting || apparatusMissing || !orderTournament}
                     onClick={() => setShowCheckout(true)}
                     className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2"
                   >
