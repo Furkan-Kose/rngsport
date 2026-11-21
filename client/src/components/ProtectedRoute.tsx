@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
@@ -13,7 +14,13 @@ const ProtectedRoute = ({ children, requiredRole, requiredRoles, redirectTo }: P
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
+    // redirectTo verilen sayfalar müşteri sitesinde (profil, galerim): site teması.
+    // Diğerleri admin paneli: panelin gri/amber teması.
+    return redirectTo ? (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+      </div>
+    ) : (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500"></div>
       </div>

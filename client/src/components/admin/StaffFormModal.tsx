@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
 import api from '../../lib/api';
 import { PANEL_ACCOUNT_ROLES, ROLES, roleLabel } from '../../lib/roles';
+import { ModalBackdrop } from './ui';
 
 export interface StaffUser {
   id: string;
@@ -70,10 +71,10 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+    <ModalBackdrop onClose={onClose}>
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+        className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
         <div className="p-5 border-b border-gray-700 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">
@@ -99,9 +100,9 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="ornek.fotografci"
               required
-              className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
             />
-            <p className="text-[11px] text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               Küçük harf, rakam, nokta, tire ve alt çizgi; 3-30 karakter. Girişte bu ad kullanılır.
             </p>
           </div>
@@ -113,7 +114,7 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
             />
           </div>
 
@@ -122,7 +123,7 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
             >
               {PANEL_ACCOUNT_ROLES.map((option) => (
                 <option key={option} value={option}>
@@ -131,12 +132,12 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
               ))}
             </select>
             {role === ROLES.ADMIN && (
-              <p className="text-[11px] text-amber-400/90 mt-1">
+              <p className="text-xs text-amber-400/90 mt-1">
                 Yönetici tüm panele erişir: siparişler, rezervasyonlar, kullanıcılar ve bu hesaplar.
               </p>
             )}
             {isEdit && (
-              <p className="text-[11px] text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 Görev değişikliği, kullanıcı yeniden giriş yaptığında geçerli olur.
               </p>
             )}
@@ -152,9 +153,9 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
               onChange={(e) => setPassword(e.target.value)}
               placeholder={isEdit ? 'Değiştirmek istemiyorsanız boş bırakın' : '••••••••'}
               required={!isEdit}
-              className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
             />
-            <p className="text-[11px] text-gray-500 mt-1">En az 8 karakter.</p>
+            <p className="text-xs text-gray-400 mt-1">En az 8 karakter.</p>
           </div>
         </div>
 
@@ -170,7 +171,7 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -181,7 +182,7 @@ const StaffFormModal = ({ open, staff, onClose, onSaved }: Props) => {
           </button>
         </div>
       </form>
-    </div>
+    </ModalBackdrop>
   );
 };
 

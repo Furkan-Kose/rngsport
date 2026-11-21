@@ -2,10 +2,12 @@ import { useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "../../components/LocalizedLink";
-import { motion } from "framer-motion";
-import { Lock, KeyRound, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import api from "../../lib/api";
 import SEO from "../../components/SEO";
+import AuthShell from "../../components/ui/AuthShell";
+import { Alert, Button, Field, Input } from "../../components/ui/kit";
+import { buttonClass } from "../../lib/siteUi";
 
 const ResetPasswordPage = () => {
   const [searchParams] = useSearchParams();
@@ -15,166 +17,121 @@ const ResetPasswordPage = () => {
 
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [error, setError] = useState("");
+  // Alan hataları (biçim) ve sunucu hatası (geçersiz/süresi dolmuş bağlantı) ayrı
+  const [passwordError, setPasswordError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
+  const [serverError, setServerError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  // Sunucu hatası (geçersiz/süresi dolmuş bağlantı) → "yeni bağlantı iste" gösterilir
-  const [isServerError, setIsServerError] = useState(false);
   const { t } = useTranslation();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
-    setIsServerError(false);
+    setServerError("");
 
-    if (password.length < 8) {
-      setError(t("auth.errors.passwordLength"));
-      return;
-    }
-    if (password !== passwordConfirm) {
-      setError(t("auth.errors.passwordMismatch"));
-      return;
-    }
+    const lengthError = password.length < 8 ? t("auth.errors.passwordLength") : "";
+    const mismatch = password !== passwordConfirm ? t("auth.errors.passwordMismatch") : "";
+    setPasswordError(lengthError);
+    setConfirmError(mismatch);
+    if (lengthError || mismatch) return;
 
     setIsSubmitting(true);
+
     try {
       await api.post("/api/auth/reset-password", { token, password });
       setIsDone(true);
     } catch (err: unknown) {
       const errorObj = err as { response?: { data?: { message?: string } } };
-      setError(errorObj.response?.data?.message || t("auth.errors.generic"));
-      setIsServerError(true);
+      setServerError(errorObj.response?.data?.message || t("auth.errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const inputClass =
-    "w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors";
-
   return (
-    <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+    <AuthShell
+      title={isFirstTime ? t("auth.reset.titleFirst") : t("auth.reset.title")}
+      subtitle={isFirstTime && !isDone ? t("auth.reset.firstHint") : undefined}
+    >
       <SEO
         noindex
         title={isFirstTime ? t("auth.reset.seoTitleFirst") : t("auth.reset.seoTitle")}
         description={t("auth.reset.seoDescription")}
       />
 
-      <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {isDone ? (
+        <div className="text-center">
+          <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-4" aria-hidden />
+          <h2 className="text-lg font-semibold text-white mb-2">
+            {isFirstTime ? t("auth.reset.doneTitleFirst") : t("auth.reset.doneTitle")}
+          </h2>
+          <p className="text-zinc-300 mb-6">
+            {isFirstTime ? t("auth.reset.doneTextFirst") : t("auth.reset.doneText")}
+          </p>
+          <LocalizedLink
+            to={isFirstTime ? "/giris?redirect=/galerim" : "/giris"}
+            className={buttonClass("primary", "lg")}
+          >
+            {t("auth.reset.login")}
+          </LocalizedLink>
+        </div>
+      ) : !token ? (
+        <div className="text-center">
+          <p className="text-zinc-300 mb-6">{t("auth.reset.invalidLink")}</p>
+          <LocalizedLink to="/sifremi-unuttum" className={buttonClass("secondary")}>
+            {t("auth.reset.requestNew")}
+          </LocalizedLink>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          {serverError && (
+            <Alert tone="danger">
+              <p>{serverError}</p>
+              <LocalizedLink to="/sifremi-unuttum" className="underline">
+                {t("auth.reset.requestNew")}
+              </LocalizedLink>
+            </Alert>
+          )}
 
-      <div className="container mx-auto px-4 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-md mx-auto"
-        >
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-4">
-              <KeyRound className="w-7 h-7 text-emerald-400" />
-            </div>
-            <h1 className="text-3xl font-bold text-gradient-brand">
-              {isFirstTime ? t("auth.reset.titleFirst") : t("auth.reset.title")}
-            </h1>
-            {isFirstTime && (
-              <p className="text-sm text-zinc-400 mt-3">
-                {t("auth.reset.firstHint")}
-              </p>
-            )}
-          </div>
+          <Field
+            label={isFirstTime ? t("auth.password") : t("auth.newPassword")}
+            htmlFor="password"
+            required
+            error={passwordError || undefined}
+            hint={t("auth.passwordPlaceholder")}
+          >
+            <Input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              invalid={!!passwordError}
+            />
+          </Field>
 
-          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 sm:p-8">
-            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
+          <Field
+            label={isFirstTime ? t("auth.passwordConfirm") : t("auth.newPasswordConfirm")}
+            htmlFor="passwordConfirm"
+            required
+            error={confirmError || undefined}
+          >
+            <Input
+              type="password"
+              id="passwordConfirm"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              autoComplete="new-password"
+              invalid={!!confirmError}
+            />
+          </Field>
 
-            {isDone ? (
-              <div className="text-center py-4">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-4">
-                  <CheckCircle2 className="w-7 h-7 text-emerald-400" />
-                </div>
-                <h2 className="text-lg font-semibold text-white mb-2">
-                  {isFirstTime ? t("auth.reset.doneTitleFirst") : t("auth.reset.doneTitle")}
-                </h2>
-                <p className="text-sm text-zinc-400 mb-6">
-                  {isFirstTime ? t("auth.reset.doneTextFirst") : t("auth.reset.doneText")}
-                </p>
-                <LocalizedLink
-                  to={isFirstTime ? "/giris?redirect=/galerim" : "/giris"}
-                  className="inline-block py-3 px-8 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold transition-all duration-300"
-                >
-                  {t("auth.reset.login")}
-                </LocalizedLink>
-              </div>
-            ) : !token ? (
-              <div className="text-center py-4">
-                <p className="text-sm text-zinc-400 mb-6">
-                  {t("auth.reset.invalidLink")}
-                </p>
-                <LocalizedLink
-                  to="/sifremi-unuttum"
-                  className="text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
-                >
-                  {t("auth.reset.requestNew")}
-                </LocalizedLink>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                    {error}{" "}
-                    {isServerError && (
-                      <LocalizedLink to="/sifremi-unuttum" className="underline text-red-300">
-                        {t("auth.reset.requestNew")}
-                      </LocalizedLink>
-                    )}
-                  </div>
-                )}
-
-                <div>
-                  <label htmlFor="password" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                    <Lock className="w-4 h-4" />
-                    {isFirstTime ? t("auth.password") : t("auth.newPassword")} <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    id="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={inputClass}
-                    placeholder={t("auth.passwordPlaceholder")}
-                    required
-                    minLength={8}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="passwordConfirm" className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                    <Lock className="w-4 h-4" />
-                    {isFirstTime ? t("auth.passwordConfirm") : t("auth.newPasswordConfirm")} <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    id="passwordConfirm"
-                    value={passwordConfirm}
-                    onChange={(e) => setPasswordConfirm(e.target.value)}
-                    className={inputClass}
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25 transition-all duration-300"
-                >
-                  {isSubmitting ? t("auth.reset.submitting") : t("auth.reset.submit")}
-                </button>
-              </form>
-            )}
-          </div>
-        </motion.div>
-      </div>
-    </div>
+          <Button type="submit" size="lg" loading={isSubmitting} className="w-full">
+            {isSubmitting ? t("auth.reset.submitting") : t("auth.reset.submit")}
+          </Button>
+        </form>
+      )}
+    </AuthShell>
   );
 };
 

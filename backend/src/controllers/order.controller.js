@@ -326,7 +326,7 @@ export const deleteOrder = async (req, res) => {
 export const getOrderStats = async (req, res) => {
   // Dashboard yarışma seçicisi: ?tournamentId= (boş/all = tümü)
   const tw = tournamentWhere(req.query.tournamentId);
-  const [total, paid, pending, failed, recentOrders, revenue] = await Promise.all([
+  const [total, paid, pending, failed, recentOrders, revenue, awaitingDelivery, byStatus] = await Promise.all([
     prisma.order.count({ where: tw }),
     prisma.order.count({ where: { ...tw, status: { in: ["PAID", "DELIVERED"] } } }),
     prisma.order.count({ where: { ...tw, status: "PENDING" } }),
@@ -348,6 +348,10 @@ export const getOrderStats = async (req, res) => {
       where: { ...tw, status: { in: ["PAID", "DELIVERED"] } },
       _sum: { totalPrice: true },
     }),
+    // Ödendi ama henüz teslim edilmedi (ana sayfadaki "teslim bekleyen")
+    prisma.order.count({ where: { ...tw, status: "PAID" } }),
+    // Ana sayfadaki "Durumlar" kartı: her durumun sayısı
+    prisma.order.groupBy({ by: ["status"], where: tw, _count: true }),
   ]);
 
   res.json({
@@ -355,6 +359,8 @@ export const getOrderStats = async (req, res) => {
     paid,
     pending,
     failed,
+    awaitingDelivery,
+    statusCounts: Object.fromEntries(byStatus.map((g) => [g.status, g._count])),
     revenue: revenue._sum.totalPrice || 0,
     recentOrders,
   });

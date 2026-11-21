@@ -1,67 +1,14 @@
-import { useState } from "react";
-import { createPortal } from "react-dom";
-import { X, ChevronLeft, ChevronRight, Camera, Play } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SEO from "../components/SEO";
-import Reveal from "../components/ui/Reveal";
-import { galleryItems, type GalleryItem } from "../data/gallery";
-
-const getVimeoThumbnail = (videoId: string) =>
-  `https://vumbnail.com/${videoId}.jpg`;
-
-const getItemThumbnail = (item: GalleryItem) => {
-  if (item.type === "video" && item.vimeoId) {
-    return item.thumbnail || getVimeoThumbnail(item.vimeoId);
-  }
-  return item.thumbnail;
-};
-
-// Veride kategori Türkçe değer olarak duruyor; sadece etiket çevrilir
-const CATEGORY_KEY: Record<string, string> = {
-  all: "home.gallery.all",
-  Fotoğraf: "pages.gallery.photo",
-  Video: "pages.gallery.video",
-};
+import PageHero from "../components/ui/PageHero";
+import ShowcaseGallery from "../components/ShowcaseGallery";
+import LocalizedLink from "../components/LocalizedLink";
+import { galleryItems } from "../data/gallery";
+import { buttonClass } from "../lib/siteUi";
 
 const GalleryPage = () => {
   const { t } = useTranslation();
-  const categoryLabel = (c: string) => (CATEGORY_KEY[c] ? t(CATEGORY_KEY[c]) : c);
-  const [selectedImage, setSelectedImage] = useState<number | null>(null);
-  const [filter, setFilter] = useState<string>("all");
-
-  const categories = ["all", "Fotoğraf", "Video"];
-
-  const filteredItems =
-    filter === "all"
-      ? galleryItems
-      : galleryItems.filter((item) => item.category === filter);
-
-  const openLightbox = (index: number) => {
-    setSelectedImage(index);
-    document.body.style.overflow = "hidden";
-  };
-
-  const closeLightbox = () => {
-    setSelectedImage(null);
-    document.body.style.overflow = "auto";
-  };
-
-  const goToPrevious = () => {
-    if (selectedImage !== null) {
-      setSelectedImage(
-        selectedImage === 0 ? filteredItems.length - 1 : selectedImage - 1,
-      );
-    }
-  };
-
-  const goToNext = () => {
-    if (selectedImage !== null) {
-      setSelectedImage(
-        selectedImage === filteredItems.length - 1 ? 0 : selectedImage + 1,
-      );
-    }
-  };
 
   return (
     <div className="min-h-screen">
@@ -71,217 +18,28 @@ const GalleryPage = () => {
         keywords={t("pages.gallery.seoKeywords")}
       />
 
-      {/* Hero Section */}
-      <section className="relative py-32 pb-44 overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src="/gallery/7.webp"
-            alt={t("pages.gallery.imageAlt")}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-linear-to-b from-black/80 via-black/65 to-black/55" />
-        </div>
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-grid-dark opacity-40 pointer-events-none"
-        />
-        <div
-          aria-hidden
-          className="absolute -bottom-20 left-1/3 w-[28rem] h-[28rem] bg-emerald-600/[0.06] rounded-full blur-3xl pointer-events-none"
-        />
+      <PageHero
+        image="/gallery/7.webp"
+        imageAlt={t("pages.gallery.imageAlt")}
+        title={<span className="text-gradient-brand">{t("pages.gallery.title")}</span>}
+        intro={t("pages.gallery.intro")}
+      />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <Reveal delay={0.1}>
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                <span className="text-gradient-brand">{t("pages.gallery.title")}</span>
-              </h1>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
-                {t("pages.gallery.intro")}
-              </p>
-            </Reveal>
-          </div>
-        </div>
-
-        {/* Bottom fade — image dissolves into the next section (#09090b) */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 h-32 md:h-44 z-[5] bg-linear-to-b from-transparent to-[#09090b] pointer-events-none"
-        />
-      </section>
-
-      {/* Gallery Section */}
-      <section className="py-20 bg-zinc-950 relative">
+      <section className="pb-20">
         <div className="container mx-auto px-4">
-          {/* Filter Buttons */}
-          <Reveal>
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setFilter(category)}
-                  className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                    filter === category
-                      ? "bg-emerald-500 text-white scale-105 shadow-lg shadow-emerald-500/40"
-                      : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-800"
-                  }`}
-                >
-                  {categoryLabel(category)}
-                </button>
-              ))}
-            </div>
-          </Reveal>
+          <ShowcaseGallery items={galleryItems} columns={4} />
 
-          {/* Stats */}
-          <Reveal delay={0.1}>
-            <div className="flex justify-center gap-8 mb-12">
-              <div className="text-center px-6 py-3 bg-zinc-900/60 border border-zinc-800 rounded-2xl">
-                <div className="text-2xl font-bold text-emerald-400">
-                  {galleryItems.filter((i) => i.type === "photo").length}
-                </div>
-                <div className="text-sm text-gray-400">{t("pages.gallery.photo")}</div>
-              </div>
-              <div className="text-center px-6 py-3 bg-zinc-900/60 border border-zinc-800 rounded-2xl">
-                <div className="text-2xl font-bold text-emerald-400">
-                  {galleryItems.filter((i) => i.type === "video").length}
-                </div>
-                <div className="text-sm text-gray-400">{t("pages.gallery.video")}</div>
-              </div>
-            </div>
-          </Reveal>
-
-          {/* Gallery Grid — uniform aspect-square */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {filteredItems.map((item, index) => (
-              <Reveal key={item.id} delay={(index % 8) * 0.04}>
-                <div
-                  className="group relative aspect-square overflow-hidden rounded-2xl cursor-pointer bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/40 transition-colors"
-                  onClick={() => openLightbox(index)}
-                >
-                  <img
-                    src={getItemThumbnail(item)}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-
-                  {item.type === "video" && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-emerald-500/40 rounded-full blur-xl group-hover:bg-emerald-400/60 transition-colors" />
-                        <div className="relative w-14 h-14 rounded-full bg-emerald-500/95 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-[0_0_30px_rgba(16,185,129,0.5)]">
-                          <Play className="w-6 h-6 text-white fill-white ml-1" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                    <p className="text-xs text-emerald-400 font-semibold uppercase tracking-wider mb-1">
-                      {categoryLabel(item.category)}
-                    </p>
-                    <h3 className="text-white font-semibold">{item.title}</h3>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
+          {/* Galeriyi gezen ziyaretçi için sonraki adım */}
+          <div className="mt-16 text-center max-w-xl mx-auto">
+            <h2 className="text-2xl font-bold text-zinc-100">{t("pages.gallery.ctaTitle")}</h2>
+            <p className="mt-2 text-zinc-400">{t("pages.gallery.ctaText")}</p>
+            <LocalizedLink to="/paketler" className={buttonClass("primary", "lg", "mt-6")}>
+              {t("pages.gallery.ctaButton")}
+              <ArrowRight className="w-4 h-4" aria-hidden />
+            </LocalizedLink>
           </div>
-
-          {filteredItems.length === 0 && (
-            <div className="text-center py-20">
-              <Camera className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-              <p className="text-gray-400">
-                {t("pages.gallery.empty")}
-              </p>
-            </div>
-          )}
         </div>
       </section>
-
-      {/* Lightbox */}
-      {createPortal(
-        <AnimatePresence>
-          {selectedImage !== null && (
-            <motion.div
-              key="gallery-page-lightbox"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex items-center justify-center"
-              onClick={closeLightbox}
-            >
-              <button
-                className="absolute top-6 right-6 z-50 p-3 text-white hover:text-emerald-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
-                onClick={closeLightbox}
-              >
-                <X className="w-8 h-8" />
-              </button>
-
-              <button
-                className="absolute left-4 z-50 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToPrevious();
-                }}
-              >
-                <ChevronLeft className="w-8 h-8" />
-              </button>
-              <button
-                className="absolute right-4 z-50 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToNext();
-                }}
-              >
-                <ChevronRight className="w-8 h-8" />
-              </button>
-
-              <motion.div
-                key={selectedImage}
-                initial={{ scale: 0.96, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="w-full max-w-[95vw] lg:max-w-[85vw] px-2 sm:px-4"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {filteredItems[selectedImage].type === "video" &&
-                filteredItems[selectedImage].vimeoId ? (
-                  <div className="relative w-full h-[70vh] lg:h-[85vh]">
-                    <iframe
-                      className="absolute inset-0 w-full h-full rounded-lg"
-                      src={`https://player.vimeo.com/video/${filteredItems[selectedImage].vimeoId}?autoplay=1&title=0&byline=0&portrait=0`}
-                      title={filteredItems[selectedImage].title}
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : (
-                  <img
-                    src={filteredItems[selectedImage].src}
-                    alt={filteredItems[selectedImage].title}
-                    className="max-w-full max-h-[80vh] object-contain rounded-lg mx-auto"
-                  />
-                )}
-                <div className="text-center mt-4">
-                  <p className="text-emerald-400 text-sm">
-                    {categoryLabel(filteredItems[selectedImage].category)}
-                  </p>
-                  <h3 className="text-white text-xl font-semibold mt-1">
-                    {filteredItems[selectedImage].title}
-                  </h3>
-                  <p className="text-gray-500 text-sm mt-2">
-                    {selectedImage + 1} / {filteredItems.length}
-                  </p>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
     </div>
   );
 };

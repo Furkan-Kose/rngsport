@@ -56,7 +56,7 @@ export const getAllFeedback = async (req, res) => {
 
 // Admin: Dashboard özeti (okunmamış, ortalama puan, son 5 görüş)
 export const getFeedbackSummary = async (req, res) => {
-  const [unread, total, avg, recent] = await Promise.all([
+  const [unread, total, avg, recent, byRating] = await Promise.all([
     prisma.feedback.count({ where: { isRead: false } }),
     prisma.feedback.count(),
     prisma.feedback.aggregate({ _avg: { rating: true }, _count: { rating: true } }),
@@ -65,12 +65,17 @@ export const getFeedbackSummary = async (req, res) => {
       take: 5,
       include: { user: { select: { id: true, name: true, email: true } } },
     }),
+    // Ana sayfadaki "Puan dağılımı" kartı
+    prisma.feedback.groupBy({ by: ["rating"], where: { rating: { not: null } }, _count: true }),
   ]);
+  const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const g of byRating) ratingCounts[g.rating] = g._count;
   res.json({
     unread,
     total,
     averageRating: avg._avg.rating,
     ratedCount: avg._count.rating,
+    ratingCounts,
     recent,
   });
 };

@@ -1,35 +1,38 @@
-import { useState, useEffect } from "react";
-import {
-  Calendar,
-  ArrowLeft,
-  User,
-  Phone,
-  Building,
-  CalendarDays,
-  MessageSquare,
-  Loader2,
-  Check,
-  Trash2,
-  Plus,
-  Package as PackageIcon,
-  Mail,
-  Trophy,
-  MessageCircle,
-} from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Calendar, Check, Trash2, Plus, Trophy, CalendarX, CreditCard } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "../components/LocalizedLink";
 import { useLocalizedNavigate } from "../lib/localePath";
-import { formatNumber } from "../lib/format";
-import { motion } from "framer-motion";
 import api from "../lib/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import SEO from "../components/SEO";
-import Reveal from "../components/ui/Reveal";
-import { APPARATUSES } from "../constants/apparatuses";
-import { emptyCustomerForm, fillCustomerFormGaps } from "../lib/customerForm";
+import {
+  emptyCustomerForm,
+  fillCustomerFormGaps,
+  focusFirstError,
+  validateCustomerForm,
+  type CustomerFormErrors,
+} from "../lib/customerForm";
 import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCard";
+import CustomerFields from "../components/checkout/CustomerFields";
+import ApparatusPicker from "../components/checkout/ApparatusPicker";
+import KvkkCheckbox from "../components/checkout/KvkkCheckbox";
+import WhatsAppIcon from "../components/ui/WhatsAppIcon";
+import {
+  Alert,
+  Button,
+  Card,
+  Chip,
+  EmptyState,
+  Field,
+  IconButton,
+  Input,
+  PageHeader,
+  Select,
+  Spinner,
+} from "../components/ui/kit";
 import { ROLES } from "../lib/roles";
 import { useMyLoyalty } from "../hooks/useMyLoyalty";
 import LoyaltyPriceLines from "../components/LoyaltyPriceLines";
@@ -41,7 +44,17 @@ import {
   type MyReservation,
 } from "../lib/myReservations";
 import { useTournaments } from "../lib/tournaments";
-import { WHATSAPP_NUMBER } from "../data/products";
+import { whatsappUrl } from "../lib/contact";
+import {
+  buttonClass,
+  containerClass,
+  cx,
+  innerRowClass,
+  pageClass,
+  pillClass,
+  widthGrid,
+  widthForm,
+} from "../lib/siteUi";
 
 interface Package {
   id: string;
@@ -65,26 +78,43 @@ interface Package {
   priorityFee?: number | null;
 }
 
+type Series = 1 | 2 | 3;
+
 interface SelectedPackage {
   id: string;
   packageId: string;
   packageName: string;
-  seriesCount: 1 | 2 | 3;
+  seriesCount: Series;
   quantity: number;
   price: number;
   apparatuses: string[];
   priority: boolean;
 }
 
+const FORM_ID = "reservation";
+
 // Seri sayısına göre rezervasyon (elden nakit) fiyatı
-const reservationPriceFor = (pkg: Package, seriesCount: 1 | 2 | 3) =>
+const reservationPriceFor = (pkg: Package, seriesCount: Series) =>
   seriesCount === 1 ? pkg.reservationPrice : pkg.reservationDiscounts[seriesCount];
 
 // Satır birim fiyatı: taban + (öncelikliyse seri başına ek ücret). Önizleme —
 // asıl fiyatı backend aynı kuralla hesaplar (utils/items.js).
-const rowPrice = (pkg: Package, seriesCount: 1 | 2 | 3, priority: boolean) =>
+const rowPrice = (pkg: Package, seriesCount: Series, priority: boolean) =>
   reservationPriceFor(pkg, seriesCount) +
   (priority && pkg.priorityFee ? pkg.priorityFee * seriesCount : 0);
+
+const emptyRow = (): SelectedPackage => ({
+  id: `temp-${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+  packageId: "",
+  packageName: "",
+  seriesCount: 1,
+  quantity: 1,
+  price: 0,
+  apparatuses: [],
+  priority: false,
+});
+
+const toSeries = (value: string | null): Series => (value === "2" ? 2 : value === "3" ? 3 : 1);
 
 const ReservationPage = () => {
   const { user, isAuthenticated } = useAuth();
@@ -92,6 +122,9 @@ const ReservationPage = () => {
   const navigate = useLocalizedNavigate();
   const [searchParams] = useSearchParams();
   const editParam = searchParams.get("duzenle");
+  // Paket kartından gelindiyse (?paket=slug&seri=n) ilk satır hazır gelir
+  const presetPackage = searchParams.get("paket");
+  const presetSeries = toSeries(searchParams.get("seri"));
 
   // Sporcu başına tek rezervasyon: veli kardeşler için ayrı rezervasyon yapabilir.
   // Form varsayılan olarak YENİ rezervasyon; düzenleme sadece ?duzenle=id ile açılır.
@@ -105,16 +138,24 @@ const ReservationPage = () => {
   const loyalty = useMyLoyalty();
 
   const [packages, setPackages] = useState<Package[]>([]);
-  const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>(
-    [],
-  );
+  const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>([]);
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
+  const [packagesFailed, setPackagesFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  // Başarı ekranı: rezervasyon no + hesap durumu (şifre belirleme kartı için)
+
+  // Hatalar: alan bazlı (fieldErrors), paket satırları (rowsError), KVKK ve sunucu
+  const [fieldErrors, setFieldErrors] = useState<CustomerFormErrors>({});
+  const [rowsError, setRowsError] = useState("");
+  const [kvkkError, setKvkkError] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const packagesCardRef = useRef<HTMLDivElement>(null);
+
+  // Başarı ekranı: rezervasyon no + ödenecek tutar + hesap durumu (şifre belirleme kartı için)
   const [result, setResult] = useState<{
     reservationId: string;
     tournamentName?: string;
+    total: number;
     account: AccountInfo;
   } | null>(null);
 
@@ -156,21 +197,44 @@ const ReservationPage = () => {
     );
   };
 
-  useEffect(() => {
-    fetchPackages();
-    // Paket adları sunucudan dile göre gelir
-  }, [i18n.language]);
-
   const fetchPackages = async () => {
+    setIsLoadingPackages(true);
+    setPackagesFailed(false);
     try {
       const { data } = await api.get("/api/packages");
       setPackages(data);
     } catch (error) {
       console.error("Failed to fetch packages:", error);
+      setPackagesFailed(true);
     } finally {
       setIsLoadingPackages(false);
     }
   };
+
+  useEffect(() => {
+    fetchPackages();
+    // Paket adları sunucudan dile göre gelir
+  }, [i18n.language]);
+
+  // Yeni rezervasyon formu hiç boş açılmaz: paket kartından gelindiyse o paket,
+  // değilse seçilmeyi bekleyen tek bir satır. Düzenlemede satırlar kayıttan gelir.
+  const rowsInitialized = useRef(false);
+  useEffect(() => {
+    if (rowsInitialized.current || editParam || packages.length === 0) return;
+    rowsInitialized.current = true;
+    const preset = presetPackage ? packages.find((p) => p.id === presetPackage) : undefined;
+    setSelectedPackages([
+      preset
+        ? {
+            ...emptyRow(),
+            packageId: preset.id,
+            packageName: preset.name,
+            seriesCount: presetSeries,
+            price: rowPrice(preset, presetSeries, false),
+          }
+        : emptyRow(),
+    ]);
+  }, [packages, editParam, presetPackage, presetSeries]);
 
   useEffect(() => {
     if (user?.role !== ROLES.CUSTOMER || packages.length === 0) return;
@@ -211,7 +275,7 @@ const ReservationPage = () => {
         setSelectedPackages(
           target.items.map((item, index) => {
             const pkg = packages.find((p) => p.id === item.package.id);
-            const seriesCount = item.seriesCount as 1 | 2 | 3;
+            const seriesCount = item.seriesCount as Series;
             const priority = !!item.priority && pkg?.priorityFee != null;
             return {
               id: `edit-${index}`,
@@ -234,28 +298,13 @@ const ReservationPage = () => {
     };
   }, [user, packages, editParam]);
 
-  const addNewPackageRow = () => {
-    const newId = `temp-${Date.now()}`;
-    setSelectedPackages([
-      ...selectedPackages,
-      {
-        id: newId,
-        packageId: "",
-        packageName: "",
-        seriesCount: 1,
-        quantity: 1,
-        price: 0,
-        apparatuses: [],
-        priority: false,
-      },
-    ]);
-  };
+  const addNewPackageRow = () => setSelectedPackages((prev) => [...prev, emptyRow()]);
 
   const removePackageRow = (id: string) => {
     setSelectedPackages(selectedPackages.filter((sp) => sp.id !== id));
   };
 
-  const updatePackageRow = (id: string, field: string, value: any) => {
+  const updatePackageRow = (id: string, field: string, value: string | number | boolean) => {
     setSelectedPackages(
       selectedPackages.map((sp) => {
         if (sp.id !== id) return sp;
@@ -267,14 +316,14 @@ const ReservationPage = () => {
           const priority = sp.priority && pkg.priorityFee != null;
           return {
             ...sp,
-            packageId: value,
+            packageId: pkg.id,
             packageName: pkg.name,
             priority,
             price: rowPrice(pkg, sp.seriesCount, priority),
           };
         }
         if (field === "seriesCount") {
-          const newCount = value as 1 | 2 | 3;
+          const newCount = value as Series;
           return {
             ...sp,
             seriesCount: newCount,
@@ -283,7 +332,8 @@ const ReservationPage = () => {
           };
         }
         if (field === "priority") {
-          return { ...sp, priority: value, ...(pkg && { price: rowPrice(pkg, sp.seriesCount, value) }) };
+          const priority = value as boolean;
+          return { ...sp, priority, ...(pkg && { price: rowPrice(pkg, sp.seriesCount, priority) }) };
         }
         return { ...sp, [field]: value };
       }),
@@ -305,52 +355,47 @@ const ReservationPage = () => {
     return sum + pointsFor(pkg?.loyaltyPoints, sp.seriesCount, sp.quantity);
   }, 0);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    // Yazmaya başlayınca o alanın hatası kalkar
+    if (fieldErrors[name as keyof CustomerFormErrors]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  // Paket satırlarındaki eksik: mesajı döner (boş = tamam)
+  const validateRows = () => {
+    if (!editingId && !bookingTournament) return t("checkout.tournament.choose");
+    if (selectedPackages.length === 0) return t("checkout.form.errors.noPackage");
+    if (selectedPackages.some((sp) => !sp.packageId)) return t("checkout.form.errors.rowPackage");
+    if (selectedPackages.some((sp) => sp.apparatuses.length !== sp.seriesCount))
+      return t("checkout.form.errors.apparatus");
+    return "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setServerError("");
+    setSubmitted(true);
     toast.dismiss();
 
-    if (
-      !form.athleteName.trim() ||
-      !form.clubName.trim() ||
-      !form.birthYear.trim() ||
-      !form.customerPhone.trim() ||
-      !form.customerEmail.trim()
-    ) {
-      setError(t("checkout.form.errors.required"));
-      return;
-    }
+    const rowsProblem = validateRows();
+    const errors = validateCustomerForm(form, t);
+    setRowsError(rowsProblem);
+    setFieldErrors(errors);
+    setKvkkError(!kvkkAccepted);
 
-    if (!editingId && !bookingTournament) {
-      setError(t("checkout.tournament.choose"));
+    // İlk eksik olan yere götür: önce paketler, sonra form alanları
+    if (rowsProblem) {
+      packagesCardRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
       return;
     }
-
-    if (!selectedPackages || selectedPackages.length === 0) {
-      setError(t("checkout.form.errors.noPackage"));
+    if (Object.keys(errors).length > 0) {
+      focusFirstError(errors, FORM_ID);
       return;
     }
-
-    // Paket seçimi kontrolü
-    const invalidPackages = selectedPackages.filter((sp) => !sp.packageId);
-    if (invalidPackages.length > 0) {
-      setError(t("checkout.form.errors.rowPackage"));
-      return;
-    }
-
-    const incompleteRow = selectedPackages.find(
-      (sp) => sp.apparatuses.length !== sp.seriesCount,
-    );
-    if (incompleteRow) {
-      setError(t("checkout.form.errors.apparatus"));
-      return;
-    }
+    if (!kvkkAccepted) return;
 
     setIsSubmitting(true);
 
@@ -395,12 +440,13 @@ const ReservationPage = () => {
       setResult({
         reservationId: data.reservation.id,
         tournamentName: data.reservation.tournament?.name,
+        total: data.reservation.totalPrice ?? discountedTotal,
         account: data.account,
       });
-      toast.success(t("checkout.reservation.toastCreated"));
-    } catch (err: any) {
-      setError(err.response?.data?.message || t("checkout.form.errors.generic"));
-      toast.error(err.response?.data?.message || t("checkout.form.errors.generic"));
+      window.scrollTo({ top: 0 });
+    } catch (err) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setServerError(message || t("checkout.form.errors.generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -414,44 +460,38 @@ const ReservationPage = () => {
   // Rezervasyona açık yarışma yoksa form yerine bilgi + WhatsApp (düzenleme bağlantısı hariç)
   const isReservationsClosed = !editParam && !tournamentsLoading && openTournaments.length === 0;
 
+  const seo = (
+    <SEO
+      title={t("checkout.reservation.seoTitle")}
+      description={t("checkout.reservation.seoDescription")}
+      keywords={t("checkout.reservation.seoKeywords")}
+    />
+  );
+
   if (isReservationsClosed) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <SEO
-          title={t("checkout.reservation.seoTitle")}
-          description={t("checkout.reservation.seoDescription")}
-        />
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
-        </div>
-        <div className="text-center relative z-10">
-          <div className="w-20 h-20 rounded-full bg-amber-500/20 border-2 border-amber-500 flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-10 h-10 text-amber-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">
-            {t("checkout.reservation.closedTitle")}
-          </h2>
-          <p className="text-zinc-400 mb-6 max-w-md">
-            {t("checkout.reservation.closedText")}
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <div className={pageClass}>
+        {seo}
+        <div className={containerClass}>
+          <EmptyState
+            icon={CalendarX}
+            title={t("checkout.reservation.closedTitle")}
+            description={t("checkout.reservation.closedText")}
+            className={cx(widthForm, "mt-10")}
+          >
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              href={whatsappUrl(t("common.whatsapp.message"))}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
+              className={buttonClass("primary")}
             >
-              <MessageCircle className="w-5 h-5" />
+              <WhatsAppIcon className="w-4 h-4" />
               {t("checkout.reservation.closedContact")}
             </a>
-            <LocalizedLink
-              to="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-medium transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              {t("checkout.reservation.backHome")}
+            <LocalizedLink to="/paketler" className={buttonClass("secondary")}>
+              {t("checkout.cart.browse")}
             </LocalizedLink>
-          </div>
+          </EmptyState>
         </div>
       </div>
     );
@@ -459,22 +499,19 @@ const ReservationPage = () => {
 
   if (lockedReservation) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 py-24">
-        <SEO title={t("checkout.reservation.seoTitle")} description={t("checkout.reservation.seoDescription")} />
-        <div className="w-full max-w-md text-center bg-zinc-900/60 border border-zinc-800 rounded-2xl p-8">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-8 h-8 text-emerald-400" />
-          </div>
-          <h2 className="text-xl font-bold text-white mb-2">{t("checkout.reservation.lockedTitle")}</h2>
-          <p className="text-zinc-400 text-sm mb-6">
-            {t("checkout.reservation.lockedText", { name: lockedReservation.athleteName })}
-          </p>
-          <LocalizedLink
-            to="/profil"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors"
+      <div className={pageClass}>
+        {seo}
+        <div className={containerClass}>
+          <EmptyState
+            icon={Check}
+            title={t("checkout.reservation.lockedTitle")}
+            description={t("checkout.reservation.lockedText", { name: lockedReservation.athleteName })}
+            className={cx(widthForm, "mt-10")}
           >
-            {t("checkout.reservation.viewMine")}
-          </LocalizedLink>
+            <LocalizedLink to="/profil" className={buttonClass("primary")}>
+              {t("checkout.reservation.viewMine")}
+            </LocalizedLink>
+          </EmptyState>
         </div>
       </div>
     );
@@ -482,50 +519,43 @@ const ReservationPage = () => {
 
   if (result) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 py-24">
-        <div className="w-full max-w-md">
-          <div className="text-center">
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 18 }}
-              className="relative w-24 h-24 mx-auto mb-6"
-            >
-              <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl animate-pulse" />
-              <div className="relative w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center">
-                <Check className="w-12 h-12 text-emerald-400" />
-              </div>
-            </motion.div>
-            <h2 className="text-2xl font-bold text-gradient-brand mb-2">
-              {t("checkout.reservation.successTitle")}
-            </h2>
-            <p className="text-zinc-400 mb-3">
-              {t("checkout.reservation.successText")}
-            </p>
-            {result.tournamentName && (
-              <p className="text-sm text-zinc-300 mb-3">
-                <span className="text-zinc-500">{t("checkout.tournament.label")}:</span>{" "}
-                <span className="font-medium text-emerald-400">{result.tournamentName}</span>
-              </p>
-            )}
-            <p className="text-xs text-zinc-600 font-mono break-all">
-              {t("checkout.reservation.number", { id: result.reservationId })}
-            </p>
-          </div>
+      <div className={pageClass}>
+        <div className={containerClass}>
+          <div className={cx(widthForm, "mt-6")}>
+            <Card padding="lg" className="text-center">
+              <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/15 text-emerald-400 mb-4">
+                <Check className="w-7 h-7" aria-hidden />
+              </span>
+              <h1 className="text-2xl font-bold text-white">{t("checkout.reservation.successTitle")}</h1>
+              <p className="mt-2 text-zinc-300">{t("checkout.reservation.successText")}</p>
 
-          <AccountClaimCard
-            account={result.account}
-            reservationId={result.reservationId}
-          />
+              <dl className={cx(innerRowClass, "mt-6 divide-y divide-zinc-700/60 text-left")}>
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
+                  <dt className="text-zinc-400">{t("checkout.reservation.amountDue")}</dt>
+                  <dd className="text-xl font-bold text-white">{formatTL(result.total)}</dd>
+                </div>
+                {result.tournamentName && (
+                  <div className="flex items-center justify-between gap-4 px-4 py-3">
+                    <dt className="text-zinc-400">{t("checkout.tournament.short")}</dt>
+                    <dd className="font-medium text-zinc-100 text-right">{result.tournamentName}</dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-4 px-4 py-3">
+                  <dt className="text-zinc-400">{t("checkout.reservation.numberLabel")}</dt>
+                  <dd className="font-mono font-medium text-zinc-100">
+                    #{result.reservationId.slice(-8).toUpperCase()}
+                  </dd>
+                </div>
+              </dl>
+            </Card>
 
-          <div className="text-center mt-6">
-            <LocalizedLink
-              to="/"
-              className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {t("checkout.reservation.backHome")}
-            </LocalizedLink>
+            <AccountClaimCard account={result.account} reservationId={result.reservationId} />
+
+            <div className="text-center mt-6">
+              <LocalizedLink to="/" className={buttonClass("ghost")}>
+                {t("checkout.reservation.backHome")}
+              </LocalizedLink>
+            </div>
           </div>
         </div>
       </div>
@@ -533,538 +563,308 @@ const ReservationPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
-      <SEO
-        title={t("checkout.reservation.seoTitle")}
-        description={t("checkout.reservation.seoDescription")}
-        keywords={t("checkout.reservation.seoKeywords")}
-      />
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-emerald-600/[0.05] rounded-full blur-3xl" />
-      </div>
+    <div className={pageClass}>
+      {seo}
 
-      <div className="container mx-auto px-4 relative z-10 max-w-6xl">
-        <Reveal>
-          <div className="flex items-center gap-4 mb-8">
-            <LocalizedLink
-              to="/"
-              className="flex items-center gap-2 text-zinc-400 hover:text-emerald-400 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">{t("checkout.reservation.home")}</span>
-            </LocalizedLink>
-          </div>
-        </Reveal>
+      <div className={containerClass}>
+        <div className={widthGrid}>
+          <PageHeader
+            backTo={editingId ? "/profil" : "/paketler"}
+            backLabel={editingId ? t("common.nav.account") : t("common.nav.packages")}
+            title={editingId ? t("checkout.reservation.editTitle") : t("checkout.reservation.newTitle")}
+            subtitle={editingId ? t("checkout.reservation.editSubtitle") : t("checkout.reservation.intro")}
+          />
 
-        <Reveal delay={0.05}>
-          <div className="flex items-center gap-4 mb-5">
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/20 rounded-2xl blur-xl" />
-              <div className="relative w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                <Calendar className="w-7 h-7 text-emerald-400" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gradient-brand">
-                {editingId ? t("checkout.reservation.editTitle") : t("checkout.reservation.newTitle")}
-              </h1>
-              <p className="text-zinc-500 text-sm">
-                {editingId
-                  ? t("checkout.reservation.editSubtitle")
-                  : t("checkout.reservation.newSubtitle")}
-              </p>
-            </div>
-          </div>
-          <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-3xl mb-6">
-            {t("checkout.reservation.intro")}
-          </p>
-
+          {/* Geniş ekranda iki sütun (sepet sayfasıyla aynı): solda form, sağda sabit özet */}
+          <form onSubmit={handleSubmit} noValidate className="grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
           {/* Hangi yarışma için: tek açık yarışma (ya da düzenlenen kaydın yarışması) bilgi olarak,
               birden çok açıksa seçim */}
           {!editingId && openTournaments.length > 1 ? (
-            <div className="mb-8">
-              <p className="text-sm text-zinc-300 mb-2">{t("checkout.tournament.choose")}</p>
-              <div className="flex flex-wrap gap-2">
+            <div>
+              <p id="tournament-choice" className="text-sm font-medium text-zinc-300 mb-2">
+                {t("checkout.tournament.choose")}
+              </p>
+              <div role="group" aria-labelledby="tournament-choice" className="flex flex-wrap gap-2">
                 {openTournaments.map((tr) => (
-                  <button
+                  <Chip
                     key={tr.id}
-                    type="button"
+                    active={bookingTournament?.id === tr.id}
                     onClick={() => setPickedTournamentId(tr.id)}
-                    className={`text-left px-4 py-2.5 rounded-xl border transition-colors ${
-                      bookingTournament?.id === tr.id
-                        ? "bg-emerald-500/15 border-emerald-500/60 text-white"
-                        : "bg-zinc-900/60 border-zinc-700 text-zinc-300 hover:border-emerald-500/40"
-                    }`}
+                    className="flex-col items-start gap-0 py-2 text-left"
                   >
-                    <span className="block font-semibold text-sm">{tr.name}</span>
-                    <span className="block text-xs text-zinc-500">{tr.date}</span>
-                  </button>
+                    <span>{tr.name}</span>
+                    <span className="text-xs font-normal text-zinc-400">{tr.date}</span>
+                  </Chip>
                 ))}
               </div>
             </div>
           ) : (
             bookingTournament && (
-              <div className="mb-8 inline-flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-                <Trophy className="w-5 h-5 text-emerald-400 shrink-0" />
-                <div>
-                  <p className="text-[11px] uppercase tracking-wider text-emerald-400/80">
-                    {t("checkout.tournament.label")}
-                  </p>
-                  <p className="text-sm font-semibold text-white">
-                    {bookingTournament.name}
-                    {bookingTournament.date && (
-                      <span className="font-normal text-zinc-400"> · {bookingTournament.date}</span>
-                    )}
-                  </p>
-                </div>
+              <div className={cx(innerRowClass, "flex items-center gap-3 px-4 py-3")}>
+                <Trophy className="w-5 h-5 text-emerald-400 shrink-0" aria-hidden />
+                <p className="text-sm">
+                  <span className="text-zinc-400">{t("checkout.tournament.short")}: </span>
+                  <span className="font-semibold text-white">{bookingTournament.name}</span>
+                  {bookingTournament.date && <span className="text-zinc-400"> · {bookingTournament.date}</span>}
+                </p>
               </div>
             )
           )}
-        </Reveal>
 
-        {/* Mevcut rezervasyonlar (kardeş için yeni rezervasyon yapılabilir) */}
-        {!editingId && myActiveHere.length > 0 && (
-          <div className="mb-6 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-5 py-4">
-            <p className="text-sm text-zinc-300 mb-2">{t("checkout.reservation.existing")}</p>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {myActiveHere.map((r) =>
-                isCustomerEditable(r.status) ? (
-                  <LocalizedLink
-                    key={r.id}
-                    to={`/rezervasyon?duzenle=${r.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-800/80 border border-zinc-700 hover:border-emerald-500/50 text-sm text-white transition-colors"
-                  >
-                    {r.athleteName} <span className="text-emerald-400">· {t("checkout.reservation.edit")}</span>
-                  </LocalizedLink>
-                ) : (
-                  <span
-                    key={r.id}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-800/50 border border-zinc-700/60 text-sm text-zinc-400"
-                  >
-                    {r.athleteName} · {t("checkout.reservation.paid")}
-                  </span>
-                ),
-              )}
-            </div>
-            <p className="text-xs text-zinc-500">
-              {t("checkout.reservation.siblingHint")}
-            </p>
-          </div>
-        )}
+          {/* Ödeme bilgisi + diğer yol (online ödeme) */}
+          {!editingId && (
+            <Alert tone="info" icon={CreditCard}>
+              <p>{t("checkout.reservation.payAtVenue")}</p>
+              <p>
+                {t("checkout.reservation.onlineHint")}{" "}
+                <LocalizedLink to="/paketler" className="text-emerald-400 hover:text-emerald-300 underline">
+                  {t("checkout.reservation.onlineLink")}
+                </LocalizedLink>
+              </p>
+            </Alert>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Paket Seçimi */}
-          <Reveal delay={0.1}>
-          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
-            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">{t("checkout.reservation.packages")}</h2>
-              <button
-                type="button"
-                onClick={addNewPackageRow}
-                className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                {t("checkout.reservation.addPackage")}
-              </button>
-            </div>
-
-            {isLoadingPackages ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {selectedPackages.length === 0 ? (
-                  <div className="text-center py-8 text-zinc-500">
-                    <PackageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>
-                      {t("checkout.reservation.noPackages")}
-                    </p>
-                  </div>
-                ) : (
-                  selectedPackages.map((sp) => {
-                    const selectedPkg = packages.find(
-                      (p) => p.id === sp.packageId,
-                    );
-                    return (
-                      <div
-                        key={sp.id}
-                        className="grid md:grid-cols-12 gap-3 p-4 bg-zinc-800/50 border border-zinc-700 rounded-xl"
+          {/* Mevcut rezervasyonlar (kardeş için yeni rezervasyon yapılabilir) */}
+          {!editingId && myActiveHere.length > 0 && (
+            <Card>
+              <p className="text-sm font-medium text-zinc-300 mb-3">{t("checkout.reservation.existing")}</p>
+              <ul className="flex flex-wrap gap-2 mb-3">
+                {myActiveHere.map((r) => (
+                  <li key={r.id}>
+                    {isCustomerEditable(r.status) ? (
+                      <LocalizedLink
+                        to={`/rezervasyon?duzenle=${r.id}`}
+                        className={buttonClass("secondary", "sm")}
                       >
-                        {/* Paket Seçimi */}
-                        <div className="md:col-span-4">
-                          <label className="text-xs text-zinc-500 mb-1 block">
-                            {t("checkout.reservation.package")}
-                          </label>
-                          <select
-                            value={sp.packageId}
-                            onChange={(e) =>
-                              updatePackageRow(
-                                sp.id,
-                                "packageId",
-                                e.target.value,
-                              )
-                            }
-                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+                        {r.athleteName}
+                        <span className="text-emerald-400 font-normal">· {t("checkout.reservation.edit")}</span>
+                      </LocalizedLink>
+                    ) : (
+                      <span className={pillClass("success", "min-h-10 px-3 text-sm")}>
+                        {r.athleteName} · {t("checkout.reservation.paid")}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-zinc-400">{t("checkout.reservation.siblingHint")}</p>
+            </Card>
+          )}
+
+            {/* 1 — Paket seçimi */}
+            <Card ref={packagesCardRef} className="scroll-mt-28">
+              <h2 className="text-xl font-semibold text-white mb-4">{t("checkout.reservation.packages")}</h2>
+
+              {rowsError && (
+                <Alert tone="danger" className="mb-4">
+                  {rowsError}
+                </Alert>
+              )}
+
+              {isLoadingPackages ? (
+                <Spinner label={t("common.loading")} />
+              ) : packagesFailed ? (
+                <div className="text-center py-4">
+                  <Alert tone="danger" className="text-left mb-4">
+                    {t("home.packages.loadError")}
+                  </Alert>
+                  <Button variant="secondary" onClick={fetchPackages}>
+                    {t("common.retry")}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedPackages.map((sp, index) => {
+                    const selectedPkg = packages.find((p) => p.id === sp.packageId);
+                    const rowId = `row-${sp.id}`;
+                    return (
+                      <fieldset key={sp.id} className={cx(innerRowClass, "p-4 space-y-4")}>
+                        <legend className="sr-only">
+                          {t("checkout.reservation.package")} {index + 1}
+                        </legend>
+                        <div className="grid sm:grid-cols-12 gap-3 items-end">
+                          <Field
+                            className="sm:col-span-6"
+                            label={t("checkout.reservation.package")}
+                            htmlFor={`${rowId}-package`}
+                            required
                           >
-                            <option value="">{t("checkout.reservation.choosePackage")}</option>
-                            {packages.map((pkg) => (
-                              <option key={pkg.id} value={pkg.id}>
-                                {pkg.name} - ₺
-                                {formatNumber(pkg.reservationPrice)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                            <Select
+                              id={`${rowId}-package`}
+                              value={sp.packageId}
+                              onChange={(e) => updatePackageRow(sp.id, "packageId", e.target.value)}
+                              invalid={submitted && !sp.packageId}
+                            >
+                              <option value="">{t("checkout.reservation.choosePackage")}</option>
+                              {packages.map((pkg) => (
+                                <option key={pkg.id} value={pkg.id}>
+                                  {pkg.name} — {formatTL(pkg.reservationPrice)}
+                                </option>
+                              ))}
+                            </Select>
+                          </Field>
 
-                        {/* Seri Sayısı */}
-                        <div className="md:col-span-3">
-                          <label className="text-xs text-zinc-500 mb-1 block">
-                            {t("checkout.reservation.seriesCount")}
-                          </label>
-                          <select
-                            value={sp.seriesCount}
-                            onChange={(e) =>
-                              updatePackageRow(
-                                sp.id,
-                                "seriesCount",
-                                Number(e.target.value),
-                              )
-                            }
-                            disabled={!sp.packageId}
-                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          <Field
+                            className="sm:col-span-3"
+                            label={t("checkout.reservation.seriesCount")}
+                            htmlFor={`${rowId}-series`}
                           >
-                            <option value={1}>
-                              {t("common.series", { count: 1 })} - ₺
-                              {formatNumber(selectedPkg?.reservationPrice || 0)}
-                            </option>
-                            <option value={2}>
-                              {t("common.series", { count: 2 })} - ₺
-                              {formatNumber(selectedPkg?.reservationDiscounts?.[2] || 0)}
-                            </option>
-                            <option value={3}>
-                              {t("common.series", { count: 3 })} - ₺
-                              {formatNumber(selectedPkg?.reservationDiscounts?.[3] || 0)}
-                            </option>
-                          </select>
-                        </div>
+                            <Select
+                              id={`${rowId}-series`}
+                              value={sp.seriesCount}
+                              onChange={(e) => updatePackageRow(sp.id, "seriesCount", Number(e.target.value))}
+                              disabled={!selectedPkg}
+                            >
+                              {([1, 2, 3] as const).map((n) => (
+                                <option key={n} value={n}>
+                                  {t("common.series", { count: n })}
+                                  {selectedPkg ? ` — ${formatTL(reservationPriceFor(selectedPkg, n))}` : ""}
+                                </option>
+                              ))}
+                            </Select>
+                          </Field>
 
-                        {/* Adet */}
-                        <div className="md:col-span-2">
-                          <label className="text-xs text-zinc-500 mb-1 block">
-                            {t("checkout.reservation.quantity")}
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={sp.quantity}
-                            onChange={(e) =>
-                              updatePackageRow(
-                                sp.id,
-                                "quantity",
-                                Number(e.target.value),
-                              )
-                            }
-                            disabled={!sp.packageId}
-                            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        </div>
+                          <Field
+                            className="sm:col-span-2"
+                            label={t("checkout.reservation.quantity")}
+                            htmlFor={`${rowId}-quantity`}
+                          >
+                            <Input
+                              id={`${rowId}-quantity`}
+                              type="number"
+                              min={1}
+                              inputMode="numeric"
+                              value={sp.quantity}
+                              onChange={(e) =>
+                                updatePackageRow(sp.id, "quantity", Math.max(1, Number(e.target.value) || 1))
+                              }
+                              disabled={!selectedPkg}
+                            />
+                          </Field>
 
-                        {/* Toplam */}
-                        <div className="md:col-span-2 flex flex-col justify-end">
-                          <label className="text-xs text-zinc-500 mb-1 block">
-                            {t("checkout.form.total")}
-                          </label>
-                          <div className="text-base font-bold text-emerald-400">
-                            ₺{formatNumber(sp.price * sp.quantity)}
+                          <div className="sm:col-span-1 flex justify-end">
+                            <IconButton
+                              variant="ghost"
+                              icon={Trash2}
+                              label={t("checkout.reservation.removePackage")}
+                              onClick={() => removePackageRow(sp.id)}
+                              disabled={selectedPackages.length === 1}
+                            />
                           </div>
-                        </div>
-
-                        {/* Sil */}
-                        <div className="md:col-span-1 flex items-end justify-end">
-                          <button
-                            type="button"
-                            onClick={() => removePackageRow(sp.id)}
-                            className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
                         </div>
 
                         {/* Öncelikli (pakette öncelik ücreti tanımlıysa) */}
                         {selectedPkg?.priorityFee != null && (
                           <PriorityCheckbox
-                            className="md:col-span-12"
                             checked={sp.priority}
                             onChange={(checked) => updatePackageRow(sp.id, "priority", checked)}
                             fee={selectedPkg.priorityFee}
                           />
                         )}
 
-                        {/* Alet seçimi (seriesCount kadar zorunlu) */}
-                        <div className="md:col-span-12 mt-1">
-                          <label className="text-xs text-zinc-500 mb-2 block">
-                            {t("checkout.apparatus.label")}{" "}
-                            <span className="text-red-400">*</span>
-                            <span className="ml-1 text-zinc-600">
-                              {t("checkout.apparatus.selected", { count: sp.apparatuses.length, total: sp.seriesCount })}
+                        {/* Alet seçimi (seri sayısı kadar zorunlu) */}
+                        <ApparatusPicker
+                          selected={sp.apparatuses}
+                          max={sp.seriesCount}
+                          disabled={!selectedPkg}
+                          showError={submitted}
+                          onToggle={(slug) => toggleApparatusOnRow(sp.id, slug)}
+                        />
+
+                        {selectedPkg && (
+                          <p className="flex items-center justify-between border-t border-zinc-700/60 pt-3 text-sm">
+                            <span className="text-zinc-400">{t("checkout.form.total")}</span>
+                            <span className="text-lg font-bold text-white">
+                              {formatTL(sp.price * sp.quantity)}
                             </span>
-                          </label>
-                          <div className="flex flex-wrap gap-2">
-                            {APPARATUSES.map((a) => {
-                              const active = sp.apparatuses.includes(a.slug);
-                              const slotsFull =
-                                !active &&
-                                sp.apparatuses.length >= sp.seriesCount;
-                              return (
-                                <button
-                                  key={a.slug}
-                                  type="button"
-                                  disabled={!sp.packageId || slotsFull}
-                                  onClick={() =>
-                                    toggleApparatusOnRow(sp.id, a.slug)
-                                  }
-                                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                                    active
-                                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                                      : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500"
-                                  }`}
-                                >
-                                  {t(`common.apparatus.${a.slug}`)}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
+                          </p>
+                        )}
+                      </fieldset>
                     );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-          </Reveal>
+                  })}
 
-          {/* Sporcu Bilgileri */}
-          <Reveal delay={0.15}>
-          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
-            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
-            <h2 className="text-xl font-semibold text-white mb-4">
-              {t("checkout.reservation.athleteInfo")}
-            </h2>
-            {isAuthenticated && !editingId && (
-              <p className="-mt-2 mb-4 text-xs text-zinc-500">
-                {t("checkout.reservation.siblingFormHint")}
-              </p>
-            )}
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                {error}
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                  <User className="w-4 h-4" />
-                  {t("checkout.form.athleteName")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="athleteName"
-                  value={form.athleteName}
-                  onChange={handleChange}
-                  placeholder={t("checkout.form.athleteNamePlaceholder")}
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                  <Building className="w-4 h-4" />
-                  {t("checkout.form.clubName")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="clubName"
-                  value={form.clubName}
-                  onChange={handleChange}
-                  placeholder={t("checkout.form.clubNamePlaceholder")}
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                  <CalendarDays className="w-4 h-4" />
-                  {t("checkout.form.birthYear")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="birthYear"
-                  value={form.birthYear}
-                  onChange={handleChange}
-                  placeholder={t("checkout.form.birthYearPlaceholder")}
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                  <Phone className="w-4 h-4" />
-                  {t("checkout.form.phone")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="customerPhone"
-                  value={form.customerPhone}
-                  onChange={handleChange}
-                  placeholder="0532 123 45 67"
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                  <Mail className="w-4 h-4" />
-                  {t("checkout.form.email")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="customerEmail"
-                  value={form.customerEmail}
-                  onChange={handleChange}
-                  readOnly={!!editingId}
-                  placeholder={t("checkout.form.emailPlaceholder")}
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors read-only:opacity-60 read-only:cursor-not-allowed"
-                />
-                {editingId && (
-                  <p className="text-xs text-zinc-500 mt-1">
-                    {t("checkout.form.emailLocked")}
-                  </p>
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-                  <MessageSquare className="w-4 h-4" />
-                  {t("checkout.form.notes")} <span className="text-zinc-600">{t("checkout.form.optional")}</span>
-                </label>
-                <textarea
-                  name="notes"
-                  value={form.notes}
-                  onChange={handleChange}
-                  placeholder={t("checkout.form.notesPlaceholder")}
-                  rows={3}
-                  className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors resize-none"
-                />
-              </div>
-            </div>
-          </div>
-          </Reveal>
-
-          {/* Özet ve Gönder */}
-          <Reveal delay={0.2}>
-          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6">
-            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-white">
-                  {t("checkout.form.totalAmount")}
-                </h3>
-                <p className="text-sm text-zinc-500">
-                  {t("checkout.reservation.packagesSelected", { count: selectedPackages.length })}
-                </p>
-              </div>
-              <div className="text-3xl font-bold text-gradient-brand">
-                {formatTL(discountedTotal)}
-              </div>
-            </div>
-
-            <LoyaltyPriceLines
-              subtotal={subtotal}
-              discountPercent={discountPercent}
-              tierName={editingId ? null : loyalty?.tier?.name}
-              redeemPoints={editingId ? 0 : (loyalty?.tier?.minPoints ?? 0)}
-              earnPoints={earnPoints}
-              isGuest={!isAuthenticated}
-              loginRedirect="/rezervasyon"
-            />
-
-            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-              <p className="text-xs text-amber-400 text-center">
-                {t("checkout.reservation.payAtVenue")}
-              </p>
-            </div>
-
-            {/* Hesap bağlama bilgisi */}
-            {isAuthenticated ? (
-              <div className="mb-4 flex items-start gap-2 text-sm text-emerald-400/90 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
-                <Check className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{t("checkout.form.accountLinked")}</span>
-              </div>
-            ) : (
-              <div className="mb-4 flex items-start gap-2 text-sm text-zinc-400 bg-zinc-800/40 border border-zinc-700/50 rounded-xl px-4 py-3">
-                <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-400" />
-                <span>
-                  {t("checkout.form.accountNewReservation")}
-                </span>
-              </div>
-            )}
-
-            {/* KVKK Onay */}
-            <div className="mb-4">
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={kvkkAccepted}
-                  onChange={(e) => setKvkkAccepted(e.target.checked)}
-                  className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
-                />
-                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                  <LocalizedLink
-                    to="/kvkk-aydinlatma-metni"
-                    target="_blank"
-                    className="text-emerald-400 hover:text-emerald-300 underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {t("checkout.form.kvkkLink")}
-                  </LocalizedLink>
-                  {t("checkout.form.kvkkSuffix")}{" "}
-                  <span className="text-red-400">*</span>
-                </span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={
-                isSubmitting ||
-                selectedPackages.length === 0 ||
-                selectedPackages.some(
-                  (sp) => sp.apparatuses.length !== sp.seriesCount,
-                ) ||
-                !kvkkAccepted
-              }
-              className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {t("checkout.form.processing")}
-                </>
-              ) : (
-                <>
-                  <Calendar className="w-5 h-5" />
-                  {editingId ? t("checkout.reservation.submitUpdate") : t("checkout.reservation.submitCreate")}
-                </>
+                  <Button variant="secondary" icon={Plus} onClick={addNewPackageRow}>
+                    {t("checkout.reservation.addPackage")}
+                  </Button>
+                </div>
               )}
-            </button>
+            </Card>
+
+            {/* 2 — Sporcu bilgileri */}
+            <Card>
+              <h2 className="text-xl font-semibold text-white">{t("checkout.reservation.athleteInfo")}</h2>
+              <p className="mt-1 mb-5 text-sm text-zinc-400">
+                {isAuthenticated && !editingId
+                  ? t("checkout.reservation.siblingFormHint")
+                  : t("checkout.form.nameHint")}
+              </p>
+
+              <CustomerFields
+                idPrefix={FORM_ID}
+                form={form}
+                errors={fieldErrors}
+                onChange={handleChange}
+                emailLocked={!!editingId}
+              />
+            </Card>
+
           </div>
-          </Reveal>
-        </form>
+
+            {/* 3 — Özet ve gönder (geniş ekranda kaydırırken sabit) */}
+            <Card className="lg:sticky lg:top-28">
+              <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">{t("checkout.form.totalAmount")}</h2>
+                  <p className="text-sm text-zinc-400">{t("checkout.reservation.payAtVenueShort")}</p>
+                </div>
+                <p className="text-3xl font-bold text-white">{formatTL(discountedTotal)}</p>
+              </div>
+
+              <LoyaltyPriceLines
+                subtotal={subtotal}
+                discountPercent={discountPercent}
+                tierName={editingId ? null : loyalty?.tier?.name}
+                redeemPoints={editingId ? 0 : (loyalty?.tier?.minPoints ?? 0)}
+                earnPoints={earnPoints}
+                isGuest={!isAuthenticated}
+                loginRedirect="/rezervasyon"
+              />
+
+              <p className="mb-5 text-sm text-zinc-400">
+                {isAuthenticated ? t("checkout.form.accountLinked") : t("checkout.form.accountNewReservation")}
+              </p>
+
+              <KvkkCheckbox
+                checked={kvkkAccepted}
+                onChange={(checked) => {
+                  setKvkkAccepted(checked);
+                  if (checked) setKvkkError(false);
+                }}
+              />
+              {kvkkError && <p className="mt-1.5 text-sm text-red-400">{t("checkout.form.errors.kvkk")}</p>}
+
+              {serverError && (
+                <Alert tone="danger" className="mt-5">
+                  {serverError}
+                </Alert>
+              )}
+              {submitted && !serverError && (rowsError || Object.values(fieldErrors).some(Boolean)) && (
+                <Alert tone="danger" className="mt-5">
+                  {t("checkout.form.errors.fix")}
+                </Alert>
+              )}
+
+              <Button type="submit" size="lg" loading={isSubmitting} icon={Calendar} className="w-full mt-5">
+                {isSubmitting
+                  ? t("checkout.form.processing")
+                  : editingId
+                    ? t("checkout.reservation.submitUpdate")
+                    : t("checkout.reservation.submitCreate")}
+              </Button>
+            </Card>
+          </form>
+        </div>
       </div>
     </div>
   );

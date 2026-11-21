@@ -11,17 +11,17 @@ const KvkkMetni = () => {
   if (lang !== "tr") return <LegalDocument doc={LEGAL_DOCS[lang].kvkk} lang={lang} />;
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-950 via-gray-900 to-gray-950">
+    <div className="min-h-screen pt-20">
       <SEO
         title="KVKK Aydınlatma Metni"
         description="RNG Sport KVKK kapsamında kişisel verilerin korunması aydınlatma ve açık rıza metni."
       />
       {/* Header */}
-      <div className="bg-black/30 backdrop-blur-xl border-b border-white/10">
+      <div className="border-b border-zinc-800">
         <div className="container mx-auto px-4 py-6">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-emerald-500 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-emerald-400 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Ana Sayfaya Dön</span>
@@ -34,31 +34,31 @@ const KvkkMetni = () => {
         <div className="max-w-4xl mx-auto">
           {/* Title */}
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-zinc-100 mb-4">
               Kişisel Verilerin Korunması Kanunu (KVKK) Kapsamında
             </h1>
-            <h2 className="text-2xl md:text-3xl font-semibold text-emerald-500">
+            <h2 className="text-2xl md:text-3xl font-semibold text-emerald-400">
               Aydınlatma ve Açık Rıza Metni
             </h2>
           </div>
 
           {/* Content Card */}
-          <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-2xl p-8 md:p-12 shadow-2xl">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 md:p-10">
             {/* Section 1 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+              <h3 className="text-xl font-bold text-emerald-400 mb-4 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">
                   1
                 </span>
                 Veri Sorumlusu ve İşleyen
               </h3>
-              <p className="text-gray-300 leading-relaxed">
+              <p className="text-zinc-300 leading-relaxed">
                 Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu
                 ("Kanun") uyarınca,{" "}
                 <strong className="text-emerald-400">RNG Sport</strong>{" "}
                 kapsamında yürütülen fotoğraf ve video çekimleri için; hizmet
                 sağlayıcı ve yetkili görüntüleme firması{" "}
-                <strong className="text-gray-100">
+                <strong className="text-zinc-100">
                   Range Media (Hakan Köse)
                 </strong>{" "}
                 tarafından işlenecek kişisel verileriniz ve görüntü kayıtlarınız
@@ -69,43 +69,43 @@ const KvkkMetni = () => {
 
             {/* Section 2 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+              <h3 className="text-xl font-bold text-emerald-400 mb-4 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">
                   2
                 </span>
                 İşlenen Kişisel Veriler ve İşleme Amaçları
               </h3>
-              <p className="text-gray-300 leading-relaxed mb-4">
+              <p className="text-zinc-300 leading-relaxed mb-4">
                 Organizasyon süresince katılımcı sporcuların;
               </p>
 
-              <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/5">
-                <h4 className="text-gray-100 font-semibold mb-3">
+              <div className="bg-zinc-800/40 rounded-xl p-6 mb-6 border border-zinc-700/60">
+                <h4 className="text-zinc-100 font-semibold mb-3">
                   İşlenen Veriler:
                 </h4>
                 <ul className="space-y-2">
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
-                      <strong className="text-gray-100">
+                      <strong className="text-zinc-100">
                         Kimlik Bilgileri:
                       </strong>{" "}
                       Ad, Soyad, Doğum Tarihi, Kulüp Bilgisi
                     </span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
-                      <strong className="text-gray-100">
+                      <strong className="text-zinc-100">
                         Görsel ve İşitsel Kayıtlar:
                       </strong>{" "}
                       Fotoğraf, Video, Yarışma Performans Görüntüleri
                     </span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
-                      <strong className="text-gray-100">
+                      <strong className="text-zinc-100">
                         İletişim Bilgileri:
                       </strong>{" "}
                       Veli E-posta, Telefon
@@ -114,18 +114,18 @@ const KvkkMetni = () => {
                 </ul>
               </div>
 
-              <div className="bg-white/5 rounded-xl p-6 border border-white/5">
-                <h4 className="text-gray-100 font-semibold mb-3">
+              <div className="bg-zinc-800/40 rounded-xl p-5 border border-zinc-700/60">
+                <h4 className="text-zinc-100 font-semibold mb-3">
                   İşleme Amaçları:
                 </h4>
                 <ul className="space-y-2">
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
                       Yarışma organizasyonunun yürütülmesi ve arşivlenmesi
                     </span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
                       Sporcu performanslarının profesyonel olarak kayıt altına
@@ -133,7 +133,7 @@ const KvkkMetni = () => {
                       sunulması
                     </span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
                       RNG Sport ve Range Media'ya ait sosyal medya
@@ -142,7 +142,7 @@ const KvkkMetni = () => {
                       olarak kullanılması
                     </span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
                       Satın alınan fotoğraf ve videoların yalnızca ilgili kişiye
@@ -158,55 +158,55 @@ const KvkkMetni = () => {
 
             {/* Section 3 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+              <h3 className="text-xl font-bold text-emerald-400 mb-4 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">
                   3
                 </span>
                 Kişisel Verilerin Aktarılması
               </h3>
-              <p className="text-gray-300 leading-relaxed">
+              <p className="text-zinc-300 leading-relaxed">
                 Elde edilen görsel ve işitsel kayıtlar; etkinliğin tanıtımı,
                 sporun teşviki ve hizmetin ifası amacıyla; RNG Sport ve
                 Range Media'nın sosyal medya hesaplarında halka açık olarak
                 paylaşılabilir, iş ortakları ve yetkili mercilerle Kanun'un{" "}
-                <strong className="text-gray-100">8. ve 9. maddelerine</strong>{" "}
+                <strong className="text-zinc-100">8. ve 9. maddelerine</strong>{" "}
                 uygun olarak paylaşılabilir.
               </p>
             </section>
 
             {/* Section 4 */}
             <section className="mb-10">
-              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+              <h3 className="text-xl font-bold text-emerald-400 mb-4 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">
                   4
                 </span>
                 Haklarınız
               </h3>
-              <p className="text-gray-300 leading-relaxed mb-4">
-                KVKK'nın <strong className="text-gray-100">11. maddesi</strong>{" "}
+              <p className="text-zinc-300 leading-relaxed mb-4">
+                KVKK'nın <strong className="text-zinc-100">11. maddesi</strong>{" "}
                 uyarınca aşağıdaki haklara sahipsiniz:
               </p>
-              <div className="bg-white/5 rounded-xl p-6 border border-white/5">
+              <div className="bg-zinc-800/40 rounded-xl p-5 border border-zinc-700/60">
                 <ul className="space-y-2">
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>Verilerinizin işlenip işlenmediğini öğrenme</span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>İşlenmişse buna ilişkin bilgi talep etme</span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
                       İşlenme amacına uygun kullanılıp kullanılmadığını öğrenme
                     </span>
                   </li>
-                  <li className="flex items-start gap-3 text-gray-300">
+                  <li className="flex items-start gap-3 text-zinc-300">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
                     <span>
                       Görüntülerin silinmesini veya yok edilmesini isteme{" "}
-                      <em className="text-gray-400">
+                      <em className="text-zinc-400">
                         (yasal saklama yükümlülükleri ve yayınlanmış içeriklerin
                         teknik geri alınamazlığı saklı kalmak kaydıyla)
                       </em>
@@ -218,14 +218,14 @@ const KvkkMetni = () => {
 
             {/* Section 5 */}
             <section>
-              <h3 className="text-xl font-bold text-emerald-500 mb-4 flex items-center gap-3">
+              <h3 className="text-xl font-bold text-emerald-400 mb-4 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm">
                   5
                 </span>
                 Açık Rıza Beyanı
               </h3>
-              <div className="bg-linear-to-r from-emerald-500/10 to-teal-500/10 rounded-xl p-6 border border-emerald-500/20">
-                <p className="text-gray-200 leading-relaxed">
+              <div className="bg-emerald-500/10 rounded-xl p-6 border border-emerald-500/20">
+                <p className="text-zinc-200 leading-relaxed">
                   Yukarıdaki aydınlatma metnini okudum ve anladım. Velisi/Vasisi
                   bulunduğum sporcunun{" "}
                   <strong className="text-emerald-400">RNG Sport</strong>{" "}
@@ -244,8 +244,8 @@ const KvkkMetni = () => {
             </section>
 
             {/* Footer Note */}
-            <div className="mt-12 pt-8 border-t border-white/10">
-              <p className="text-gray-400 text-sm text-center">
+            <div className="mt-12 pt-8 border-t border-zinc-800">
+              <p className="text-zinc-400 text-sm text-center">
                 Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu
                 kapsamında hazırlanmıştır.
                 <br />
@@ -254,7 +254,7 @@ const KvkkMetni = () => {
                   href="https://wa.me/905512217635"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-emerald-500 hover:text-emerald-400 transition-colors"
+                  className="text-emerald-400 hover:text-emerald-400 transition-colors"
                 >
                   +90 (551) 221 76 35
                 </a>{" "}

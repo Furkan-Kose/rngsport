@@ -143,7 +143,7 @@ const StaffPanel = () => {
                     <td className="px-4 py-3 text-white font-medium">
                       {user.name || '-'}
                       {user.id === currentUser?.id && (
-                        <span className="ml-2 text-[11px] font-normal text-amber-400">(Siz)</span>
+                        <span className="ml-2 text-xs font-normal text-amber-400">(Siz)</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-300 text-sm font-mono">

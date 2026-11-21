@@ -3,15 +3,21 @@ import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "../../components/LocalizedLink";
 import { useLocalizedNavigate } from "../../lib/localePath";
-import { motion } from "framer-motion";
-import { UserPlus, Mail, Lock, Phone, User, Building2, CalendarDays } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import SEO from "../../components/SEO";
+import AuthShell from "../../components/ui/AuthShell";
+import KvkkCheckbox from "../../components/checkout/KvkkCheckbox";
+import { Alert, Button, Field, Input } from "../../components/ui/kit";
+
+type FormKey = "name" | "clubName" | "birthYear" | "phone" | "email" | "password" | "passwordConfirm";
+type Errors = Partial<Record<FormKey | "kvkk", string>>;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RegisterPage = () => {
   // name = sporcu adı soyadı. Rezervasyon formu ve çekim listesi eşleşmesi bunu
   // kullanıyor, o yüzden hesapta sporcunun kendi adı tutuluyor.
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<FormKey, string>>({
     name: "",
     clubName: "",
     birthYear: "",
@@ -21,7 +27,8 @@ const RegisterPage = () => {
     passwordConfirm: "",
   });
   const [kvkkAccepted, setKvkkAccepted] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Errors>({});
+  const [serverError, setServerError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register, isAuthenticated, isAdmin, isLoading } = useAuth();
@@ -37,19 +44,39 @@ const RegisterPage = () => {
     }
   }, [isLoading, isAuthenticated, isAdmin, redirect, navigate]);
 
-  const updateForm = (key: keyof typeof form, value: string) =>
+  const updateForm = (key: FormKey, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const validate = (): Errors => {
+    const e: Errors = {};
+    const err = (key: string) => t(`checkout.form.errors.${key}`);
+    if (form.name.trim().length < 2) e.name = err("athleteName");
+    if (form.clubName.trim().length < 2) e.clubName = err("clubName");
+    const year = form.birthYear.trim();
+    if (!year) e.birthYear = err("birthYear");
+    else if (!/^\d{4}$/.test(year) || Number(year) < 1950 || Number(year) > new Date().getFullYear())
+      e.birthYear = err("birthYearInvalid");
+    if (!form.phone.trim()) e.phone = err("phone");
+    else if (form.phone.replace(/\D/g, "").length < 10) e.phone = err("phoneInvalid");
+    if (!form.email.trim()) e.email = err("email");
+    else if (!EMAIL_RE.test(form.email.trim())) e.email = err("emailInvalid");
+    if (form.password.length < 8) e.password = t("auth.errors.passwordLength");
+    if (form.password !== form.passwordConfirm) e.passwordConfirm = t("auth.errors.passwordMismatch");
+    if (!kvkkAccepted) e.kvkk = err("kvkk");
+    return e;
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    setServerError("");
 
-    if (form.password.length < 8) {
-      setError(t("auth.errors.passwordLength"));
-      return;
-    }
-    if (form.password !== form.passwordConfirm) {
-      setError(t("auth.errors.passwordMismatch"));
+    const found = validate();
+    setErrors(found);
+    const first = Object.keys(found)[0];
+    if (first) {
+      document.getElementById(first)?.focus();
       return;
     }
 
@@ -67,17 +94,28 @@ const RegisterPage = () => {
     if (result.success) {
       navigate(redirect, { replace: true });
     } else {
-      setError(result.message || t("auth.errors.registerFailed"));
+      setServerError(result.message || t("auth.errors.registerFailed"));
       setIsSubmitting(false);
     }
   };
 
-  const inputClass =
-    "w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors";
-  const labelClass = "flex items-center gap-2 text-sm text-zinc-400 mb-2";
-
   return (
-    <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+    <AuthShell
+      wide
+      title={t("auth.register.title")}
+      subtitle={t("auth.register.subtitle")}
+      footer={
+        <>
+          {t("auth.register.hasAccount")}{" "}
+          <LocalizedLink
+            to={`/giris${redirect !== "/profil" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
+            className="text-emerald-400 hover:text-emerald-300 font-medium underline underline-offset-4"
+          >
+            {t("auth.register.login")}
+          </LocalizedLink>
+        </>
+      }
+    >
       <SEO
         noindex
         title={t("auth.register.seoTitle")}
@@ -85,198 +123,126 @@ const RegisterPage = () => {
         keywords={t("auth.register.seoKeywords")}
       />
 
-      {/* Dekoratif arka plan */}
-      <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {serverError && <Alert tone="danger">{serverError}</Alert>}
 
-      <div className="container mx-auto px-4 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-md mx-auto"
+        <div className="grid sm:grid-cols-2 gap-5 items-start">
+        <Field
+          label={t("auth.register.athleteName")}
+          htmlFor="name"
+          required
+          error={errors.name}
+          hint={t("auth.register.athleteNameHint")}
         >
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mb-4">
-              <UserPlus className="w-7 h-7 text-emerald-400" />
-            </div>
-            <h1 className="text-3xl font-bold text-gradient-brand">{t("auth.register.title")}</h1>
-            <p className="text-zinc-500 text-sm mt-2">
-              {t("auth.register.subtitle")}
-            </p>
-          </div>
+          <Input
+            id="name"
+            value={form.name}
+            onChange={(e) => updateForm("name", e.target.value)}
+            placeholder={t("auth.register.athleteNamePlaceholder")}
+            autoComplete="off"
+            invalid={!!errors.name}
+          />
+        </Field>
 
-          <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 sm:p-8">
-            <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
+        <Field label={t("auth.register.club")} htmlFor="clubName" required error={errors.clubName}>
+          <Input
+            id="clubName"
+            value={form.clubName}
+            onChange={(e) => updateForm("clubName", e.target.value)}
+            placeholder={t("auth.register.clubPlaceholder")}
+            autoComplete="organization"
+            invalid={!!errors.clubName}
+          />
+        </Field>
+        </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
+        <div className="grid sm:grid-cols-2 gap-5 items-start">
+          <Field label={t("auth.register.birthYear")} htmlFor="birthYear" required error={errors.birthYear}>
+            <Input
+              id="birthYear"
+              value={form.birthYear}
+              onChange={(e) => updateForm("birthYear", e.target.value)}
+              placeholder="2015"
+              inputMode="numeric"
+              maxLength={4}
+              autoComplete="off"
+              invalid={!!errors.birthYear}
+            />
+          </Field>
 
-              <div>
-                <label htmlFor="name" className={labelClass}>
-                  <User className="w-4 h-4" />
-                  {t("auth.register.athleteName")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => updateForm("name", e.target.value)}
-                  className={inputClass}
-                  placeholder={t("auth.register.athleteNamePlaceholder")}
-                  required
-                  minLength={2}
-                />
-                <p className="text-xs text-zinc-600 mt-1.5">
-                  {t("auth.register.athleteNameHint")}
-                </p>
-              </div>
+          <Field label={t("auth.register.phone")} htmlFor="phone" required error={errors.phone}>
+            <Input
+              type="tel"
+              id="phone"
+              value={form.phone}
+              onChange={(e) => updateForm("phone", e.target.value)}
+              placeholder={t("auth.register.phonePlaceholder")}
+              inputMode="tel"
+              autoComplete="tel"
+              invalid={!!errors.phone}
+            />
+          </Field>
+        </div>
 
-              <div>
-                <label htmlFor="clubName" className={labelClass}>
-                  <Building2 className="w-4 h-4" />
-                  {t("auth.register.club")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="clubName"
-                  value={form.clubName}
-                  onChange={(e) => updateForm("clubName", e.target.value)}
-                  className={inputClass}
-                  placeholder={t("auth.register.clubPlaceholder")}
-                  required
-                  minLength={2}
-                />
-              </div>
+        <Field label={t("auth.email")} htmlFor="email" required error={errors.email}>
+          <Input
+            type="email"
+            id="email"
+            value={form.email}
+            onChange={(e) => updateForm("email", e.target.value)}
+            placeholder={t("auth.emailPlaceholder")}
+            inputMode="email"
+            autoComplete="username"
+            invalid={!!errors.email}
+          />
+        </Field>
 
-              <div>
-                <label htmlFor="birthYear" className={labelClass}>
-                  <CalendarDays className="w-4 h-4" />
-                  {t("auth.register.birthYear")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="birthYear"
-                  value={form.birthYear}
-                  onChange={(e) => updateForm("birthYear", e.target.value)}
-                  className={inputClass}
-                  placeholder="2011"
-                  required
-                />
-              </div>
+        <div className="grid sm:grid-cols-2 gap-5 items-start">
+        <Field
+          label={t("auth.password")}
+          htmlFor="password"
+          required
+          error={errors.password}
+          hint={t("auth.passwordPlaceholder")}
+        >
+          <Input
+            type="password"
+            id="password"
+            value={form.password}
+            onChange={(e) => updateForm("password", e.target.value)}
+            autoComplete="new-password"
+            invalid={!!errors.password}
+          />
+        </Field>
 
-              <div>
-                <label htmlFor="phone" className={labelClass}>
-                  <Phone className="w-4 h-4" />
-                  {t("auth.register.phone")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={form.phone}
-                  onChange={(e) => updateForm("phone", e.target.value)}
-                  className={inputClass}
-                  placeholder={t("auth.register.phonePlaceholder")}
-                  required
-                />
-              </div>
+        <Field label={t("auth.passwordConfirm")} htmlFor="passwordConfirm" required error={errors.passwordConfirm}>
+          <Input
+            type="password"
+            id="passwordConfirm"
+            value={form.passwordConfirm}
+            onChange={(e) => updateForm("passwordConfirm", e.target.value)}
+            autoComplete="new-password"
+            invalid={!!errors.passwordConfirm}
+          />
+        </Field>
+        </div>
 
-              <div>
-                <label htmlFor="email" className={labelClass}>
-                  <Mail className="w-4 h-4" />
-                  {t("auth.email")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={form.email}
-                  onChange={(e) => updateForm("email", e.target.value)}
-                  className={inputClass}
-                  placeholder={t("auth.emailPlaceholder")}
-                  required
-                />
-              </div>
+        <div>
+          <KvkkCheckbox
+            checked={kvkkAccepted}
+            onChange={(checked) => {
+              setKvkkAccepted(checked);
+              if (checked) setErrors((prev) => ({ ...prev, kvkk: undefined }));
+            }}
+          />
+          {errors.kvkk && <p className="mt-1.5 text-sm text-red-400">{errors.kvkk}</p>}
+        </div>
 
-              <div>
-                <label htmlFor="password" className={labelClass}>
-                  <Lock className="w-4 h-4" />
-                  {t("auth.password")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  value={form.password}
-                  onChange={(e) => updateForm("password", e.target.value)}
-                  className={inputClass}
-                  placeholder={t("auth.passwordPlaceholder")}
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="passwordConfirm" className={labelClass}>
-                  <Lock className="w-4 h-4" />
-                  {t("auth.passwordConfirm")} <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="password"
-                  id="passwordConfirm"
-                  value={form.passwordConfirm}
-                  onChange={(e) => updateForm("passwordConfirm", e.target.value)}
-                  className={inputClass}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              {/* KVKK Onay */}
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={kvkkAccepted}
-                  onChange={(e) => setKvkkAccepted(e.target.checked)}
-                  className="mt-1 w-5 h-5 rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer"
-                />
-                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                  <LocalizedLink
-                    to="/kvkk-aydinlatma-metni"
-                    target="_blank"
-                    className="text-emerald-400 hover:text-emerald-300 underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {t("checkout.form.kvkkLink")}
-                  </LocalizedLink>
-                  {t("checkout.form.kvkkSuffix")}{" "}
-                  <span className="text-red-400">*</span>
-                </span>
-              </label>
-
-              <button
-                type="submit"
-                disabled={isSubmitting || !kvkkAccepted}
-                className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-emerald-500/25 transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? t("auth.register.submitting") : t("auth.register.submit")}
-              </button>
-            </form>
-
-            <p className="text-center text-sm text-zinc-500 mt-6">
-              {t("auth.register.hasAccount")}{" "}
-              <LocalizedLink
-                to={`/giris${redirect !== "/profil" ? `?redirect=${encodeURIComponent(redirect)}` : ""}`}
-                className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
-              >
-                {t("auth.register.login")}
-              </LocalizedLink>
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    </div>
+        <Button type="submit" size="lg" loading={isSubmitting} className="w-full">
+          {isSubmitting ? t("auth.register.submitting") : t("auth.register.submit")}
+        </Button>
+      </form>
+    </AuthShell>
   );
 };
 

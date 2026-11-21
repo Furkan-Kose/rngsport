@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Loader2, Mail, RotateCcw } from 'lucide-react';
+import { Camera, Check, Clapperboard, Film, Loader2, Mail, Package, RotateCcw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../lib/api';
 import {
-  DELIVERY_ICONS,
   DELIVERY_LABELS_TR,
   DELIVERY_SUBJECTS_TR,
   DELIVERY_TYPES,
@@ -11,6 +10,13 @@ import {
   type Deliveries,
   type DeliveryType,
 } from '../../lib/delivery';
+
+// Teslimat parçası → ikon (emoji yerine; her temada aynı görünür)
+const DELIVERY_ICON = { photo: Camera, video: Clapperboard, reels: Film, general: Package } as const;
+const TypeIcon = ({ type, className }: { type: DeliveryType; className?: string }) => {
+  const Icon = DELIVERY_ICON[type];
+  return <Icon className={className} aria-hidden />;
+};
 
 interface DeliveryRecord {
   id: string;
@@ -68,7 +74,7 @@ const DeliveryPanel = ({ kind, record, onUpdated }: DeliveryPanelProps) => {
         <Mail className="w-4 h-4 text-amber-400" />
         <h3 className="text-white font-medium">Teslimat</h3>
       </div>
-      <p className="text-gray-500 text-xs mb-3">
+      <p className="text-gray-400 text-xs mb-3">
         Hazır olan parçayı seçin; müşteriye ona uygun mail gider. Paketinde olanlar vurgulu.
       </p>
 
@@ -89,12 +95,16 @@ const DeliveryPanel = ({ kind, record, onUpdated }: DeliveryPanelProps) => {
                     : 'border-gray-700 bg-gray-800/40'
                 }`}
               >
-                <span className="text-sm text-white font-medium">
-                  {DELIVERY_ICONS[type]} {DELIVERY_LABELS_TR[type]}
+                <span className="inline-flex items-center gap-1.5 text-sm text-white font-medium">
+                  <TypeIcon type={type} className="w-4 h-4 text-gray-400" />
+                  {DELIVERY_LABELS_TR[type]}
                 </span>
                 {when ? (
                   <>
-                    <span className="text-xs text-emerald-400">✓ {formatWhen(when)}</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-green-400">
+                      <Check className="w-3.5 h-3.5" />
+                      {formatWhen(when)}
+                    </span>
                     <button
                       onClick={() => setConfirm({ type, resend: true })}
                       disabled={busy !== null || !record.customerEmail}
@@ -108,9 +118,9 @@ const DeliveryPanel = ({ kind, record, onUpdated }: DeliveryPanelProps) => {
                   <button
                     onClick={() => setConfirm({ type, resend: false })}
                     disabled={busy !== null}
-                    className={`inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium disabled:opacity-50 ${
+                    className={`inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 ${
                       relevant(type)
-                        ? 'bg-amber-500 hover:bg-amber-600 text-gray-900'
+                        ? 'bg-amber-500 hover:bg-amber-400 text-gray-900'
                         : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
                     }`}
                   >
@@ -125,7 +135,7 @@ const DeliveryPanel = ({ kind, record, onUpdated }: DeliveryPanelProps) => {
       )}
 
       {!record.customerEmail && !blocked && (
-        <p className="text-xs text-gray-500 mt-2">Kayıtta e-posta yok; teslimat kaydedilir ama mail gitmez.</p>
+        <p className="text-xs text-gray-400 mt-2">Kayıtta e-posta yok; teslimat kaydedilir ama mail gitmez.</p>
       )}
 
       {confirm && (
@@ -146,13 +156,13 @@ const DeliveryPanel = ({ kind, record, onUpdated }: DeliveryPanelProps) => {
           <div className="flex gap-2 mt-3">
             <button
               onClick={() => setConfirm(null)}
-              className="px-3 py-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm"
+              className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm"
             >
               Vazgeç
             </button>
             <button
               onClick={() => send(confirm.type, confirm.resend)}
-              className="px-3 py-1.5 rounded-md bg-amber-500 hover:bg-amber-600 text-gray-900 text-sm font-semibold"
+              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-900 text-sm font-semibold"
             >
               {confirm.resend ? 'Tekrar gönder' : 'Teslim et ve gönder'}
             </button>
@@ -163,14 +173,14 @@ const DeliveryPanel = ({ kind, record, onUpdated }: DeliveryPanelProps) => {
   );
 };
 
-// Liste satırında: gönderilmiş parçaların simgeleri (📸 🎬 🎞️ 📦)
+// Liste satırında: gönderilmiş parçaların simgeleri
 export const DeliveryIcons = ({ deliveries }: { deliveries?: Deliveries }) => {
   const sent = DELIVERY_TYPES.filter((type) => deliveries?.[type]);
   if (sent.length === 0) return null;
   return (
-    <span className="inline-flex gap-0.5 text-sm" title={sent.map((type) => `${DELIVERY_LABELS_TR[type]} gönderildi`).join(', ')}>
+    <span className="inline-flex gap-1 text-gray-400" title={sent.map((type) => `${DELIVERY_LABELS_TR[type]} gönderildi`).join(', ')}>
       {sent.map((type) => (
-        <span key={type}>{DELIVERY_ICONS[type]}</span>
+        <TypeIcon key={type} type={type} className="w-3.5 h-3.5" />
       ))}
     </span>
   );

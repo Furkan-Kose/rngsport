@@ -1,7 +1,8 @@
 {
   "tournament": {
     "label": "Rezervasyon yapılan yarışma",
-    "choose": "Lütfen rezervasyon yapacağınız yarışmayı seçin"
+    "choose": "Lütfen rezervasyon yapacağınız yarışmayı seçin",
+    "short": "Yarışma"
   },
   "form": {
     "athleteName": "Sporcu Adı Soyadı",
@@ -28,17 +29,29 @@
     "total": "Toplam",
     "totalAmount": "Toplam Tutar",
     "errors": {
-      "required": "Lütfen tüm zorunlu alanları doldurun",
       "noPackage": "Lütfen en az bir paket seçin",
       "rowPackage": "Lütfen tüm satırlarda paket seçimi yapın",
       "apparatus": "Her paket için seri sayısı kadar alet seçmelisiniz",
-      "generic": "Bir hata oluştu"
-    }
+      "generic": "Bir hata oluştu",
+      "athleteName": "Sporcunun adını ve soyadını yazın",
+      "clubName": "Kulüp ya da şube adını yazın",
+      "birthYear": "Doğum yılını yazın",
+      "birthYearInvalid": "Doğum yılını dört haneli yazın (örn. 2015)",
+      "phone": "Telefon numarasını yazın",
+      "phoneInvalid": "Telefon numarası eksik görünüyor",
+      "email": "E-posta adresini yazın",
+      "emailInvalid": "E-posta adresi geçerli görünmüyor",
+      "kvkk": "Devam etmek için aydınlatma metnini onaylayın",
+      "fix": "Lütfen işaretli alanları düzeltin"
+    },
+    "emailHint": "Fotoğraf ve videolarınız bu adresle açılan hesaba yüklenir.",
+    "nameHint": "Sporcunun adını yarışma kaydındaki gibi yazın; çekim listesinde bu isimle eşleştirilir."
   },
   "apparatus": {
     "label": "Aletler",
     "selected": "({{count}} / {{total}} seçildi)",
-    "pickForPackage": "Bu paket için aletleri seçin"
+    "pickForPackage": "Bu paket için aletleri seçin",
+    "hint": "Her seri için sporcunun o performansta kullanacağı aleti seçin."
   },
   "priority": {
     "title": "Öncelikli teslim",
@@ -67,35 +80,37 @@
     "lockedTitle": "Zaten bir rezervasyonunuz var",
     "lockedText": "{{name}} adına yaptığınız rezervasyonun ödemesi alındı. Değişiklik için bizimle iletişime geçebilirsiniz.",
     "viewMine": "Rezervasyonumu Gör",
-    "successTitle": "Rezervasyon Başarılı!",
-    "successText": "Rezervasyonunuz alınmıştır. Satış masasına uğrayarak ödemenizi yapabilirsiniz.",
-    "number": "Rezervasyon No: {{id}}",
+    "successTitle": "Rezervasyonunuz alındı",
+    "successText": "Ödemenizi yarışma günü standımızda yapabilirsiniz.",
     "backHome": "Ana Sayfaya Dön",
     "home": "Ana Sayfa",
     "editTitle": "Rezervasyonu Düzenle",
-    "newTitle": "Rezervasyon Formu",
+    "newTitle": "Rezervasyon",
     "editSubtitle": "Mevcut rezervasyonunuzu güncelleyin",
-    "newSubtitle": "Paketleri seçin ve bilgilerinizi girin",
-    "intro": "Paketini seç, bilgilerini gir ve hesabını oluştur. Rezervasyonunu kullanıcı panelinden takip edebilir ve güncelleyebilirsin. Çekimlerin hazır olduğunda e-posta ile bilgilendirilir, fotoğraf ve videolarına kişisel galerinden ulaşırsın.",
+    "intro": "Paketi seçin, sporcu bilgilerini girin. Rezervasyonunuzu hesabınızdan takip edebilir, ödeme öncesinde değiştirebilirsiniz.",
     "existing": "Mevcut rezervasyonlarınız:",
     "edit": "Düzenle",
     "paid": "Ödendi",
     "siblingHint": "Kardeşi ya da başka bir sporcu için aşağıdan yeni rezervasyon yapabilirsiniz.",
     "packages": "Paket Seçimi",
-    "addPackage": "Paket Ekle",
-    "noPackages": "Henüz paket eklenmedi. \"Paket Ekle\" butonuna tıklayın.",
+    "addPackage": "Başka paket ekle",
     "package": "Paket",
     "choosePackage": "Paket Seçin",
     "seriesCount": "Seri Sayısı",
     "quantity": "Adet",
     "athleteInfo": "Sporcu Bilgileri",
     "siblingFormHint": "Kardeşi için rezervasyon yapıyorsanız sporcu bilgilerini değiştirin.",
-    "packagesSelected": "{{count}} paket seçildi",
-    "payAtVenue": "💡 Rezervasyonunuzu şimdi tamamlayın; ödeme işlemini yarışma günü alandaki standımızda gerçekleştirin.",
+    "payAtVenue": "Ödeme şimdi alınmaz; yarışma günü standımızda ödersiniz.",
     "submitUpdate": "Rezervasyonu Güncelle",
-    "submitCreate": "Rezervasyonu Onayla",
+    "submitCreate": "Rezervasyonu Tamamla",
     "toastUpdated": "Rezervasyonunuz güncellendi",
-    "toastCreated": "Rezervasyon başarıyla oluşturuldu!"
+    "toastCreated": "Rezervasyon başarıyla oluşturuldu!",
+    "amountDue": "Stantta ödenecek tutar",
+    "numberLabel": "Rezervasyon no",
+    "payAtVenueShort": "Yarışma günü stantta ödenir",
+    "onlineHint": "Kartla şimdi ödemek isterseniz",
+    "onlineLink": "paketleri sepete ekleyin",
+    "removePackage": "Paketi kaldır"
   },
   "cart": {
     "seoTitle": "Sepet",
@@ -118,6 +133,14 @@
     "orderInfo": "Sipariş Bilgileri",
     "toPayment": "Ödemeye Geç",
     "payment": "Ödeme",
-    "pickApparatusFirst": "Ödemeye geçmeden önce her paket için aletleri seçin."
+    "pickApparatusFirst": "Ödemeye geçmeden önce her paket için aletleri seçin.",
+    "remove": "{{name}} paketini sepetten çıkar",
+    "decrease": "Azalt",
+    "increase": "Artır",
+    "pay": "Ödemeyi Tamamla",
+    "clearTitle": "Sepet boşaltılsın mı?",
+    "clearText": "Sepetteki tüm paketler kaldırılacak.",
+    "reserveHint": "Yarışma günü stantta ödemek isterseniz",
+    "reserveLink": "rezervasyon yapın"
   }
 }

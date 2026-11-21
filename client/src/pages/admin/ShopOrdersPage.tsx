@@ -5,25 +5,15 @@ import api from '../../lib/api';
 import { useUrlState } from '../../hooks/useUrlState';
 import PhoneLinks from '../../components/admin/PhoneLinks';
 import ExportModal from '../../components/admin/ExportModal';
-import { formatTL } from '../../lib/loyalty';
+import { formatDateTime, formatMoney as formatTL } from '../../lib/adminFormat';
 import { SHOP_STATUS_LABELS as STATUS_LABELS, isUnpaid, type ShippingInput, type ShopOrder, type ShopStatus } from '../../lib/shop';
 import ShopStatusBadge from '../../components/admin/ShopStatusBadge';
-import {
-  Button,
-  EmptyState,
-  IconButton,
-  FilterTabs,
-  SkeletonRows,
-  SortableTh,
-  PageHeader,
-  Pagination,
-  Panel,
-  SearchInput,
-  Toolbar,
-} from '../../components/admin/ui';
+import { Button, EmptyState, FilterTabs, IconButton, ModalBackdrop, PageHeader, Pagination, Panel, SearchInput, SkeletonRows, SortableTh, Toolbar } from '../../components/admin/ui';
 import { tableBodyClass, tableHeadRowClass, tdClass, thClass } from '../../lib/adminUi';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import { getApparatusLabel } from '../../constants/apparatuses';
+import { notifyError } from '../../lib/adminErrors';
+import { inputClass } from '../../lib/adminUi';
 
 interface AdminShopOrder extends ShopOrder {
   adminNote: string | null;
@@ -35,22 +25,20 @@ interface AdminShopOrder extends ShopOrder {
 
 // Sekme → sunucudaki status filtresi
 const TABS: { key: string; label: string; statuses: ShopStatus[] }[] = [
-  { key: 'paid', label: 'Aktif siparişler', statuses: ['CONFIRMED', 'IN_PRODUCTION', 'SHIPPED', 'DELIVERED'] },
-  { key: 'CONFIRMED', label: 'Yeni', statuses: ['CONFIRMED'] },
-  { key: 'IN_PRODUCTION', label: 'Hazırlanıyor', statuses: ['IN_PRODUCTION'] },
+  { key: 'all', label: 'Tümü', statuses: [] },
+  { key: 'paid', label: 'Ödenenler', statuses: ['CONFIRMED', 'IN_PRODUCTION', 'SHIPPED', 'DELIVERED'] },
+  // Hazırlanacak: ödendi, henüz kargoya verilmedi (ana sayfadaki sayıyla aynı küme)
+  { key: 'todo', label: 'Hazırlanacak', statuses: ['CONFIRMED', 'IN_PRODUCTION'] },
   { key: 'SHIPPED', label: 'Kargoda', statuses: ['SHIPPED'] },
   { key: 'DELIVERED', label: 'Teslim edildi', statuses: ['DELIVERED'] },
   { key: 'unpaid', label: 'Ödenmemiş', statuses: ['PENDING', 'FAILED'] },
   { key: 'CANCELLED', label: 'İptal', statuses: ['CANCELLED'] },
-  { key: 'all', label: 'Tümü', statuses: [] },
 ];
 
 
 const selectionText = (o: ShopOrder) =>
   o.selection ? `${getApparatusLabel(o.selection.apparatus)} · Poz ${o.selection.poseNo}` : '';
 
-const formatDateTime = (value: string | null) =>
-  value ? new Date(value).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
 
 const copy = (text: string) =>
   navigator.clipboard.writeText(text).then(
@@ -58,13 +46,11 @@ const copy = (text: string) =>
     () => toast.error('Kopyalanamadı')
   );
 
-const inputClass =
-  'w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
 
 const ShopOrdersPage = () => {
   // Sekme, arama, sayfa, sıralama ve açık detay adres çubuğunda.
   // Dashboard'daki "Ödeme Bekleyen" kartı → ?tab=unpaid, hızlı arama → ?tab=all&id=…
-  const [url, setUrl] = useUrlState({ tab: 'paid', q: '', page: '1', sort: '', dir: 'desc', id: '' });
+  const [url, setUrl] = useUrlState({ tab: 'paid', q: '', page: '1', sort: '', dir: 'desc', id: '', limit: '20' });
   const tab = TABS.some((t) => t.key === url.tab) ? url.tab : 'paid';
   const query = url.q;
   const page = Math.max(1, Number(url.page) || 1);
@@ -74,6 +60,8 @@ const ShopOrdersPage = () => {
   const [orders, setOrders] = useState<AdminShopOrder[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = [10, 25, 50, 100, 20].includes(Number(url.limit)) ? Number(url.limit) : 20;
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AdminShopOrder | null>(null);
   // Listedeki satırdan silme (yalnızca ödenmemiş siparişler silinebilir)
@@ -83,7 +71,7 @@ const ShopOrdersPage = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ status: tab, page: String(page), limit: '20' });
+      const params = new URLSearchParams({ status: tab, page: String(page), limit: String(limit) });
       if (query) params.set('search', query);
       if (url.sort) {
         params.set('sort', url.sort);
@@ -93,17 +81,26 @@ const ShopOrdersPage = () => {
       setOrders(data.data);
       setCounts(data.counts);
       setTotalPages(Math.max(1, data.pagination.totalPages));
+      setTotal(data.pagination.total ?? data.data.length);
     } catch (err) {
-      console.error('Ürün siparişleri yüklenemedi:', err);
-      toast.error('Siparişler yüklenemedi');
+      notifyError(err, 'Ürün siparişleri yüklenemedi');
     } finally {
       setLoading(false);
     }
-  }, [tab, page, query, url.sort, url.dir]);
+  }, [tab, page, query, url.sort, url.dir, limit]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Yazınca arar (diğer sipariş sayfalarıyla aynı): 500 ms bekleyip adres çubuğuna yazar
+  useEffect(() => {
+    const next = search.trim();
+    if (next === url.q) return;
+    const timer = setTimeout(() => setUrl({ q: next, page: '1' }), 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   // Detay aç/kapat: açık sipariş ?id= ile adres çubuğunda
   const openDetail = (order: AdminShopOrder | null) => {
@@ -166,7 +163,7 @@ const ShopOrdersPage = () => {
       <PageHeader
         title="Ürün Siparişleri"
         icon={Truck}
-        description={'Kişiye özel ürün siparişleri. Durumu buradan güncelleyin; müşteri profilinden görür. "Kargoda" ve "Teslim edildi"de müşteriye mail gider.'}
+        description="Kişiye özel ürün siparişleri. Kargoya verince ve teslim edilince müşteriye e-posta gider."
         actions={
           <Button icon={FileSpreadsheet} onClick={() => setExportOpen(true)}>
             Excel İndir
@@ -174,25 +171,27 @@ const ShopOrdersPage = () => {
         }
       />
 
-      <Toolbar>
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          onSubmit={() => setUrl({ q: search.trim(), page: '1' })}
-          placeholder="Alıcı, telefon, e-posta, ürün, il ara... (Enter)"
-        />
+      {/* Üstte seçici + arama, altında tek satır durum sekmeleri */}
+      <div className="space-y-3">
+        <Toolbar>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Alıcı, telefon, e-posta, ürün veya il ara..."
+          />
+        </Toolbar>
         <FilterTabs
           tabs={TABS.map((t) => ({ key: t.key, label: t.label, count: tabCount(t) }))}
           value={tab}
           onChange={(key) => setUrl({ tab: key, page: '1' })}
         />
-      </Toolbar>
+      </div>
 
       <Panel className="overflow-hidden">
         {loading ? (
           <SkeletonRows />
         ) : orders.length === 0 ? (
-          <EmptyState bare icon={Truck} title="Sipariş yok" description={query ? 'Aramayı değiştirmeyi deneyin.' : undefined} />
+          <EmptyState bare icon={Truck} title="Sipariş bulunamadı" description="Arama veya filtreyi değiştirmeyi deneyin." />
         ) : (
           <>
           {/* Mobil kartlar */}
@@ -206,7 +205,7 @@ const ShopOrdersPage = () => {
                         {o.productName}
                         {o.quantity > 1 && <span className="text-gray-400"> × {o.quantity}</span>}
                       </p>
-                      {o.selection && <p className="text-xs text-amber-300">{selectionText(o)}</p>}
+                      {o.selection && <p className="text-xs text-gray-400">{selectionText(o)}</p>}
                       <p className="text-gray-400 text-xs mt-1 truncate">
                         {o.recipientName} · {o.city}
                       </p>
@@ -218,7 +217,7 @@ const ShopOrdersPage = () => {
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-500 text-xs mt-2">{formatDateTime(o.paidAt ?? o.createdAt)}</p>
+                  <p className="text-gray-400 text-xs mt-2">{formatDateTime(o.paidAt ?? o.createdAt)}</p>
                 </button>
                 <div className="mt-3 flex items-center gap-2">
                   <Button size="sm" icon={Eye} onClick={() => openDetail(o)}>
@@ -238,38 +237,38 @@ const ShopOrdersPage = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className={tableHeadRowClass}>
-                  <SortableTh label="Tarih" field="createdAt" sort={url.sort} dir={sortDir} onSort={handleSort} />
-                  <th className={thClass}>Ürün</th>
                   <SortableTh label="Alıcı" field="recipientName" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <th className={thClass}>Ürün</th>
                   <SortableTh label="İl" field="city" sort={url.sort} dir={sortDir} onSort={handleSort} />
                   <SortableTh label="Tutar" field="totalPrice" sort={url.sort} dir={sortDir} onSort={handleSort} />
                   <SortableTh label="Durum" field="status" sort={url.sort} dir={sortDir} onSort={handleSort} />
-                  <th className={`${thClass} text-right`}>İşlemler</th>
+                  <SortableTh label="Tarih" field="createdAt" sort={url.sort} dir={sortDir} onSort={handleSort} />
+                  <th className={thClass}>İşlemler</th>
                 </tr>
               </thead>
               <tbody className={tableBodyClass}>
                 {orders.map((o) => (
                   <tr key={o.id} onClick={() => openDetail(o)} className="hover:bg-gray-700/20 cursor-pointer transition-colors">
-                    <td className={`${tdClass} text-gray-300 whitespace-nowrap`}>{formatDateTime(o.paidAt ?? o.createdAt)}</td>
-                    <td className={`${tdClass} text-white`}>
-                      {o.productName}
-                      {o.quantity > 1 && <span className="text-gray-400"> × {o.quantity}</span>}
-                      {o.selection && <div className="text-xs text-amber-300">{selectionText(o)}</div>}
-                    </td>
-                    <td className={`${tdClass} text-gray-200`}>
+                    <td className={`${tdClass} text-white font-medium`}>
                       {o.recipientName}
-                      <div className="text-xs" onClick={(e) => e.stopPropagation()}>
+                      <div className="text-xs font-normal" onClick={(e) => e.stopPropagation()}>
                         <PhoneLinks phone={o.phone} />
                       </div>
                     </td>
+                    <td className={`${tdClass} text-gray-200`}>
+                      {o.productName}
+                      {o.quantity > 1 && <span className="text-gray-400"> × {o.quantity}</span>}
+                      {o.selection && <div className="text-xs text-gray-400">{selectionText(o)}</div>}
+                    </td>
                     <td className={`${tdClass} text-gray-300`}>{o.city}</td>
-                    <td className={`${tdClass} text-gray-200 whitespace-nowrap`}>{formatTL(o.totalPrice)}</td>
+                    <td className={`${tdClass} text-white font-medium whitespace-nowrap`}>{formatTL(o.totalPrice)}</td>
                     <td className={tdClass}>
                       <ShopStatusBadge status={o.status} />
                     </td>
+                    <td className={`${tdClass} text-gray-400 whitespace-nowrap`}>{formatDateTime(o.paidAt ?? o.createdAt)}</td>
                     <td className={tdClass} onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1.5">
-                        <IconButton icon={Eye} title="Detay / Düzenle" onClick={() => openDetail(o)} />
+                      <div className="flex items-center gap-1.5">
+                        <IconButton icon={Eye} title="Detay" onClick={() => openDetail(o)} />
                         {isUnpaid(o.status) ? (
                           <IconButton icon={Trash2} title="Sil" tone="danger" onClick={() => setRowDelete(o)} />
                         ) : (
@@ -289,7 +288,14 @@ const ShopOrdersPage = () => {
           </div>
           </>
         )}
-        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onChange={setPage}
+          total={total}
+          limit={limit}
+          onLimitChange={(n) => setUrl({ limit: String(n), page: '1' })}
+        />
       </Panel>
 
       {selected && (
@@ -430,15 +436,15 @@ const OrderDetail = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl my-8" onClick={(e) => e.stopPropagation()}>
+    <ModalBackdrop onClose={onClose} dismissOnBackdrop top>
+      <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl my-8">
         <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-700">
           <div>
             <h2 className="text-lg font-semibold text-white">
               {order.productName}
               {order.quantity > 1 && <span className="text-gray-400"> × {order.quantity}</span>}
             </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-gray-400 mt-0.5">
               {order.id} · {formatTL(order.totalPrice)} · sipariş {formatDateTime(order.createdAt)} · ödeme {formatDateTime(order.paidAt)}
             </p>
           </div>
@@ -466,15 +472,15 @@ const OrderDetail = ({
             <div className="bg-gray-900/40 border border-gray-700 rounded-xl p-4">
               <h3 className="text-sm font-medium text-gray-300 mb-2">Kişiselleştirme</h3>
               {personalization.length === 0 ? (
-                <p className="text-sm text-gray-500">—</p>
+                <p className="text-sm text-gray-400">—</p>
               ) : (
                 <dl className="space-y-2">
                   {personalization.map(([key, value]) => (
                     <div key={key}>
-                      <dt className="text-xs text-gray-500">{order.fieldLabels?.[key] || key}</dt>
+                      <dt className="text-xs text-gray-400">{order.fieldLabels?.[key] || key}</dt>
                       <dd className="text-sm text-white break-words whitespace-pre-line flex items-start gap-2">
                         <span className="flex-1">{value}</span>
-                        <button onClick={() => copy(value)} className="text-gray-500 hover:text-amber-400" title="Kopyala">
+                        <button onClick={() => copy(value)} className="text-gray-400 hover:text-amber-400" title="Kopyala">
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                       </dd>
@@ -562,7 +568,7 @@ const OrderDetail = ({
                   {order.customerNote && <p className="text-sm text-gray-400 italic mt-2">Not: {order.customerNote}</p>}
                 </>
               )}
-              <p className="text-xs text-gray-500 mt-3">
+              <p className="text-xs text-gray-400 mt-3">
                 Hesap: {order.user?.name ?? '—'} · {order.user?.email ?? 'hesap silinmiş'}
               </p>
             </div>
@@ -597,7 +603,7 @@ const OrderDetail = ({
               Müşteriye "{STATUS_LABELS[status]}" maili gönder
             </label>
           )}
-          {order.paymentId && <p className="text-xs text-gray-500">iyzico ödeme no: {order.paymentId} (iade iyzico panelinden yapılır)</p>}
+          {order.paymentId && <p className="text-xs text-gray-400">iyzico ödeme no: {order.paymentId} (iade iyzico panelinden yapılır)</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-t border-gray-700">
@@ -606,7 +612,7 @@ const OrderDetail = ({
               Sil
             </Button>
           ) : (
-            <p className="text-xs text-gray-500">Ödenmiş sipariş silinemez — iptal için durumu "İptal" yapın.</p>
+            <p className="text-xs text-gray-400">Ödenmiş sipariş silinemez — iptal için durumu "İptal" yapın.</p>
           )}
           <div className="flex-1" />
           <Button onClick={onClose}>Kapat</Button>
@@ -624,7 +630,7 @@ const OrderDetail = ({
         onConfirm={remove}
         onCancel={() => setConfirmDelete(false)}
       />
-    </div>
+    </ModalBackdrop>
   );
 };
 

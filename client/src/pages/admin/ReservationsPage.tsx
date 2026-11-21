@@ -21,20 +21,10 @@ import PriorityBadge from '../../components/PriorityBadge';
 import DeliveryPanel, { DeliveryIcons } from '../../components/admin/DeliveryPanel';
 import type { Deliveries } from '../../lib/delivery';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
-import {
-  Button,
-  EmptyState,
-  FilterTabs,
-  IconButton,
-  SkeletonRows,
-  SortableTh,
-  PageHeader,
-  Pagination as PaginationBar,
-  Panel,
-  SearchInput,
-  Toolbar,
-} from '../../components/admin/ui';
+import { Button, EmptyState, FilterTabs, IconButton, ModalBackdrop, PageHeader, Pagination as PaginationBar, Panel, SearchInput, SkeletonRows, SortableTh, Toolbar } from '../../components/admin/ui';
 import { tableBodyClass, tableHeadRowClass, thClass } from '../../lib/adminUi';
+import { notifyError } from '../../lib/adminErrors';
+import { formatDateTime, formatMoney } from '../../lib/adminFormat';
 
 // Durum sekmeleri (sayılar liste cevabındaki counts'tan)
 const STATUS_TABS = [
@@ -143,7 +133,7 @@ const ReservationsPage = () => {
       setPagination(data.pagination);
       setCounts(data.counts ?? {});
     } catch (error) {
-      console.error('Reservations fetch error:', error);
+      notifyError(error, 'Rezervasyonlar yüklenemedi');
     } finally {
       setIsLoading(false);
     }
@@ -226,7 +216,7 @@ const ReservationsPage = () => {
         setSelectedReservation({ ...selectedReservation, status });
       }
     } catch (error) {
-      console.error('Update reservation error:', error);
+      notifyError(error, 'Rezervasyon durumu güncellenemedi');
     }
   };
 
@@ -257,8 +247,9 @@ const ReservationsPage = () => {
       }));
       
       setDeleteConfirmId(null);
+      toast.success('Rezervasyon silindi');
     } catch (error) {
-      console.error('Delete reservation error:', error);
+      notifyError(error, 'Rezervasyon silinemedi');
     } finally {
       setIsDeleting(false);
     }
@@ -283,22 +274,9 @@ const ReservationsPage = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-    }).format(price);
-  };
+  const formatPrice = formatMoney;
 
-  const formatDate = (date: string) => {
-    return new Intl.DateTimeFormat('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
-  };
+  const formatDate = formatDateTime;
 
 
   // Onaylı/ödenmiş rezervasyonun çekim listesiyle isim + alet eşleşmesi:
@@ -334,14 +312,28 @@ const ReservationsPage = () => {
         }
       />
 
-      <Toolbar>
-        <TournamentSelect
-          tournaments={tournament.tournaments}
-          value={tournament.value}
-          onChange={tournament.setValue}
-          className="w-full sm:w-auto"
-        />
-        <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Sporcu, kulüp veya telefon ara..." />
+      {/* Üstte seçici + arama, altında tek satır durum sekmeleri */}
+      <div className="space-y-3">
+        <Toolbar>
+          <TournamentSelect
+            tournaments={tournament.tournaments}
+            value={tournament.value}
+            onChange={tournament.setValue}
+            className="w-full sm:w-auto"
+          />
+          <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Sporcu, kulüp veya telefon ara..." />
+          <div className="lg:ml-auto shrink-0">
+            {selectMode ? (
+              <Button size="sm" variant="ghost" icon={X} onClick={exitSelectMode}>
+                Seçimi bitir
+              </Button>
+            ) : (
+              <Button size="sm" icon={CheckSquare} onClick={() => setSelectMode(true)} disabled={reservations.length === 0}>
+                Seç (toplu işlem)
+              </Button>
+            )}
+          </div>
+        </Toolbar>
         <FilterTabs
           tabs={STATUS_TABS.map((t) => ({
             key: t.key,
@@ -351,18 +343,7 @@ const ReservationsPage = () => {
           value={filterStatus}
           onChange={setFilterStatus}
         />
-        <div className="lg:ml-auto shrink-0">
-          {selectMode ? (
-            <Button size="sm" variant="ghost" icon={X} onClick={exitSelectMode}>
-              Seçimi bitir
-            </Button>
-          ) : (
-            <Button size="sm" icon={CheckSquare} onClick={() => setSelectMode(true)} disabled={reservations.length === 0}>
-              Seç (toplu işlem)
-            </Button>
-          )}
-        </div>
-      </Toolbar>
+      </div>
 
       {selectMode && (
         <div className="flex flex-wrap items-center gap-2 -mt-2">
@@ -420,7 +401,7 @@ const ReservationsPage = () => {
                       <div className="mt-1.5 flex items-center justify-end gap-1.5"><DeliveryIcons deliveries={reservation.deliveries} /><StatusBadge status={reservation.status} /></div>
                     </div>
                   </div>
-                  <p className="text-gray-500 text-xs mt-2">{formatDate(reservation.createdAt)}</p>
+                  <p className="text-gray-400 text-xs mt-2">{formatDate(reservation.createdAt)}</p>
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <Button size="sm" icon={Eye} onClick={() => openDetail(reservation)}>
                       Detay
@@ -465,13 +446,14 @@ const ReservationsPage = () => {
                   {reservations.map((reservation) => (
                     <tr
                       key={reservation.id}
-                      onClick={selectMode ? () => toggleSelect(reservation.id) : undefined}
-                      className={`hover:bg-gray-700/20 transition-colors ${getRowTint(reservation)} ${
-                        selectMode ? 'cursor-pointer' : ''
-                      } ${selectedIds.has(reservation.id) ? 'bg-amber-500/10' : ''}`}
+                      onClick={() => (selectMode ? toggleSelect(reservation.id) : openDetail(reservation))}
+                      title={selectMode ? undefined : 'Detayı aç'}
+                      className={`cursor-pointer hover:bg-gray-700/20 transition-colors ${getRowTint(reservation)} ${
+                        selectedIds.has(reservation.id) ? 'bg-amber-500/10' : ''
+                      }`}
                     >
                       {selectMode && (
-                        <td className="pl-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <td className="pl-4 py-3">
                           <input
                             type="checkbox"
                             checked={selectedIds.has(reservation.id)}
@@ -497,7 +479,7 @@ const ReservationsPage = () => {
                       <td className="px-4 py-3 text-white font-medium whitespace-nowrap">{formatPrice(reservation.totalPrice)}</td>
                       <td className="px-4 py-3"><div className="flex items-center gap-1.5"><StatusBadge status={reservation.status} /><DeliveryIcons deliveries={reservation.deliveries} /></div></td>
                       <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{formatDate(reservation.createdAt)}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1.5">
                           <IconButton icon={Eye} title="Detay" onClick={() => openDetail(reservation)} />
                           <IconButton icon={Pencil} title="Düzenle" onClick={() => openEditModal(reservation)} />
@@ -523,8 +505,8 @@ const ReservationsPage = () => {
 
       {/* Reservation Detail Modal */}
       {selectedReservation && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <ModalBackdrop onClose={() => openDetail(null)} dismissOnBackdrop>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-4 sm:p-6 border-b border-gray-700 flex items-center justify-between">
               <h2 className="text-lg sm:text-xl font-semibold text-white">Rezervasyon Detayı</h2>
               <button
@@ -606,7 +588,7 @@ const ReservationsPage = () => {
                             {item.apparatuses.map((slug) => (
                               <span
                                 key={slug}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-violet-500/20 text-violet-300 border border-violet-500/30"
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700/60 text-gray-200 border border-gray-600"
                               >
                                 {getApparatusLabel(slug)}
                               </span>
@@ -626,7 +608,7 @@ const ReservationsPage = () => {
                 />
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
                   <span className="text-lg font-medium text-white">Toplam</span>
-                  <span className="text-xl font-bold text-violet-400">
+                  <span className="text-xl font-bold text-white">
                     {formatPrice(selectedReservation.totalPrice)}
                   </span>
                 </div>
@@ -687,7 +669,7 @@ const ReservationsPage = () => {
               </div>
             </div>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       {/* Yeni / Düzenle Modal */}

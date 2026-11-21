@@ -63,3 +63,46 @@ export const fillCustomerFormGaps = (
     customerEmail: prev.customerEmail || fromUser.customerEmail,
   };
 };
+
+export type CustomerFormErrors = Partial<Record<keyof CustomerForm, string>>;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Alan bazlı doğrulama: her hatalı alan için çevrilmiş mesaj döner (boş nesne = geçerli).
+ * Yalnızca biçim denetimi; asıl doğrulama sunucuda.
+ */
+export const validateCustomerForm = (
+  form: CustomerForm,
+  t: (key: string) => string,
+): CustomerFormErrors => {
+  const errors: CustomerFormErrors = {};
+  const e = (key: string) => t(`checkout.form.errors.${key}`);
+
+  if (!form.athleteName.trim()) errors.athleteName = e("athleteName");
+  if (!form.clubName.trim()) errors.clubName = e("clubName");
+
+  const year = form.birthYear.trim();
+  if (!year) errors.birthYear = e("birthYear");
+  else if (!/^\d{4}$/.test(year) || Number(year) < 1950 || Number(year) > new Date().getFullYear())
+    errors.birthYear = e("birthYearInvalid");
+
+  const phone = form.customerPhone.trim();
+  if (!phone) errors.customerPhone = e("phone");
+  else if (phone.replace(/\D/g, "").length < 10) errors.customerPhone = e("phoneInvalid");
+
+  const email = form.customerEmail.trim();
+  if (!email) errors.customerEmail = e("email");
+  else if (!EMAIL_RE.test(email)) errors.customerEmail = e("emailInvalid");
+
+  return errors;
+};
+
+/** İlk hatalı alana kaydırır ve odaklar (alan id'si: `${idPrefix}-${alan}`) */
+export const focusFirstError = (errors: CustomerFormErrors, idPrefix: string) => {
+  const first = Object.keys(errors)[0];
+  if (!first) return;
+  const el = document.getElementById(`${idPrefix}-${first}`);
+  el?.scrollIntoView({ block: "center", behavior: "smooth" });
+  el?.focus({ preventScroll: true });
+};

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "../components/LocalizedLink";
-import { ArrowLeft, Check, Loader2, MessageCircle, PackageX, ShoppingBag, Truck } from "lucide-react";
+import { ArrowLeft, Check, PackageX, ShoppingBag, Truck } from "lucide-react";
 import SEO from "../components/SEO";
 import Reveal from "../components/ui/Reveal";
 import { ComingSoonBadge, PriceBadge } from "../components/Products";
@@ -11,10 +11,15 @@ import { getProduct, localizeProduct, notifyMeUrlFor } from "../data/products";
 import api from "../lib/api";
 import { formatTL } from "../lib/loyalty";
 import type { ShopProduct } from "../lib/shop";
+import { useAuth } from "../context/AuthContext";
+import WhatsAppIcon from "../components/ui/WhatsAppIcon";
+import { Card, EmptyState, Spinner } from "../components/ui/kit";
+import { buttonClass, containerClass, cx, innerRowClass, pageClass, textLinkClass } from "../lib/siteUi";
 
 const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { t, i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const found = getProduct(slug);
   const staticProduct = found && localizeProduct(found, i18n.language);
   // Mağaza kaydı (aktifse), hangi ürün ve dil için yüklendiğiyle birlikte. Başka ürüne
@@ -36,8 +41,8 @@ const ProductDetailPage = () => {
 
   if (shop === undefined && !staticProduct) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+      <div className={pageClass}>
+        <Spinner label={t("common.loading")} />
       </div>
     );
   }
@@ -45,25 +50,19 @@ const ProductDetailPage = () => {
   // Router'da 404 rotası yok; bilinmeyen slug'ı burada karşılıyoruz
   if (!shop && !staticProduct) {
     return (
-      <div className="min-h-screen bg-zinc-950 pt-32 pb-20">
-        <SEO title={t("pages.products.notFoundTitle")} />
-        <div className="container mx-auto px-4">
-          <div className="max-w-md mx-auto text-center bg-zinc-900/60 border border-zinc-800 rounded-2xl p-10">
-            <PackageX className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <h1 className="text-xl font-semibold text-white mb-2">
-              {t("pages.products.notFoundTitle")}
-            </h1>
-            <p className="text-zinc-400 mb-6">
-              {t("pages.products.notFoundText")}
-            </p>
-            <LocalizedLink
-              to="/urunler"
-              className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
+      <div className={pageClass}>
+        <SEO title={t("pages.products.notFoundTitle")} noindex />
+        <div className={containerClass}>
+          <EmptyState
+            icon={PackageX}
+            title={t("pages.products.notFoundTitle")}
+            description={t("pages.products.notFoundText")}
+            className="max-w-md mx-auto mt-10"
+          >
+            <LocalizedLink to="/urunler" className={buttonClass("primary")}>
               {t("pages.products.backAll")}
             </LocalizedLink>
-          </div>
+          </EmptyState>
         </div>
       </div>
     );
@@ -78,7 +77,7 @@ const ProductDetailPage = () => {
   const intro = staticProduct?.intro ?? (shop?.description ?? "").split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+    <div className={pageClass}>
       <SEO
         title={name}
         description={`${tagline} ${shop?.summary ?? staticProduct?.cardSummary ?? ""}`.trim()}
@@ -86,25 +85,18 @@ const ProductDetailPage = () => {
         image={image}
       />
 
-      <div className="container mx-auto px-4">
-        <LocalizedLink
-          to="/urunler"
-          className="inline-flex items-center gap-2 text-zinc-400 hover:text-emerald-400 text-sm mb-8 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t("pages.products.allProducts")}
-        </LocalizedLink>
-
+      <div className={containerClass}>
         <div className="max-w-5xl mx-auto">
+          <LocalizedLink to="/urunler" className={cx(textLinkClass, "mb-8")}>
+            <ArrowLeft className="w-4 h-4" aria-hidden />
+            {t("pages.products.allProducts")}
+          </LocalizedLink>
+
           {/* Üst blok: görsel + başlık */}
           <div className="grid md:grid-cols-2 gap-10 lg:gap-14 items-center mb-16">
             <Reveal>
               {/* Mobilde görsel ekranı kaplamasın: dar ve ortalı; masaüstünde sütun genişliğinde */}
               <div className="relative max-w-xs sm:max-w-sm mx-auto md:max-w-none">
-                <div
-                  aria-hidden
-                  className="absolute -inset-2 md:-inset-4 bg-emerald-500/10 rounded-3xl blur-2xl"
-                />
                 <ProductImageCarousel
                   images={shop?.images?.length ? shop.images : [image]}
                   alt={imageAlt}
@@ -115,14 +107,6 @@ const ProductDetailPage = () => {
             <div>
               <Reveal delay={0.1}>
                 <div className="flex items-center gap-3 mb-4">
-                  {staticProduct && (
-                    <>
-                      <span className="text-emerald-400 font-mono text-sm tracking-widest">
-                        {staticProduct.number}
-                      </span>
-                      <span className="w-8 h-px bg-emerald-500/50" />
-                    </>
-                  )}
                   {purchasable ? <PriceBadge price={shop!.price!} note={staticProduct?.priceNote} /> : <ComingSoonBadge />}
                 </div>
               </Reveal>
@@ -133,12 +117,12 @@ const ProductDetailPage = () => {
               </Reveal>
               {tagline && (
                 <Reveal delay={0.2}>
-                  <p className="text-lg text-gradient-brand font-medium mb-6">{tagline}</p>
+                  <p className="text-lg text-emerald-400 font-medium mb-6">{tagline}</p>
                 </Reveal>
               )}
               {intro.map((paragraph, i) => (
                 <Reveal key={i} delay={0.25 + i * 0.05}>
-                  <p className="text-gray-400 leading-relaxed mb-4 whitespace-pre-line">
+                  <p className="text-zinc-300 mb-4 whitespace-pre-line">
                     {paragraph}
                   </p>
                 </Reveal>
@@ -146,18 +130,17 @@ const ProductDetailPage = () => {
               {purchasable && (
                 <Reveal delay={0.3}>
                   <div className="mt-6 flex flex-wrap items-center gap-4">
-                    <LocalizedLink
-                      to={`/urunler/${slug}/siparis`}
-                      className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-7 py-3 rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/30 hover:-translate-y-0.5"
-                    >
-                      <ShoppingBag className="w-5 h-5" />
+                    <LocalizedLink to={`/urunler/${slug}/siparis`} className={buttonClass("primary", "lg")}>
+                      <ShoppingBag className="w-5 h-5" aria-hidden />
                       {t("pages.shop.buyFor", { price: formatTL(shop!.price!) })}
                     </LocalizedLink>
                     <span className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
-                      <Truck className="w-4 h-4 text-emerald-400" />
+                      <Truck className="w-4 h-4 text-emerald-400" aria-hidden />
                       {t("pages.shop.freeShipping")}
                     </span>
                   </div>
+                  {/* Sipariş için giriş gerekir; düğmeye basınca şaşırtmasın */}
+                  {!isAuthenticated && <p className="mt-3 text-sm text-zinc-400">{t("pages.shop.loginNote")}</p>}
                 </Reveal>
               )}
             </div>
@@ -174,7 +157,7 @@ const ProductDetailPage = () => {
                     </h2>
 
                     {section.body?.map((paragraph, j) => (
-                      <p key={j} className="text-gray-400 leading-relaxed mb-3">
+                      <p key={j} className="text-zinc-300 mb-3">
                         {paragraph}
                       </p>
                     ))}
@@ -184,10 +167,10 @@ const ProductDetailPage = () => {
                         {section.bullets.map((bullet) => (
                           <li
                             key={bullet}
-                            className="flex items-center gap-3 bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-2.5"
+                            className={cx(innerRowClass, "flex items-center gap-3 px-4 py-2.5")}
                           >
                             <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                            <span className="text-sm text-gray-300">
+                            <span className="text-sm text-zinc-300">
                               {bullet}
                             </span>
                           </li>
@@ -203,7 +186,7 @@ const ProductDetailPage = () => {
           {/* Meta şeridi */}
           {staticProduct && (
             <Reveal delay={0.1}>
-              <p className="text-center text-sm text-zinc-500 tracking-wide mt-14 mb-10">
+              <p className="text-center text-sm text-zinc-400 tracking-wide mt-14 mb-10">
                 {staticProduct.meta}
               </p>
             </Reveal>
@@ -211,47 +194,34 @@ const ProductDetailPage = () => {
 
           {/* CTA */}
           <Reveal delay={0.15}>
-            <div className="relative rounded-3xl p-px bg-linear-to-r from-emerald-500/40 via-emerald-400/20 to-emerald-500/40 overflow-hidden max-w-3xl mx-auto mt-10">
-              <div className="absolute inset-0 border-glow-shimmer opacity-60" />
-              <div className="relative bg-linear-to-r from-emerald-900/40 to-teal-900/40 backdrop-blur-xl rounded-3xl p-8 md:p-12 text-center">
-                {purchasable ? (
-                  <>
-                    <p className="text-emerald-300 text-sm font-semibold uppercase tracking-[0.18em] mb-3">
-                      {t("pages.shop.ctaEyebrow")}
-                    </p>
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                      {t("pages.shop.ctaTitle")}
-                    </h2>
-                    <p className="text-zinc-300 mb-6 max-w-xl mx-auto">{t("pages.shop.ctaText")}</p>
-                    <LocalizedLink
-                      to={`/urunler/${slug}/siparis`}
-                      className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5"
-                    >
-                      <ShoppingBag className="w-5 h-5" />
-                      {t("pages.shop.buyFor", { price: formatTL(shop!.price!) })}
-                    </LocalizedLink>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-emerald-300 text-sm font-semibold uppercase tracking-[0.18em] mb-3">
-                      {t("pages.products.comingSoon")}
-                    </p>
-                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
-                      {staticProduct?.comingSoonNote ?? t("pages.products.notYet")}
-                    </h2>
-                    <a
-                      href={notifyMeUrlFor(name, i18n.language)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5"
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      {t("pages.products.notifyMe")}
-                    </a>
-                  </>
-                )}
-              </div>
-            </div>
+            <Card padding="lg" tone="soft" className="max-w-3xl mx-auto mt-10 text-center">
+              {purchasable ? (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">{t("pages.shop.ctaTitle")}</h2>
+                  <p className="text-zinc-300 mb-6 max-w-xl mx-auto">{t("pages.shop.ctaText")}</p>
+                  <LocalizedLink to={`/urunler/${slug}/siparis`} className={buttonClass("primary", "lg")}>
+                    <ShoppingBag className="w-5 h-5" aria-hidden />
+                    {t("pages.shop.buyFor", { price: formatTL(shop!.price!) })}
+                  </LocalizedLink>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-amber-300 mb-3">{t("pages.products.comingSoon")}</p>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
+                    {staticProduct?.comingSoonNote ?? t("pages.products.notYet")}
+                  </h2>
+                  <a
+                    href={notifyMeUrlFor(name, i18n.language)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonClass("primary", "lg")}
+                  >
+                    <WhatsAppIcon className="w-5 h-5" />
+                    {t("pages.products.notifyMe")}
+                  </a>
+                </>
+              )}
+            </Card>
           </Reveal>
         </div>
       </div>

@@ -80,5 +80,7 @@
   "retry": "Try again",
   "required": "required",
   "optional": "optional",
-  "total": "Total"
+  "total": "Total",
+  "previous": "Previous",
+  "next": "Next"
 }

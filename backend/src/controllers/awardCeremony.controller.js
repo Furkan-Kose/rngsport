@@ -136,7 +136,7 @@ export const getAllCeremonies = async (req, res) => {
         where: { contentType: { startsWith: "image/" } },
         orderBy: { createdAt: "asc" },
         take: 1,
-        select: { r2Key: true, previewKey: true },
+        select: { r2Key: true, thumbKey: true, previewKey: true },
       },
     },
   });
@@ -146,11 +146,16 @@ export const getAllCeremonies = async (req, res) => {
       ...formatCeremony(c, req.locale),
       photoCount: c._count.photos,
       coverUrl: c.photos[0]
-        ? await presignView(c.photos[0].previewKey ?? c.photos[0].r2Key)
+        ? // Kart için küçük görsel yeter (thumb ~480 px); eski kayıtlarda yoksa önizleme / orijinal
+          await presignView(c.photos[0].thumbKey ?? c.photos[0].previewKey ?? c.photos[0].r2Key)
         : null,
     }))
   );
 
+  // Herkese açık liste: 60 sn tarayıcı önbelleği (imzalı kapak adresleri 1 saat geçerli).
+  // Dile göre değişir (Accept-Language), o yüzden Vary.
+  res.set("Cache-Control", "public, max-age=60");
+  res.vary("Accept-Language");
   res.json(data);
 };
 

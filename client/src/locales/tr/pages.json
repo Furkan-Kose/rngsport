@@ -7,7 +7,7 @@
     "preparingProgress": "Hazırlanıyor {{done}}/{{total}}",
     "downloadAll": "Tümünü İndir (.zip)",
     "downloadAlbum": "Bu Albümü İndir (.zip)",
-    "mobileHint": "📱 Telefonda fotoğraf ve videoları tek tek indirirseniz doğrudan galerinize kaydedilir. Zip dosyası telefonda \"Dosyalar\" uygulamasına iner.",
+    "mobileHint": "Telefonda fotoğraf ve videoları tek tek indirirseniz doğrudan galerinize kaydedilir. Zip dosyası telefonda \"Dosyalar\" uygulamasına iner.",
     "loadError": "Fotoğraflar yüklenirken bir hata oluştu",
     "downloadError": "Fotoğraf indirilemedi",
     "zipDone": "Zip dosyası indirildi",
@@ -81,7 +81,8 @@
     "photos": "Fotoğraflar",
     "videos": "Videolar",
     "emptyTitle": "Henüz fotoğrafınız yüklenmedi",
-    "emptyText": "Çekiminiz tamamlandıktan sonra fotoğraflarınız burada görünecek. Teslim süresi paketinize göre değişiklik gösterir."
+    "emptyText": "Çekiminiz tamamlandıktan sonra fotoğraflarınız burada görünecek. Teslim süresi paketinize göre değişiklik gösterir.",
+    "typeFilter": "Dosya türü"
   },
   "awards": {
     "seoTitle": "Ödül Törenleri",
@@ -115,18 +116,25 @@
     "intro": "Geçtiğimiz yılın organizasyonunda yakaladığımız performanslardan seçilmiş kareler ve videolar.",
     "photo": "Fotoğraf",
     "video": "Video",
-    "empty": "Bu kategoride henüz içerik bulunmuyor."
+    "empty": "Bu kategoride henüz içerik bulunmuyor.",
+    "ctaTitle": "Sıradaki yarışmada sizi de çekelim",
+    "ctaText": "Fotoğraf ve video paketlerine göz atın, yerinizi şimdiden ayırtın.",
+    "ctaButton": "Paketleri İncele"
   },
   "orderSuccess": {
-    "title": "Ödeme Başarılı!",
-    "text": "Siparişiniz başarıyla alındı. En kısa sürede sizinle iletişime geçeceğiz.",
+    "title": "Ödemeniz alındı",
+    "text": "Siparişiniz kaydedildi. Çekimden sonra dosyalarınız hazır olduğunda e-postayla haber vereceğiz; hesabınızdaki galeriden indirebilirsiniz.",
     "details": "Sipariş Detayları",
     "orderNo": "Sipariş No",
     "athlete": "Sporcu",
     "club": "Kulüp",
     "packages": "Paketler",
     "total": "Toplam",
-    "backHome": "Ana Sayfaya Dön"
+    "backHome": "Ana Sayfaya Dön",
+    "pendingTitle": "Ödeme henüz tamamlanmadı",
+    "pendingText": "Bu siparişin ödemesi görünmüyor. Ödeme yaptıysanız birkaç dakika sonra sayfayı yenileyin; yapmadıysanız sepetten tekrar deneyebilirsiniz.",
+    "notFoundTitle": "Sipariş bulunamadı",
+    "notFoundText": "Bağlantı eksik ya da hatalı olabilir. Siparişlerinizi hesabınızdan görebilirsiniz."
   },
   "orderFailed": {
     "defaultError": "Ödeme işlemi tamamlanamadı",
@@ -142,7 +150,8 @@
       "Online alışveriş kapalı olabilir",
       "3D Secure doğrulaması başarısız olmuş olabilir",
       "Kart bilgileri hatalı girilmiş olabilir"
-    ]
+    ],
+    "contact": "WhatsApp'tan yazın"
   },
   "packagesPage": {
     "seoTitle": "Paketler",
@@ -150,10 +159,10 @@
     "seoKeywords": "ritmik cimnastik çekim paketleri, yarışma fotoğraf fiyatları, spor video çekim paket, rng sport paketler",
     "imageAlt": "RNG Sport çekim paketleri",
     "title": "Paketler",
-    "intro": "Sporcunuzun kaç serisini çektirmek istediğinize göre seçin. Rezervasyonu şimdi oluşturun, ödemeyi yarışma günü standımızda tamamlayın."
+    "intro": "Paketi seçin; ister rezervasyon yapıp yarışma günü ödeyin, ister şimdi online ödeyin."
   },
   "cartToast": {
-    "removed": "Ürün sepetten çıkarıldı!",
+    "removed": "Paket sepetten çıkarıldı",
     "added": "{{name}} sepete eklendi!"
   },
   "about": {
@@ -300,11 +309,12 @@
       "text": "Bu anları sporcuna özel bir hatıraya dönüştür.",
       "all": "Tüm ürünler",
       "close": "Kapat",
-      "popupTitle": "Bu anlar raflarda da kalsın ✨",
+      "popupTitle": "Bu anlar raflarda da kalsın",
       "popupText": "Sporcunun pozundan ve isminden yola çıkılarak hazırlanan kişiye özel ürünlerimiz satışta. Ücretsiz kargoyla adresine gelsin.",
       "cta": "Ürünleri incele",
       "later": "Daha sonra"
-    }
+    },
+    "loginNote": "Sipariş vermek için giriş yapmanız gerekir; düğme sizi önce giriş sayfasına götürür."
   },
   "feedback": {
     "title": "Görüşlerinizi bildirin",
@@ -345,5 +355,9 @@
     "invalidTitle": "Link geçersiz",
     "invalidText": "Bu paylaşım linkinin süresi dolmuş ya da sahibi tarafından kapatılmış olabilir.",
     "goHome": "Ana sayfaya git"
+  },
+  "notFound": {
+    "title": "Sayfa bulunamadı",
+    "description": "Aradığınız sayfa kaldırılmış ya da adres yanlış yazılmış olabilir."
   }
 }

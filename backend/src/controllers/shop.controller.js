@@ -677,9 +677,11 @@ const formatAdminOrder = (o) => ({
   user: o.user ? { id: o.user.id, name: o.user.name, email: o.user.email } : null,
 });
 
-// status: "paid" (varsayılan) | "unpaid" | "all" | tek bir durum kodu
+// status: "paid" (varsayılan) | "todo" | "unpaid" | "all" | tek bir durum kodu
 const statusWhere = (status) => {
   if (!status || status === "paid") return { status: { in: PAID_STATUSES } };
+  // Hazırlanacak: ödendi ama henüz kargoya verilmedi (ana sayfadaki sayıyla aynı küme)
+  if (status === "todo") return { status: { in: ["CONFIRMED", "IN_PRODUCTION"] } };
   if (status === "unpaid") return { status: { in: UNPAID_STATUSES } };
   if (status === "all") return {};
   if (SHOP_STATUSES.includes(status)) return { status };

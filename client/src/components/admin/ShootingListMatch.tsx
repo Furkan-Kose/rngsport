@@ -1,5 +1,6 @@
 import { getApparatusLabel } from '../../constants/apparatuses';
 import type { ListMatch } from '../../lib/listMatch';
+import { AlertTriangle } from 'lucide-react';
 
 // Admin sipariş/rezervasyon listelerinde "çekim listesinde mi?" açıklaması ve uyarısı.
 // Kural çekim listesiyle aynı: isim + alet (bkz. backend utils/names.js shootingListChecker).
@@ -18,7 +19,7 @@ export const ListMatchLegend = ({ scope }: { scope: string }) => (
       <span className="inline-block w-3 h-3 rounded-sm bg-red-500/30 border border-red-500/40" />
       Listede bulunamadı (isim hatalı olabilir)
     </span>
-    <span className="text-gray-500">— yalnızca {scope} için</span>
+    <span className="text-gray-400">— yalnızca {scope} için</span>
   </div>
 );
 
@@ -38,7 +39,7 @@ export const ListMatchWarning = ({
         isNone ? 'bg-red-500/10 border-red-500/30 text-red-300' : 'bg-amber-500/10 border-amber-500/30 text-amber-200'
       }`}
     >
-      <span aria-hidden>⚠️</span>
+      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
       <span>
         {isNone ? (
           <>Bu sporcu çekim listesinde bulunamadı; adı listeyle karşılaştırıp düzeltin.</>

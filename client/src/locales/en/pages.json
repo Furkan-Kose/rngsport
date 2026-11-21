@@ -8,7 +8,7 @@
     "preparingProgress": "Preparing {{done}}/{{total}}",
     "downloadAll": "Download All (.zip)",
     "downloadAlbum": "Download This Album (.zip)",
-    "mobileHint": "📱 On a phone, downloading photos and videos one by one saves them straight to your gallery. A zip file goes to the \"Files\" app.",
+    "mobileHint": "On a phone, downloading photos and videos one by one saves them straight to your gallery. A zip file goes to the \"Files\" app.",
     "loadError": "An error occurred while loading the photos",
     "downloadError": "The photo could not be downloaded",
     "zipDone": "Zip file downloaded",
@@ -85,7 +85,8 @@
     "photos": "Photos",
     "videos": "Videos",
     "emptyTitle": "No photos uploaded yet",
-    "emptyText": "Your photos will appear here after your shoot is complete. Delivery time depends on your package."
+    "emptyText": "Your photos will appear here after your shoot is complete. Delivery time depends on your package.",
+    "typeFilter": "File type"
   },
   "awards": {
     "seoTitle": "Award Ceremonies",
@@ -119,18 +120,25 @@
     "intro": "Selected shots and videos of the performances we captured at last year's event.",
     "photo": "Photo",
     "video": "Video",
-    "empty": "There is no content in this category yet."
+    "empty": "There is no content in this category yet.",
+    "ctaTitle": "Let us film you at the next competition",
+    "ctaText": "Take a look at the photo and video packages and reserve your spot.",
+    "ctaButton": "View Packages"
   },
   "orderSuccess": {
-    "title": "Payment Successful!",
-    "text": "Your order has been received. We will contact you as soon as possible.",
+    "title": "Payment received",
+    "text": "Your order is saved. After the shoot we will email you when your files are ready; you can download them from the gallery in your account.",
     "details": "Order Details",
     "orderNo": "Order No",
     "athlete": "Athlete",
     "club": "Club",
     "packages": "Packages",
     "total": "Total",
-    "backHome": "Back to Home"
+    "backHome": "Back to Home",
+    "pendingTitle": "Payment not completed yet",
+    "pendingText": "We cannot see a payment for this order. If you have paid, refresh this page in a few minutes; if not, you can try again from the cart.",
+    "notFoundTitle": "Order not found",
+    "notFoundText": "The link may be incomplete or wrong. You can see your orders in your account."
   },
   "orderFailed": {
     "defaultError": "The payment could not be completed",
@@ -146,7 +154,8 @@
       "Online purchases may be disabled on your card",
       "3D Secure verification may have failed",
       "Card details may have been entered incorrectly"
-    ]
+    ],
+    "contact": "Message us on WhatsApp"
   },
   "packagesPage": {
     "seoTitle": "Packages",
@@ -154,10 +163,10 @@
     "seoKeywords": "rhythmic gymnastics photo packages, competition photo prices, sports video package, rng sport packages",
     "imageAlt": "RNG Sport packages",
     "title": "Packages",
-    "intro": "Choose based on how many of your athlete's routines you want captured. Book now and pay at our stand on competition day."
+    "intro": "Choose a package; either book and pay on competition day, or pay online now."
   },
   "cartToast": {
-    "removed": "Item removed from cart!",
+    "removed": "Package removed from cart",
     "added": "{{name}} added to cart!"
   },
   "about": {
@@ -305,11 +314,12 @@
       "text": "Turn these moments into a keepsake made just for your athlete.",
       "all": "All products",
       "close": "Close",
-      "popupTitle": "Keep these moments on the shelf too ✨",
+      "popupTitle": "Keep these moments on the shelf too",
       "popupText": "Our personalised products, made from the athlete's own pose and name, are now on sale — delivered to your door with free shipping.",
       "cta": "View products",
       "later": "Maybe later"
-    }
+    },
+    "loginNote": "You need to sign in to order; the button takes you to the sign-in page first."
   },
   "feedback": {
     "title": "Share your feedback",
@@ -352,5 +362,9 @@
     "invalidTitle": "Invalid link",
     "invalidText": "This share link may have expired or been turned off by its owner.",
     "goHome": "Go to homepage"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page may have been removed or the address may be mistyped."
   }
 }

@@ -20,20 +20,10 @@ import { listMatchTint, type ListMatchFields } from '../../lib/listMatch';
 import PriorityBadge from '../../components/PriorityBadge';
 import DeliveryPanel, { DeliveryIcons } from '../../components/admin/DeliveryPanel';
 import type { Deliveries } from '../../lib/delivery';
-import {
-  Button,
-  EmptyState,
-  FilterTabs,
-  IconButton,
-  SkeletonRows,
-  SortableTh,
-  PageHeader,
-  Pagination as PaginationBar,
-  Panel,
-  SearchInput,
-  Toolbar,
-} from '../../components/admin/ui';
+import { Button, EmptyState, FilterTabs, IconButton, ModalBackdrop, PageHeader, Pagination as PaginationBar, Panel, SearchInput, SkeletonRows, SortableTh, Toolbar } from '../../components/admin/ui';
 import { tableBodyClass, tableHeadRowClass, thClass } from '../../lib/adminUi';
+import { notifyError } from '../../lib/adminErrors';
+import { formatDateTime, formatMoney } from '../../lib/adminFormat';
 
 // Durum sekmeleri (sayılar liste cevabındaki counts'tan)
 const STATUS_TABS = [
@@ -97,7 +87,7 @@ interface EditForm {
 }
 
 const inputClass =
-  'w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
+  'w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25';
 
 const errorMessage = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { message?: string } } }).response?.data?.message || fallback;
@@ -163,7 +153,7 @@ const OrdersPage = () => {
       setPagination(data.pagination);
       setCounts(data.counts ?? {});
     } catch (error) {
-      console.error('Orders fetch error:', error);
+      notifyError(error, 'Paket siparişleri yüklenemedi');
     } finally {
       setIsLoading(false);
     }
@@ -239,7 +229,7 @@ const OrdersPage = () => {
         setSelectedOrder({ ...selectedOrder, status });
       }
     } catch (error) {
-      console.error('Update order error:', error);
+      notifyError(error, 'Sipariş durumu güncellenemedi');
     }
   };
 
@@ -318,22 +308,9 @@ const OrdersPage = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-    }).format(price);
-  };
+  const formatPrice = formatMoney;
 
-  const formatDate = (date: string) => {
-    return new Intl.DateTimeFormat('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
-  };
+  const formatDate = formatDateTime;
 
 
   // Ödenmiş siparişin çekim listesiyle isim + alet eşleşmesi:
@@ -363,14 +340,28 @@ const OrdersPage = () => {
         }
       />
 
-      <Toolbar>
-        <TournamentSelect
-          tournaments={tournament.tournaments}
-          value={tournament.value}
-          onChange={tournament.setValue}
-          className="w-full sm:w-auto"
-        />
-        <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Sporcu, kulüp veya telefon ara..." />
+      {/* Üstte seçici + arama, altında tek satır durum sekmeleri */}
+      <div className="space-y-3">
+        <Toolbar>
+          <TournamentSelect
+            tournaments={tournament.tournaments}
+            value={tournament.value}
+            onChange={tournament.setValue}
+            className="w-full sm:w-auto"
+          />
+          <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Sporcu, kulüp veya telefon ara..." />
+          <div className="lg:ml-auto shrink-0">
+            {selectMode ? (
+              <Button size="sm" variant="ghost" icon={X} onClick={bulk.exit}>
+                Seçimi bitir
+              </Button>
+            ) : (
+              <Button size="sm" icon={CheckSquare} onClick={() => bulk.setSelectMode(true)} disabled={orders.length === 0}>
+                Seç (toplu işlem)
+              </Button>
+            )}
+          </div>
+        </Toolbar>
         <FilterTabs
           tabs={STATUS_TABS.map((t) => ({
             key: t.key,
@@ -380,18 +371,7 @@ const OrdersPage = () => {
           value={filterStatus}
           onChange={setFilterStatus}
         />
-        <div className="lg:ml-auto shrink-0">
-          {selectMode ? (
-            <Button size="sm" variant="ghost" icon={X} onClick={bulk.exit}>
-              Seçimi bitir
-            </Button>
-          ) : (
-            <Button size="sm" icon={CheckSquare} onClick={() => bulk.setSelectMode(true)} disabled={orders.length === 0}>
-              Seç (toplu işlem)
-            </Button>
-          )}
-        </div>
-      </Toolbar>
+      </div>
 
       {selectMode && (
         <div className="flex flex-wrap items-center gap-2 -mt-2">
@@ -463,7 +443,7 @@ const OrdersPage = () => {
                       <div className="mt-1.5 flex items-center justify-end gap-1.5"><DeliveryIcons deliveries={order.deliveries} /><StatusBadge status={order.status} /></div>
                     </div>
                   </div>
-                  <p className="text-gray-500 text-xs mt-2">{formatDate(order.createdAt)}</p>
+                  <p className="text-gray-400 text-xs mt-2">{formatDate(order.createdAt)}</p>
                   </div>
                   </div>
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -517,13 +497,14 @@ const OrdersPage = () => {
                   {orders.map((order) => (
                     <tr
                       key={order.id}
-                      onClick={selectMode ? () => bulk.toggle(order.id) : undefined}
-                      className={`hover:bg-gray-700/20 transition-colors ${getRowTint(order)} ${selectMode ? 'cursor-pointer' : ''} ${
+                      onClick={() => (selectMode ? bulk.toggle(order.id) : openOrder(order))}
+                      title={selectMode ? undefined : 'Detayı aç'}
+                      className={`cursor-pointer hover:bg-gray-700/20 transition-colors ${getRowTint(order)} ${
                         selectedIds.has(order.id) ? 'bg-amber-500/10' : ''
                       }`}
                     >
                       {selectMode && (
-                        <td className="pl-4 py-3" onClick={(e) => e.stopPropagation()}>
+                        <td className="pl-4 py-3">
                           <input
                             type="checkbox"
                             checked={selectedIds.has(order.id)}
@@ -543,13 +524,13 @@ const OrdersPage = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-300">{order.clubName}</td>
-                      <td className="px-4 py-3 text-sm whitespace-nowrap">
+                      <td className="px-4 py-3 text-sm whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <PhoneLinks phone={order.customerPhone} />
                       </td>
                       <td className="px-4 py-3 text-white font-medium whitespace-nowrap">{formatPrice(order.totalPrice)}</td>
                       <td className="px-4 py-3"><div className="flex items-center gap-1.5"><StatusBadge status={order.status} /><DeliveryIcons deliveries={order.deliveries} /></div></td>
                       <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{formatDate(order.createdAt)}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1.5">
                           <IconButton icon={Eye} title="Detay" onClick={() => openOrder(order)} />
                           <IconButton
@@ -582,8 +563,8 @@ const OrdersPage = () => {
 
       {/* Order Detail Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <ModalBackdrop onClose={() => openOrder(null)} dismissOnBackdrop>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-4 sm:p-6 border-b border-gray-700 flex items-center justify-between">
               <h2 className="text-lg sm:text-xl font-semibold text-white">Paket Siparişi Detayı</h2>
               <button
@@ -623,7 +604,7 @@ const OrdersPage = () => {
                       />
                     </label>
                   ))}
-                  <p className="sm:col-span-2 text-xs text-gray-500 -mt-1">
+                  <p className="sm:col-span-2 text-xs text-gray-400 -mt-1">
                     E-posta değişirse sipariş o e-postanın hesabına taşınır.
                   </p>
                   <label className="sm:col-span-2">
@@ -708,9 +689,9 @@ const OrdersPage = () => {
                                   key={a.slug}
                                   type="button"
                                   onClick={() => toggleApparatus(item.id, a.slug, item.seriesCount)}
-                                  className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                                  className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
                                     picked
-                                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/50'
                                       : 'bg-gray-800 text-gray-400 border-gray-600 hover:text-white'
                                   }`}
                                 >
@@ -718,7 +699,7 @@ const OrdersPage = () => {
                                 </button>
                               );
                             })}
-                            <span className="text-[11px] text-gray-500 self-center ml-1">
+                            <span className="text-xs text-gray-400 self-center ml-1">
                               {(editApparatuses[item.id] ?? []).length}/{item.seriesCount}
                             </span>
                           </div>
@@ -727,7 +708,7 @@ const OrdersPage = () => {
                             {item.apparatuses.map((slug) => (
                               <span
                                 key={slug}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700/60 text-gray-200 border border-gray-600"
                               >
                                 {getApparatusLabel(slug)}
                               </span>
@@ -747,7 +728,7 @@ const OrdersPage = () => {
                 />
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
                   <span className="text-lg font-medium text-white">Toplam</span>
-                  <span className="text-xl font-bold text-amber-400">
+                  <span className="text-xl font-bold text-white">
                     {formatPrice(selectedOrder.totalPrice)}
                   </span>
                 </div>
@@ -768,7 +749,7 @@ const OrdersPage = () => {
                     <Button onClick={() => setEditForm(null)} disabled={isSaving}>
                       Vazgeç
                     </Button>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-400">
                       Paket, seri ve adet değiştirilemez (tutar iyzico'dan tahsil edildi).
                     </span>
                   </>
@@ -822,7 +803,7 @@ const OrdersPage = () => {
               </div>
             </div>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       <ConfirmDeleteModal

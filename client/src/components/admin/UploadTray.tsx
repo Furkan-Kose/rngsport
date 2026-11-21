@@ -10,7 +10,7 @@ const JobRow = ({ job }: { job: UploadJob }) => {
     <li className="px-4 py-3">
       <div className="flex items-center gap-2">
         {job.status === 'running' && <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />}
-        {job.status === 'queued' && <Upload className="w-4 h-4 text-gray-500 shrink-0" />}
+        {job.status === 'queued' && <Upload className="w-4 h-4 text-gray-400 shrink-0" />}
         {job.status === 'done' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
         {job.status === 'error' && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
         <span className="text-sm text-white truncate flex-1" title={job.label}>
@@ -20,7 +20,7 @@ const JobRow = ({ job }: { job: UploadJob }) => {
           <button
             type="button"
             onClick={() => dismissUpload(job.id)}
-            className="p-1 text-gray-500 hover:text-white"
+            className="p-1 text-gray-400 hover:text-white"
             title="Kapat"
           >
             <X className="w-3.5 h-3.5" />
@@ -81,7 +81,7 @@ const UploadTray = () => {
             ))}
           </ul>
           {active.length > 0 && (
-            <p className="px-4 py-2 text-[11px] text-gray-500 border-t border-gray-800">
+            <p className="px-4 py-2 text-xs text-gray-400 border-t border-gray-800">
               Panelde başka sayfaya geçebilirsiniz; sekmeyi kapatmayın.
             </p>
           )}

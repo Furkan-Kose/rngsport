@@ -3,6 +3,8 @@ import { toast } from 'react-toastify';
 import { Loader2, Star } from 'lucide-react';
 import api from '../../lib/api';
 import { POINT_TYPE_LABELS as TYPE_LABELS, type LoyaltySummary } from '../../lib/loyalty';
+import { notifyError } from '../../lib/adminErrors';
+import { formatDateTime } from '../../lib/adminFormat';
 
 // Admin → müşteri detayı: puan, seviye, geçmiş ve elle düzeltme
 const UserLoyaltyPanel = ({ userId }: { userId: string }) => {
@@ -20,7 +22,7 @@ const UserLoyaltyPanel = ({ userId }: { userId: string }) => {
       .then(({ data }) => {
         if (!cancelled) setSummary(data);
       })
-      .catch((error) => console.error('Puan bilgisi yüklenemedi:', error));
+      .catch((error) => notifyError(error, 'Puan bilgisi yüklenemedi'));
     return () => {
       cancelled = true;
     };
@@ -63,10 +65,10 @@ const UserLoyaltyPanel = ({ userId }: { userId: string }) => {
               {summary.tier.name} · %{summary.tier.discountPercent}
             </span>
           ) : (
-            <span className="text-gray-500 text-xs">Seviye yok</span>
+            <span className="text-gray-400 text-xs">Seviye yok</span>
           )}
           {summary.nextTier && (
-            <span className="text-gray-500 text-xs">
+            <span className="text-gray-400 text-xs">
               {summary.nextTier.name}'e {summary.pointsToNext} puan
             </span>
           )}
@@ -100,7 +102,7 @@ const UserLoyaltyPanel = ({ userId }: { userId: string }) => {
           placeholder={mode === 'set' ? `ör. 500` : '+50 / -20'}
           min={mode === 'set' ? 0 : undefined}
           required
-          className="w-28 px-3 py-1.5 bg-gray-900/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+          className="bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-8 px-2 py-1 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25 w-28"
         />
         <input
           value={note}
@@ -108,7 +110,7 @@ const UserLoyaltyPanel = ({ userId }: { userId: string }) => {
           placeholder="Açıklama (zorunlu)"
           required
           maxLength={200}
-          className="flex-1 min-w-48 px-3 py-1.5 bg-gray-900/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+          className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-8 px-2 py-1 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25 flex-1 min-w-48"
         />
         <button
           type="submit"
@@ -121,15 +123,15 @@ const UserLoyaltyPanel = ({ userId }: { userId: string }) => {
       </form>
 
       {summary.transactions.length === 0 ? (
-        <p className="text-sm text-gray-500">Henüz puan hareketi yok.</p>
+        <p className="text-sm text-gray-400">Henüz puan hareketi yok.</p>
       ) : (
         <ul className="divide-y divide-gray-700/60 max-h-64 overflow-y-auto">
           {summary.transactions.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-3 py-2 text-sm">
               <div className="min-w-0">
                 <p className="text-gray-300 truncate">{t.note || TYPE_LABELS[t.type]}</p>
-                <p className="text-xs text-gray-500">
-                  {TYPE_LABELS[t.type]} · {new Date(t.createdAt).toLocaleString('tr-TR')}
+                <p className="text-xs text-gray-400">
+                  {TYPE_LABELS[t.type]} · {formatDateTime(t.createdAt)}
                 </p>
               </div>
               <span className={`font-semibold ${t.amount > 0 ? 'text-emerald-400' : 'text-red-400'}`}>

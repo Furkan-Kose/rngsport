@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Folder, Loader2, RotateCcw, Save, X } from 'lucide-react';
 import api from '../../lib/api';
+import { ModalBackdrop } from './ui';
 
 export interface PhotoFolderEntry {
   id: string;
@@ -61,8 +62,8 @@ const PhotoFolderModal = ({ entry, clientId, onClose, onSaved }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-sm">
+    <ModalBackdrop onClose={onClose}>
+      <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-sm">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700">
           <h2 className="text-base font-semibold text-white flex items-center gap-2">
             <Folder className="w-4 h-4 text-amber-400" />
@@ -91,9 +92,9 @@ const PhotoFolderModal = ({ entry, clientId, onClose, onSaved }: Props) => {
               value={value}
               onChange={(e) => setValue(e.target.value)}
               autoFocus
-              className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-lg font-semibold focus:outline-none focus:border-amber-500"
+              className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25 text-lg font-semibold"
             />
-            <p className="text-xs text-gray-500 mt-1.5">
+            <p className="text-xs text-gray-400 mt-1.5">
               Bu sporcudan sonra çekilenlerin klasörleri buna göre kendiliğinden sıralanır.
             </p>
           </div>
@@ -108,7 +109,7 @@ const PhotoFolderModal = ({ entry, clientId, onClose, onSaved }: Props) => {
             <Folder className="w-4 h-4" />
             SD kart değişti — bu sporcuyu 100 yap
           </button>
-          <p className="text-xs text-gray-500 -mt-2">
+          <p className="text-xs text-gray-400 -mt-2">
             Bu sporcu 100 olur, sonrakiler 101, 102 … diye devam eder; öncekiler değişmez.
           </p>
 
@@ -116,7 +117,7 @@ const PhotoFolderModal = ({ entry, clientId, onClose, onSaved }: Props) => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-medium disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Kaydet
@@ -136,7 +137,7 @@ const PhotoFolderModal = ({ entry, clientId, onClose, onSaved }: Props) => {
           </div>
         </form>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

@@ -10,10 +10,8 @@
     "titleLine1": "Sahnedeki O An,",
     "titleLine2": "Hep Seninle.",
     "description": "Aylarca süren emeği, birkaç dakikalık performansı ve bir daha tekrarlanmayacak anları profesyonel fotoğraf ve videolarla kayıt altına alıyoruz.",
-    "packagesPrefix": "Paketleri ",
-    "packagesWord": "İncele",
     "reservation": "Rezervasyon",
-    "scroll": "Keşfet"
+    "packages": "Paketleri İncele"
   },
   "discount": {
     "eyebrow": "Yaklaşan Yarışma",
@@ -27,7 +25,6 @@
     "cta": "Hemen Rezervasyon Yap"
   },
   "tournaments": {
-    "eyebrow": "Yaklaşan Etkinlikler",
     "title": "Turnuva Takvimi",
     "description": "Katılacağımız yaklaşan turnuvalarda fotoğraf ve video çekimi için şimdiden yerinizi ayırtın.",
     "active": "Aktif",
@@ -37,73 +34,116 @@
     "bookingOpen": "Rezervasyon açık"
   },
   "packages": {
-    "eyebrow": "Fiyatlandırma",
     "title": "Paketlerimiz",
-    "description": "Her bütçeye uygun profesyonel fotoğraf ve video paketleri",
-    "popular": "Popüler",
+    "description": "Fotoğraf, video ya da ikisi birden. Bir seri, sporcunun tek bir aletle yaptığı bir performanstır; kaç performans çekilecekse o kadar seri seçin.",
     "discount": "%{{percent}} indirim",
-    "addToCart": "Sepete Ekle",
-    "addAgain": "Tekrar Ekle",
     "inCart": "Sepette",
-    "loadError": "Paketler yüklenemedi"
+    "loadError": "Paketler yüklenemedi",
+    "featuredTag": "Fotoğraf + Video",
+    "reserve": "Rezervasyon yap",
+    "reserveClosed": "Şu an rezervasyona açık yarışma yok.",
+    "wayReserveTitle": "Rezervasyon: yarışma günü ödeyin",
+    "wayReserveText": "Formu doldurup yerinizi ayırtırsınız, ödemeyi yarışma günü standımızda yaparsınız. Rezervasyon fiyatı online fiyattan daha uygundur.",
+    "wayOnlineTitle": "Online ödeme: şimdi kartla ödeyin",
+    "wayOnlineText": "Paketi sepete ekleyip kartınızla güvenli şekilde ödersiniz; yarışma günü ödemeyle uğraşmazsınız.",
+    "closedNotice": "Şu an rezervasyona ve siparişe açık bir yarışma yok. Yeni yarışma açıldığında paketleri buradan alabilirsiniz.",
+    "payOnline": "Online öde"
   },
   "awards": {
-    "eyebrow": "Ödül Törenleri",
     "title": "Ödül Töreni Fotoğrafları",
     "imageAlt": "Ödül töreni",
-    "description": "Minik yıldızların kürsü heyecanına ortak olun! Ödül töreni fotoğrafları yarışma günü içerisinde yüklenir. Çocuğunuzun bu özel anlarına ait fotoğraflara ücretsiz olarak ulaşabilirsiniz.",
+    "description": "Ödül töreni fotoğrafları yarışma günü içinde yüklenir. Çocuğunuzun kürsüdeki fotoğraflarına ücretsiz ulaşabilir, indirebilirsiniz.",
     "point1": "Her tören için ayrı galeri",
     "point2": "Tek tek veya hepsini birden indirin",
     "cta": "Fotoğraflara Göz At"
   },
   "products": {
     "eyebrow": "Özel Ürünler",
-    "title": "Sporcunuzun en kıymetli anı artık…",
+    "title": "Sporcunuzun en kıymetli anı artık evinizde",
     "description": "Ürünlerimiz, sporcuların en değerli anlarını ekranlardan çıkarıp evinizin en özel köşesinde sergileyebileceğiniz kalıcı hatıralara dönüştürmek için kişiye özel olarak tasarlanıyor.",
-    "line1": "İsmi, sporu, hatırlamak istediği an ve ona ait detaylar…",
-    "line2": "Ortaya çıkan ürün de yalnızca ona ait oluyor.",
     "comingSoonLine": "RNG SPORT Özel Ürünler — Çok Yakında",
     "comingSoon": "Çok Yakında",
     "view": "İncele",
     "all": "Tüm ürünleri gör"
   },
   "gallery": {
-    "eyebrow": "Portföy",
     "title": "Galeri",
     "description": "Geçtiğimiz yılın organizasyonunda yakaladığımız performanslardan seçilmiş örnek kareler.",
     "all": "Tümü",
     "photo": "Fotoğraf",
     "video": "Video",
-    "viewAll": "Tüm Galeriyi Gör"
+    "viewAll": "Tüm Galeriyi Gör",
+    "filterLabel": "Tür"
   },
   "process": {
-    "eyebrow": "Süreç",
     "title": "Sipariş ve Teslimat Süreci",
     "description": "Online kayıttan dijital teslimata uzanan kesintisiz akış.",
     "steps": [
-      { "title": "Rezervasyon ve Hesap", "description": "Paketini seçip rezervasyonunu oluştur. E-posta adresin ve belirlediğin şifreyle hesabını aynı adımda kolayca aç." },
-      { "title": "Ödeme", "description": "Ödemeni online olarak tamamlayabilir veya yarışma alanındaki ödeme seçeneklerinden yararlanabilirsin." },
-      { "title": "Performans ve Çekim", "description": "Sıra sana geldiğinde ekibimiz hazır olur. Performansının en özel anlarını fotoğraf ve videolarla kaydederiz." },
-      { "title": "Düzenleme ve Hazırlık", "description": "Çekimlerin ekibimiz tarafından seçilir, düzenlenir ve satın aldığın pakete göre hazırlanır." },
-      { "title": "Kişisel Galerin Hazır", "description": "İçeriklerin hazır olduğunda sana e-posta ile haber veririz. Hesabına giriş yaparak kişisel galerindeki fotoğraf ve videolarına ulaşabilirsin." }
+      {
+        "title": "Rezervasyon ve Hesap",
+        "description": "Paketinizi seçip rezervasyonunuzu oluşturun. E-posta adresiniz ve belirlediğiniz şifreyle hesabınızı aynı adımda kolayca açın."
+      },
+      {
+        "title": "Ödeme",
+        "description": "Ödemenizi online olarak tamamlayabilir veya yarışma alanındaki ödeme seçeneklerinden yararlanabilirsiniz."
+      },
+      {
+        "title": "Performans ve Çekim",
+        "description": "Sıra size geldiğinde ekibimiz hazır olur. Performansınızın en özel anlarını fotoğraf ve videolarla kaydederiz."
+      },
+      {
+        "title": "Düzenleme ve Hazırlık",
+        "description": "Çekimleriniz ekibimiz tarafından seçilir, düzenlenir ve satın aldığınız pakete göre hazırlanır."
+      },
+      {
+        "title": "Kişisel Galeriniz Hazır",
+        "description": "İçerikleriniz hazır olduğunda size e-posta ile haber veririz. Hesabınıza giriş yaparak kişisel galerinizdeki fotoğraf ve videolarınıza ulaşabilirsiniz."
+      }
     ]
   },
   "faq": {
-    "eyebrow": "Yardım",
     "title": "Sık Sorulan Sorular",
     "description": "Merak ettiğiniz soruların cevapları",
     "stillQuestions": "Hâlâ sorunuz var mı?",
-    "contactText": "\"Aradığınız cevabı bulamadınız mı?\" \"WhatsApp destek hattımızdan veya yarışma günü danışma masamızdan bize anında ulaşabilirsiniz. Size yardımcı olmaktan mutluluk duyarız.\"",
+    "contactText": "Aradığınız cevabı bulamadınız mı? WhatsApp destek hattımızdan veya yarışma günü standımızdan bize anında ulaşabilirsiniz. Size yardımcı olmaktan mutluluk duyarız.",
     "items": [
-      { "q": "Rezervasyonumu ne zaman yapmalıyım?", "a": "Çekim planlamamızın eksiksiz yapılabilmesi için web sitemiz üzerinden ön rezervasyon yapmanızı öneriyoruz. Yarışma günü alandaki standımızdan da kayıt kabul edilmektedir; ancak öncelik rezervasyonlu sporcularımızdadır." },
-      { "q": "Ödeme işlemini nasıl gerçekleştireceğim?", "a": "Web sitemiz üzerinden paketinizi seçip ön kaydınızı oluşturduktan sonra, ödemenizi yarışma günü alandaki standımızda (Nakit veya Kredi Kartı ile) tamamlayabilirsiniz. Ödemesi tamamlanan kayıtlar çekim listesine alınır." },
-      { "q": "Sadece fotoğraf mı, yoksa video çekimi de yapıyor musunuz?", "a": "Evet, hem fotoğraf hem de video hizmetimiz mevcuttur. Dilerseniz sadece fotoğraf, sadece video veya her ikisini kapsayan avantajlı paketlerimizi tercih edebilirsiniz." },
-      { "q": "Çocuğumun çekildiğinden nasıl emin olabilirim?", "a": "Rezervasyon yaptıran sporcularımız, yarışma esame (başlangıç) listesi üzerinden takip edilir. Profesyonel ekibimiz, rezervasyonlu sporcunun sırası geldiğinde hazır bulunur ve performansı baştan sona kayıt altına alır." },
-      { "q": "Teknik bir sorun olursa veya fotoğrafları beğenmezsem iade yapıyor musunuz?", "a": "Müşteri memnuniyeti esastır. Eğer bizden kaynaklı teknik bir hata (odak kaybı, veri bozulması vb.) nedeniyle performansınız görüntülenemezse, %100 ücret iadesi garantisi veriyoruz." },
-      { "q": "Sadece dijital teslim mi yapıyorsunuz, albüm veya çerçeve seçeneği var mı?", "a": "Standart teslimatımız en hızlı ulaşım için dijitaldir. Ancak talep edilmesi durumunda; özel tasarım poster, kanvas tablo veya anı albümü gibi baskılı ürünler için yarışma sonrası ekibimizle iletişime geçebilirsiniz." },
-      { "q": "Hesap oluşturmam gerekiyor mu?", "a": "Evet. Rezervasyon sırasında oluşturduğun hesap sayesinde siparişlerini takip edebilir, içeriklerin hazır olduğunda kişisel galerine ulaşabilir ve sonraki yarışmalarda hesabına giriş yaparak bilgilerini tekrar girmeden daha hızlı rezervasyon oluşturabilirsin." },
-      { "q": "Rezervasyonu yarışmadan önce yapmak zorunda mıyım?", "a": "Önceden rezervasyon yapmanı öneriyoruz. Böylece sporcunun bilgileri çekim ekibimize önceden ulaşır ve süreç yarışma günü daha hızlı ilerler." },
-      { "q": "Rezervasyonumu güncelleyebilir miyim?", "a": "Evet. Kullanıcı paneline giriş yaparak mevcut rezervasyon bilgilerini görüntüleyebilir ve gerekli güncellemeleri kolayca yapabilirsin." }
-    ]
+      {
+        "q": "Rezervasyonumu ne zaman yapmalıyım?",
+        "a": "Çekim planlamamızın eksiksiz yapılabilmesi için web sitemiz üzerinden ön rezervasyon yapmanızı öneriyoruz. Yarışma günü alandaki standımızdan da kayıt kabul edilmektedir; ancak öncelik rezervasyonlu sporcularımızdadır."
+      },
+      {
+        "q": "Ödeme işlemini nasıl gerçekleştireceğim?",
+        "a": "Web sitemiz üzerinden paketinizi seçip ön kaydınızı oluşturduktan sonra, ödemenizi yarışma günü alandaki standımızda (Nakit veya Kredi Kartı ile) tamamlayabilirsiniz. Ödemesi tamamlanan kayıtlar çekim listesine alınır."
+      },
+      {
+        "q": "Sadece fotoğraf mı, yoksa video çekimi de yapıyor musunuz?",
+        "a": "Evet, hem fotoğraf hem de video hizmetimiz mevcuttur. Dilerseniz sadece fotoğraf, sadece video veya her ikisini kapsayan avantajlı paketlerimizi tercih edebilirsiniz."
+      },
+      {
+        "q": "Çocuğumun çekildiğinden nasıl emin olabilirim?",
+        "a": "Rezervasyon yaptıran sporcularımız, yarışma esame (başlangıç) listesi üzerinden takip edilir. Profesyonel ekibimiz, rezervasyonlu sporcunun sırası geldiğinde hazır bulunur ve performansı baştan sona kayıt altına alır."
+      },
+      {
+        "q": "Teknik bir sorun olursa veya fotoğrafları beğenmezsem iade yapıyor musunuz?",
+        "a": "Müşteri memnuniyeti esastır. Eğer bizden kaynaklı teknik bir hata (odak kaybı, veri bozulması vb.) nedeniyle performansınız görüntülenemezse, %100 ücret iadesi garantisi veriyoruz."
+      },
+      {
+        "q": "Sadece dijital teslim mi yapıyorsunuz, albüm veya çerçeve seçeneği var mı?",
+        "a": "Standart teslimatımız en hızlı ulaşım için dijitaldir. Ancak talep edilmesi durumunda; özel tasarım poster, kanvas tablo veya anı albümü gibi baskılı ürünler için yarışma sonrası ekibimizle iletişime geçebilirsiniz."
+      },
+      {
+        "q": "Hesap oluşturmam gerekiyor mu?",
+        "a": "Evet. Rezervasyon sırasında oluşturduğunuz hesap sayesinde siparişlerinizi takip edebilir, içerikleriniz hazır olduğunda kişisel galerinize ulaşabilir ve sonraki yarışmalarda hesabınıza giriş yaparak bilgilerinizi tekrar girmeden daha hızlı rezervasyon oluşturabilirsiniz."
+      },
+      {
+        "q": "Rezervasyonu yarışmadan önce yapmak zorunda mıyım?",
+        "a": "Önceden rezervasyon yapmanızı öneriyoruz. Böylece sporcunun bilgileri çekim ekibimize önceden ulaşır ve süreç yarışma günü daha hızlı ilerler."
+      },
+      {
+        "q": "Rezervasyonumu güncelleyebilir miyim?",
+        "a": "Evet. Kullanıcı paneline giriş yaparak mevcut rezervasyon bilgilerinizi görüntüleyebilir ve gerekli güncellemeleri kolayca yapabilirsiniz."
+      }
+    ],
+    "contactCta": "WhatsApp'tan yazın"
   }
 }

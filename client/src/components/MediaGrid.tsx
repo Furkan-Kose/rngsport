@@ -17,6 +17,7 @@ interface MediaGridProps {
 // Tıklayınca lightbox açan, hover'da indirme butonu çıkan foto/video ızgarası
 const MediaGrid = ({ items, onOpen, onDownload, downloadingId, selecting = false, selectedIds, onToggleSelect }: MediaGridProps) => {
   const { t } = useTranslation();
+  const activate = (id: string, index: number) => (selecting ? onToggleSelect?.(id) : onOpen(index));
   return (
   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
     {items.map((item, index) => {
@@ -24,12 +25,21 @@ const MediaGrid = ({ items, onOpen, onDownload, downloadingId, selecting = false
       return (
       <div
         key={item.id}
-        role={selecting ? "checkbox" : undefined}
+        role={selecting ? "checkbox" : "button"}
         aria-checked={selecting ? selected : undefined}
+        aria-label={item.fileName}
+        tabIndex={0}
         className={`relative group aspect-square rounded-xl overflow-hidden bg-zinc-900 border cursor-pointer select-none ${
           selected ? "border-emerald-400 ring-2 ring-emerald-500/60" : "border-zinc-800"
         }`}
-        onClick={() => (selecting ? onToggleSelect?.(item.id) : onOpen(index))}
+        onClick={() => activate(item.id, index)}
+        onKeyDown={(e) => {
+          // Karo bir düğme gibi davranır: Enter / Boşluk ile açılır ya da işaretlenir
+          if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            activate(item.id, index);
+          }
+        }}
       >
         {isVideoItem(item) && !item.thumbUrl ? (
           <video
@@ -41,7 +51,7 @@ const MediaGrid = ({ items, onOpen, onDownload, downloadingId, selecting = false
         ) : (
           <img
             src={gridSrc(item)}
-            alt={item.fileName}
+            alt=""
             loading="lazy"
             draggable={false}
             className={`w-full h-full object-cover transition-transform duration-300 ${selecting ? "" : "group-hover:scale-105"} ${selected ? "scale-95 rounded-lg" : ""}`}
@@ -49,7 +59,7 @@ const MediaGrid = ({ items, onOpen, onDownload, downloadingId, selecting = false
         )}
         {isVideoItem(item) && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <div className="w-11 h-11 rounded-full bg-black/60 border border-white/20 flex items-center justify-center">
               <Play className="w-5 h-5 text-white ml-0.5" fill="currentColor" />
             </div>
           </div>
@@ -71,7 +81,8 @@ const MediaGrid = ({ items, onOpen, onDownload, downloadingId, selecting = false
               onDownload(item, "original");
             }}
             disabled={downloadingId === item.id}
-            className="absolute bottom-2 right-2 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-white sm:opacity-0 sm:group-hover:opacity-100 hover:bg-emerald-600/80 transition-all duration-300"
+            className="absolute bottom-2 right-2 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-black/70 border border-white/20 text-white opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-emerald-500 hover:text-zinc-950 transition"
+            aria-label={`${t("pages.media.downloadOriginal")} — ${item.fileName}`}
             title={`${t("pages.media.downloadOriginal")} ${formatFileSize(item.size)}`.trim()}
           >
             {downloadingId === item.id ? (

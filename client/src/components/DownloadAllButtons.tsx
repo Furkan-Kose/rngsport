@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { ChevronDown, FolderDown, Loader2, Shrink, Wifi } from "lucide-react";
+import { ChevronDown, FolderDown, Loader2, Shrink } from "lucide-react";
+import Modal from "./ui/Modal";
+import { Button } from "./ui/kit";
 import { useTranslation } from "react-i18next";
 import { formatFileSize, type DownloadSizes, type MediaQuality } from "../lib/media";
 import { isIOS, isMobileDevice } from "../lib/device";
@@ -61,6 +62,7 @@ const DownloadAllButtons = ({
     <>
       <div ref={menuRef} className="relative">
         <button
+          type="button"
           onClick={() => (sizes?.hasPreview ? setMenuOpen((o) => !o) : choose("original"))}
           disabled={isRunning}
           aria-haspopup={sizes?.hasPreview ? "menu" : undefined}
@@ -76,7 +78,7 @@ const DownloadAllButtons = ({
         </button>
 
         {menuOpen && sizes?.hasPreview && (
-          <div role="menu" className="absolute right-0 mt-2 z-30 w-64 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden">
+          <div role="menu" className="absolute right-0 mt-2 z-30 w-72 max-w-[calc(100vw-2rem)] bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden shadow-lg shadow-black/40">
             {(["original", "preview"] as const).map((q) => (
               <button
                 key={q}
@@ -89,52 +91,48 @@ const DownloadAllButtons = ({
                   <span className="block text-sm text-white">
                     {q === "preview" ? t("pages.media.downloadSmall") : t("pages.media.downloadOriginal")}
                   </span>
-                  <span className="block text-xs text-zinc-500">
+                  <span className="block text-sm text-zinc-400">
                     {q === "preview" ? t("pages.media.menu.smallHint") : t("pages.media.menu.originalHint")}
                   </span>
                 </span>
-                <span className="text-xs text-zinc-400">{formatFileSize(sizeOf(q))}</span>
+                <span className="text-sm text-zinc-400">{formatFileSize(sizeOf(q))}</span>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {confirm &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] bg-black/80 flex items-end sm:items-center justify-center p-4" onClick={() => setConfirm(null)}>
-            <div role="dialog" aria-modal="true" className="w-full max-w-sm bg-zinc-950 border border-zinc-800 rounded-3xl p-6" onClick={(e) => e.stopPropagation()}>
-              <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center mb-3">
-                <Wifi className="w-5 h-5 text-emerald-400" />
-              </div>
-              <h2 className="text-lg font-bold text-white mb-2">
-                {t("pages.media.confirm.title", { size: formatFileSize(sizeOf(confirm)) })}
-              </h2>
-              <ul className="text-sm text-zinc-300 space-y-1.5 mb-5 list-disc pl-5">
-                <li>{t("pages.media.confirm.wifi")}</li>
-                <li>{t("pages.media.confirm.space", { size: formatFileSize(sizeOf(confirm)) })}</li>
-                <li>{t("pages.media.confirm.background")}</li>
-                {isIOS() && <li>{t("pages.media.confirm.ios")}</li>}
-              </ul>
-              <div className="flex gap-2">
-                <button onClick={() => setConfirm(null)} className="flex-1 px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium">
-                  {t("pages.media.confirm.cancel")}
-                </button>
-                <button
-                  onClick={() => {
-                    const q = confirm;
-                    setConfirm(null);
-                    onStart(q);
-                  }}
-                  className="flex-1 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
-                >
-                  {t("pages.media.confirm.start")}
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
+      <Modal
+        open={confirm !== null}
+        onClose={() => setConfirm(null)}
+        size="sm"
+        title={confirm ? t("pages.media.confirm.title", { size: formatFileSize(sizeOf(confirm)) }) : ""}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirm(null)}>
+              {t("pages.media.confirm.cancel")}
+            </Button>
+            <Button
+              onClick={() => {
+                const q = confirm;
+                setConfirm(null);
+                if (q) onStart(q);
+              }}
+            >
+              {t("pages.media.confirm.start")}
+            </Button>
+          </>
+        }
+      >
+        {confirm && (
+          <ul className="text-zinc-300 space-y-1.5 list-disc pl-5">
+            <li>{t("pages.media.confirm.wifi")}</li>
+            <li>{t("pages.media.confirm.space", { size: formatFileSize(sizeOf(confirm)) })}</li>
+            <li>{t("pages.media.confirm.background")}</li>
+            {isIOS() && <li>{t("pages.media.confirm.ios")}</li>}
+          </ul>
         )}
+      </Modal>
     </>
   );
 };

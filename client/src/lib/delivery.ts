@@ -6,12 +6,7 @@ export type Deliveries = Partial<Record<DeliveryType, string>> | null | undefine
 
 export const DELIVERY_TYPES: DeliveryType[] = ["photo", "video", "reels", "general"];
 
-export const DELIVERY_ICONS: Record<DeliveryType, string> = {
-  photo: "📸",
-  video: "🎬",
-  reels: "🎞️",
-  general: "📦",
-};
+// Teslimat parçası ikonları bileşen tarafında: components/admin/DeliveryPanel.tsx (DELIVERY_ICON)
 
 // Admin paneli Türkçe
 export const DELIVERY_LABELS_TR: Record<DeliveryType, string> = {

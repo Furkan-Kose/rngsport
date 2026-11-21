@@ -15,6 +15,10 @@ export interface Package {
     2: number;
     3: number;
   };
+  // Rezervasyon (yarışma günü ödeme) fiyatları — paket kartında iki fiyat birlikte
+  // gösterilir. Eski sepetlerde (localStorage) olmayabilir.
+  reservationPrice?: number;
+  reservationDiscounts?: { 2: number; 3: number };
   // Sadakat puanı (seri başına). Eski sepetlerde (localStorage) olmayabilir.
   loyaltyPoints?: number;
   // Öncelikli ek ücreti (seri başına); null/yok = bu pakette öncelik seçilemez

@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  Images,
-  Loader2,
-  Camera,
-  Video,
-} from "lucide-react";
+import { Images, Camera, Video, Eye } from "lucide-react";
 import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
 
@@ -27,6 +21,8 @@ import ShareGalleryButton, { ActiveSharesLine } from "../components/ShareGallery
 import { useGalleryShares } from "../hooks/useGalleryShares";
 import LocalizedLink from "../components/LocalizedLink";
 import { formatDate } from "../lib/format";
+import { Button, Chip, EmptyState, PageHeader, Skeleton } from "../components/ui/kit";
+import { buttonClass, containerClass, cx, pageClass, widthGrid } from "../lib/siteUi";
 
 interface GalleryPhoto {
   id: string;
@@ -189,101 +185,98 @@ const MyGalleryPage = ({
 
   if (invalidLink) {
     return (
-      <div className="min-h-screen bg-zinc-950 pt-28 pb-16">
+      <div className={pageClass}>
         <SEO title={t("pages.share.seoTitle")} noindex noReferrer />
-        <div className="container mx-auto px-4 max-w-lg text-center">
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-10">
-            <Link2Off className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <h1 className="text-xl font-semibold text-white mb-2">{t("pages.share.invalidTitle")}</h1>
-            <p className="text-sm text-zinc-400 mb-6">{t("pages.share.invalidText")}</p>
-            <LocalizedLink to="/" className="inline-flex px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold">
+        <div className={containerClass}>
+          <EmptyState
+            icon={Link2Off}
+            title={t("pages.share.invalidTitle")}
+            description={t("pages.share.invalidText")}
+            className="max-w-lg mx-auto mt-10"
+          >
+            <LocalizedLink to="/" className={buttonClass("primary")}>
               {t("pages.share.goHome")}
             </LocalizedLink>
-          </div>
+          </EmptyState>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-zinc-950 pt-28 ${selection.active ? "pb-56" : "pb-16"}`}>
+    <div className={cx(pageClass, selection.active && "pb-56")}>
       {isShared || isPreview ? (
         <SEO title={isPreview ? "Müşteri görünümü" : t("pages.share.seoTitle")} noindex noReferrer />
       ) : (
         <SEO noindex title={t("pages.myGallery.seoTitle")} description={t("pages.myGallery.seoDescription")} />
       )}
 
-      <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10">
-        {isPreview && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            <span>
-              👁 Önizleme — <strong className="text-amber-100">{previewName || "Müşteri"}</strong> galerisini
-              müşterinin gördüğü gibi görüyorsunuz. Paylaş ve görüş formu burada gizli.
-            </span>
-            <a
-              href={`/admin/users/${previewUserId}/galeri`}
-              className="shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 font-semibold text-zinc-950 hover:bg-amber-400"
-            >
-              Panele dön
-            </a>
-          </div>
-        )}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {/* Başlık */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                <Images className="w-7 h-7 text-emerald-400" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gradient-brand">
-                  {isShared ? t("pages.share.sharedTitle") : t("pages.myGallery.title")}
-                </h1>
-                <p className="text-zinc-500 text-sm">
-                  {pagination ? t("pages.media.files", { count: pagination.total }) : t("pages.myGallery.subtitle")}
-                  {isShared && sharedInfo && (
-                    <> · {t("pages.share.validUntil", { date: formatDate(sharedInfo.expiresAt, { day: "numeric", month: "long" }) })}</>
-                  )}
-                </p>
-              </div>
-            </div>
-            {photos.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-              {!selection.active && (
-              <button
-                onClick={selection.start}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
+      <div className={containerClass}>
+        <div className={widthGrid}>
+          {isPreview && (
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              <span className="flex items-start gap-2">
+                <Eye className="w-5 h-5 shrink-0" aria-hidden />
+                <span>
+                  Önizleme — <strong>{previewName || "Müşteri"}</strong> galerisini müşterinin gördüğü gibi
+                  görüyorsunuz. Paylaş ve görüş formu burada gizli.
+                </span>
+              </span>
+              <a
+                href={`/admin/users/${previewUserId}/galeri`}
+                className="shrink-0 inline-flex items-center min-h-10 rounded-xl bg-amber-500 px-4 font-semibold text-zinc-950 hover:bg-amber-400"
               >
-                <CheckSquare className="w-4 h-4" />
-                {t("pages.media.select.start")}
-              </button>
-              )}
-              {isOwnGallery && (
-                <ShareGalleryButton
-                  album={activeAlbum}
-                  shares={shares}
-                  setShares={setShares}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
-                />
-              )}
-              <DownloadAllButtons
-                serverFallback={isOwnGallery}
-                sizes={downloadSizes}
-                album={activeAlbum !== null}
-                progress={zip.progress}
-                
-                onStart={handleDownloadAll}
-                primaryClassName="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
-              />
-              </div>
-            )}
-          </div>
+                Panele dön
+              </a>
+            </div>
+          )}
+
+          <PageHeader
+            backTo={isOwnGallery ? "/profil" : undefined}
+            backLabel={t("common.nav.account")}
+            title={isShared ? t("pages.share.sharedTitle") : t("pages.myGallery.title")}
+            subtitle={
+              <>
+                {pagination ? t("pages.media.files", { count: pagination.total }) : t("pages.myGallery.subtitle")}
+                {isShared && sharedInfo && (
+                  <>
+                    {" · "}
+                    {t("pages.share.validUntil", {
+                      date: formatDate(sharedInfo.expiresAt, { day: "numeric", month: "long" }),
+                    })}
+                  </>
+                )}
+              </>
+            }
+            actions={
+              photos.length > 0 && (
+                <>
+                  {!selection.active && (
+                    <Button variant="secondary" icon={CheckSquare} onClick={selection.start}>
+                      {t("pages.media.select.start")}
+                    </Button>
+                  )}
+                  {isOwnGallery && (
+                    <ShareGalleryButton
+                      album={activeAlbum}
+                      shares={shares}
+                      setShares={setShares}
+                      className={buttonClass("secondary")}
+                    />
+                  )}
+                  <DownloadAllButtons
+                    serverFallback={isOwnGallery}
+                    sizes={downloadSizes}
+                    album={activeAlbum !== null}
+                    progress={zip.progress}
+                    onStart={handleDownloadAll}
+                    primaryClassName={buttonClass("primary")}
+                  />
+                </>
+              )
+            }
+          />
 
           {isOwnGallery && <ActiveSharesLine shares={shares} />}
 
@@ -292,35 +285,19 @@ const MyGalleryPage = ({
           {!isShared && <GalleryShopPromo withPopup={!isPreview} />}
 
           {/* Filtreler: yarışma/albüm + tür */}
-          <div className="flex flex-wrap items-center gap-2 mb-6">
-            {albums.length > 0 && !(isShared && sharedInfo?.album) && (
-              <>
-                <button
-                  onClick={() => changeAlbum(null)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-300 ${
-                    activeAlbum === null
-                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                      : "bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:border-emerald-500/30 hover:text-zinc-300"
-                  }`}
-                >
-                  {t("pages.myGallery.allCompetitions")}
-                </button>
-                {albums.map((album) => (
-                  <button
-                    key={album}
-                    onClick={() => changeAlbum(album)}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-300 ${
-                      activeAlbum === album
-                        ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                        : "bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:border-emerald-500/30 hover:text-zinc-300"
-                    }`}
-                  >
-                    {album}
-                  </button>
-                ))}
-                <div className="w-px h-6 bg-zinc-800 mx-1 hidden sm:block" />
-              </>
-            )}
+          {albums.length > 0 && !(isShared && sharedInfo?.album) && (
+            <div role="group" aria-label={t("pages.myGallery.allCompetitions")} className="flex flex-wrap gap-2 mb-3">
+              <Chip active={activeAlbum === null} onClick={() => changeAlbum(null)}>
+                {t("pages.myGallery.allCompetitions")}
+              </Chip>
+              {albums.map((album) => (
+                <Chip key={album} active={activeAlbum === album} onClick={() => changeAlbum(album)}>
+                  {album}
+                </Chip>
+              ))}
+            </div>
+          )}
+          <div role="group" aria-label={t("pages.myGallery.typeFilter")} className="flex flex-wrap gap-2 mb-6">
             {(
               [
                 { value: "all", label: t("pages.myGallery.all"), icon: null },
@@ -328,36 +305,26 @@ const MyGalleryPage = ({
                 { value: "video", label: t("pages.myGallery.videos"), icon: Video },
               ] as const
             ).map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                onClick={() => changeType(value)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-300 ${
-                  typeFilter === value
-                    ? "bg-teal-500/20 border-teal-500/50 text-teal-300"
-                    : "bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:border-teal-500/30 hover:text-zinc-300"
-                }`}
-              >
-                {Icon && <Icon className="w-3.5 h-3.5" />}
+              <Chip key={value} active={typeFilter === value} onClick={() => changeType(value)}>
+                {Icon && <Icon className="w-4 h-4" aria-hidden />}
                 {label}
-              </button>
+              </Chip>
             ))}
           </div>
 
           {/* İçerik */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-24">
-              <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 8 }, (_, i) => (
+                <Skeleton key={i} className="aspect-square" />
+              ))}
             </div>
           ) : photos.length === 0 ? (
-            <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-12 text-center">
-              <Images className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-white mb-2">
-                {t("pages.myGallery.emptyTitle")}
-              </h2>
-              <p className="text-sm text-zinc-500 max-w-md mx-auto">
-                {t("pages.myGallery.emptyText")}
-              </p>
-            </div>
+            <EmptyState
+              icon={Images}
+              title={t("pages.myGallery.emptyTitle")}
+              description={t("pages.myGallery.emptyText")}
+            />
           ) : (
             <>
               <MediaGrid
@@ -372,21 +339,16 @@ const MyGalleryPage = ({
 
               {hasMore && (
                 <div className="flex justify-center mt-8">
-                  <button
-                    onClick={loadMore}
-                    disabled={isLoadingMore}
-                    className="px-6 py-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 font-medium transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <Button variant="secondary" size="lg" loading={isLoadingMore} onClick={loadMore}>
                     {t("pages.media.loadMore")}
-                  </button>
+                  </Button>
                 </div>
               )}
             </>
           )}
-        </motion.div>
 
-        {isOwnGallery && <FeedbackForm page="galerim" />}
+          {isOwnGallery && <FeedbackForm page="galerim" />}
+        </div>
       </div>
 
       <MediaLightbox

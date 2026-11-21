@@ -4,9 +4,10 @@ import { Plus, Pencil, Trash2, X, Award, Save, MapPin, Calendar, Images, Externa
 import api from '../../lib/api';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
-import { Button, EmptyState, IconButton, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
+import { Button, EmptyState, IconButton, ModalBackdrop, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
 
 import { AWARD_FALLBACK_IMAGE, type AwardCeremonySummary } from '../../lib/awardCeremonies';
+import { notifyError } from '../../lib/adminErrors';
 
 interface CeremonyFormData {
   title: string;
@@ -27,7 +28,7 @@ const initialFormData: CeremonyFormData = {
 };
 
 const inputClass =
-  'w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
+  'w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25';
 
 const AwardCeremoniesPage = () => {
   const [ceremonies, setCeremonies] = useState<AwardCeremonySummary[]>([]);
@@ -45,7 +46,7 @@ const AwardCeremoniesPage = () => {
       const { data } = await api.get('/api/award-ceremonies');
       setCeremonies(data);
     } catch (error) {
-      console.error('Ödül törenleri yüklenemedi:', error);
+      notifyError(error, 'Ödül törenleri yüklenemedi');
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +178,7 @@ const AwardCeremoniesPage = () => {
                         {ceremony.location}
                       </span>
                     )}
-                    <span className="text-gray-600">Sıra: {ceremony.sortOrder}</span>
+                    <span className="text-gray-400">Sıra: {ceremony.sortOrder}</span>
                   </div>
                 </div>
               </div>
@@ -206,8 +207,8 @@ const AwardCeremoniesPage = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <ModalBackdrop onClose={closeModal}>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 sticky top-0 bg-gray-800">
               <h2 className="text-lg font-semibold text-white">
                 {editingId ? 'Töreni Düzenle' : 'Yeni Ödül Töreni'}
@@ -236,7 +237,7 @@ const AwardCeremoniesPage = () => {
                   className={inputClass}
                 />
                 {!editingId && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     Sayfa adresi bu addan oluşturulur ve sonradan değişmez.
                   </p>
                 )}
@@ -302,7 +303,7 @@ const AwardCeremoniesPage = () => {
 
               <div className="flex gap-3 pt-2">
                 <Button className="flex-1" onClick={closeModal}>
-                  İptal
+                  Vazgeç
                 </Button>
                 <Button type="submit" variant="primary" className="flex-1" icon={Save} loading={isSubmitting}>
                   {editingId ? 'Güncelle' : 'Oluştur'}
@@ -310,7 +311,7 @@ const AwardCeremoniesPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       <ConfirmDeleteModal

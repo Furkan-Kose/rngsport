@@ -3,6 +3,7 @@ import { Star, ChevronDown } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { type LoyaltySummary, type PointTransaction } from "../lib/loyalty";
 import { formatDate, formatNumber } from "../lib/format";
+import { Card, Pill } from "./ui/kit";
 
 // Profil: puan, seviye, sonraki seviyeye ilerleme ve puan geçmişi
 const LoyaltyCard = ({ summary }: { summary: LoyaltySummary }) => {
@@ -27,27 +28,24 @@ const LoyaltyCard = ({ summary }: { summary: LoyaltySummary }) => {
   const progress = nextTier ? Math.min(100, ((balance - from) / (to - from)) * 100) : 100;
 
   return (
-    <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-amber-500/20 rounded-2xl p-6">
-      <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-amber-400/50 to-transparent" />
+    <Card>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
-            <Star className="w-6 h-6 text-amber-400" fill="currentColor" />
-          </div>
+          <Star className="w-7 h-7 text-amber-400 shrink-0" fill="currentColor" aria-hidden />
           <div>
-            <p className="text-sm text-zinc-400">{t("account.loyalty.title")}</p>
+            <h2 className="text-sm text-zinc-400">{t("account.loyalty.title")}</h2>
             <p className="text-2xl font-bold text-white">{formatNumber(balance)}</p>
           </div>
         </div>
         {tier ? (
           <div className="text-right">
-            <span className="inline-block px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-sm font-semibold">
+            <Pill tone="warning" className="text-sm">
               {tier.name}
-            </span>
-            <p className="text-xs text-zinc-400 mt-1">{t("account.loyalty.discount", { percent: tier.discountPercent })}</p>
+            </Pill>
+            <p className="text-sm text-zinc-400 mt-1">{t("account.loyalty.discount", { percent: tier.discountPercent })}</p>
           </div>
         ) : (
-          <span className="text-xs text-zinc-500">{t("account.loyalty.noTier")}</span>
+          <span className="text-sm text-zinc-400">{t("account.loyalty.noTier")}</span>
         )}
       </div>
 
@@ -55,11 +53,11 @@ const LoyaltyCard = ({ summary }: { summary: LoyaltySummary }) => {
         <div className="mb-3">
           <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-linear-to-r from-amber-500 to-amber-300 transition-all duration-500"
+              className="h-full bg-amber-400 rounded-full transition-all duration-500"
               style={{ width: `${Math.max(2, progress)}%` }}
             />
           </div>
-          <p className="text-xs text-zinc-400 mt-2">
+          <p className="text-sm text-zinc-300 mt-2">
             <Trans
               i18nKey="account.loyalty.next"
               values={{
@@ -72,18 +70,20 @@ const LoyaltyCard = ({ summary }: { summary: LoyaltySummary }) => {
           </p>
         </div>
       ) : (
-        tier && <p className="text-xs text-amber-300/80 mb-3">{t("account.loyalty.top")}</p>
+        tier && <p className="text-sm text-amber-300 mb-3">{t("account.loyalty.top")}</p>
       )}
 
-      <p className="text-xs text-zinc-500">
+      <p className="text-sm text-zinc-400">
         {t("account.loyalty.explain")}
       </p>
 
       {transactions.length > 0 && (
         <div className="mt-4 pt-4 border-t border-zinc-800">
           <button
+            type="button"
+            aria-expanded={showHistory}
             onClick={() => setShowHistory((v) => !v)}
-            className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="flex items-center gap-1.5 min-h-10 text-sm font-medium text-zinc-300 hover:text-white transition-colors"
           >
             <ChevronDown className={`w-4 h-4 transition-transform ${showHistory ? "rotate-180" : ""}`} />
             {t("account.loyalty.history")}
@@ -94,7 +94,7 @@ const LoyaltyCard = ({ summary }: { summary: LoyaltySummary }) => {
                 <li key={tx.id} className="flex items-center justify-between gap-3 text-sm">
                   <div className="min-w-0">
                     <p className="text-zinc-300 truncate">{noteFor(tx)}</p>
-                    <p className="text-xs text-zinc-600">
+                    <p className="text-zinc-400">
                       {typeLabel(tx.type)} ·{" "}
                       {formatDate(tx.createdAt, { day: "numeric", month: "long", year: "numeric" })}
                     </p>
@@ -109,7 +109,7 @@ const LoyaltyCard = ({ summary }: { summary: LoyaltySummary }) => {
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

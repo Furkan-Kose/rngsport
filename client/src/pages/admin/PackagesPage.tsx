@@ -1,19 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Plus, Pencil, Trash2, X, Loader2, Package, Save, Upload } from 'lucide-react';
+import { Loader2, Package, Pencil, Plus, Save, Star, Trash2, Upload, X, Zap } from 'lucide-react';
 import api from '../../lib/api';
 import { toast } from 'react-toastify';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
-import {
-  Button,
-  EmptyState,
-  IconButton,
-  PageHeader,
-  SkeletonPage,
-  Panel,
-} from '../../components/admin/ui';
+import { Button, EmptyState, IconButton, ModalBackdrop, PageHeader, Panel, SkeletonPage } from '../../components/admin/ui';
 import { tableBodyClass, tableHeadRowClass, thClass } from '../../lib/adminUi';
+import { notifyError } from '../../lib/adminErrors';
+import { formatMoney } from '../../lib/adminFormat';
 
 
 interface Package {
@@ -99,13 +94,13 @@ const PackagesPage = () => {
       const { data } = await api.get('/api/packages/all');
       setPackages(data);
     } catch (error) {
-      console.error('Failed to fetch packages:', error);
+      notifyError(error, 'Paketler yüklenemedi');
       // Fallback to regular endpoint if /all doesn't exist
       try {
         const { data } = await api.get('/api/packages');
         setPackages(data);
       } catch (err) {
-        console.error('Failed to fetch packages:', err);
+        notifyError(err, 'Paketler yüklenemedi');
       }
     } finally {
       setIsLoading(false);
@@ -231,12 +226,7 @@ const PackagesPage = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-    }).format(price);
-  };
+  const formatPrice = formatMoney;
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
@@ -283,24 +273,30 @@ const PackagesPage = () => {
               />
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium truncate">{pkg.name}</p>
-                <p className="text-gray-500 text-xs truncate">{pkg.slug}</p>
+                <p className="text-gray-400 text-xs truncate">{pkg.slug}</p>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full border ${getCategoryBadge(pkg.category)}`}>
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getCategoryBadge(pkg.category)}`}>
                     {getCategoryLabel(pkg.category)}
                   </span>
-                  <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
                     pkg.isActive
                       ? 'bg-green-500/20 text-green-400'
                       : 'bg-red-500/20 text-red-400'
                   }`}>
                     {pkg.isActive ? 'Aktif' : 'Pasif'}
                   </span>
-                  <span className="text-gray-500 text-[11px]">Sıra: {pkg.sortOrder}</span>
+                  <span className="text-gray-400 text-xs">Sıra: {pkg.sortOrder}</span>
                   {pkg.priorityFee != null && (
-                    <span className="text-amber-300 text-[11px]">⚡ Öncelikli +{formatPrice(pkg.priorityFee)}/seri</span>
+                    <span className="inline-flex items-center gap-1 text-amber-300 text-xs">
+                      <Zap className="w-3 h-3" />
+                      Öncelikli +{formatPrice(pkg.priorityFee)}/seri
+                    </span>
                   )}
                   {pkg.loyaltyPoints > 0 && (
-                    <span className="text-amber-400 text-[11px]">★ {pkg.loyaltyPoints} puan/seri</span>
+                    <span className="inline-flex items-center gap-1 text-amber-400 text-xs">
+                      <Star className="w-3 h-3" />
+                      {pkg.loyaltyPoints} puan/seri
+                    </span>
                   )}
                 </div>
               </div>
@@ -310,14 +306,14 @@ const PackagesPage = () => {
               <div className="bg-gray-900/40 rounded-lg p-2">
                 <p className="text-gray-400 mb-1">Normal (Online)</p>
                 <p className="text-white">{formatPrice(pkg.price)}</p>
-                <p className="text-gray-500 text-[11px] mt-0.5">
+                <p className="text-gray-400 text-xs mt-0.5">
                   2S: {formatPrice(pkg.discount2)} / 3S: {formatPrice(pkg.discount3)}
                 </p>
               </div>
               <div className="bg-violet-500/5 border border-violet-500/20 rounded-lg p-2">
                 <p className="text-gray-400 mb-1">Rezervasyon</p>
                 <p className="text-violet-400">{formatPrice(pkg.reservationPrice || pkg.price)}</p>
-                <p className="text-gray-500 text-[11px] mt-0.5">
+                <p className="text-gray-400 text-xs mt-0.5">
                   2S: {formatPrice(pkg.reservationDiscount2 || pkg.discount2)} / 3S: {formatPrice(pkg.reservationDiscount3 || pkg.discount3)}
                 </p>
               </div>
@@ -364,7 +360,7 @@ const PackagesPage = () => {
                       />
                       <div>
                         <p className="text-white font-medium">{pkg.name}</p>
-                        <p className="text-gray-500 text-xs">{pkg.slug}</p>
+                        <p className="text-gray-400 text-xs">{pkg.slug}</p>
                       </div>
                     </div>
                   </td>
@@ -376,13 +372,13 @@ const PackagesPage = () => {
                   <td className="px-4 py-3">
                     <div className="text-sm">
                       <p className="text-white">{formatPrice(pkg.price)}</p>
-                      <p className="text-gray-500 text-xs">2S: {formatPrice(pkg.discount2)} / 3S: {formatPrice(pkg.discount3)}</p>
+                      <p className="text-gray-400 text-xs">2S: {formatPrice(pkg.discount2)} / 3S: {formatPrice(pkg.discount3)}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-sm">
                       <p className="text-violet-400">{formatPrice(pkg.reservationPrice || pkg.price)}</p>
-                      <p className="text-gray-500 text-xs">
+                      <p className="text-gray-400 text-xs">
                         2S: {formatPrice(pkg.reservationDiscount2 || pkg.discount2)} / 3S: {formatPrice(pkg.reservationDiscount3 || pkg.discount3)}
                       </p>
                     </div>
@@ -414,8 +410,8 @@ const PackagesPage = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <ModalBackdrop onClose={closeModal}>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-700">
               <h2 className="text-lg sm:text-xl font-semibold text-white">
@@ -449,7 +445,7 @@ const PackagesPage = () => {
                     placeholder="photo-basic"
                     required
                     disabled={!!editingId}
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   />
                 </div>
 
@@ -463,7 +459,7 @@ const PackagesPage = () => {
                     onChange={handleInputChange}
                     placeholder="Foto Basic"
                     required
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   />
                 </div>
               </div>
@@ -476,7 +472,7 @@ const PackagesPage = () => {
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   >
                     <option value="photo">Fotoğraf</option>
                     <option value="video">Video</option>
@@ -492,7 +488,7 @@ const PackagesPage = () => {
                     name="sortOrder"
                     value={formData.sortOrder}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   />
                 </div>
               </div>
@@ -507,9 +503,9 @@ const PackagesPage = () => {
                   step={50}
                   value={formData.priorityFee ?? 0}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   Rezervasyon ve sepette &quot;Öncelikli&quot; kutucuğu çıkar; işaretlenirse seri başına bu tutar eklenir. 0 = bu pakette öncelik yok.
                 </p>
               </div>
@@ -524,9 +520,9 @@ const PackagesPage = () => {
                   step={1}
                   value={formData.loyaltyPoints}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   Müşteri ödeme sonrası puan × seri × adet kadar puan kazanır. 0 = puan verilmez.
                 </p>
               </div>
@@ -569,7 +565,7 @@ const PackagesPage = () => {
                         </>
                       )}
                     </button>
-                    <p className="text-xs text-gray-500 mt-1.5">webp/jpg/png, maks. 10MB</p>
+                    <p className="text-xs text-gray-400 mt-1.5">webp/jpg/png, maks. 10MB</p>
                     <input
                       type="text"
                       name="image"
@@ -579,7 +575,7 @@ const PackagesPage = () => {
                         setImagePreview(e.target.value);
                       }}
                       placeholder="veya harici URL girin"
-                      className="mt-2 w-full px-3 py-1.5 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-xs placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+                      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-8 px-2 py-1 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25 mt-2"
                     />
                   </div>
                 </div>
@@ -597,7 +593,7 @@ const PackagesPage = () => {
                       value={formData.price}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                     />
                   </div>
                   <div>
@@ -608,7 +604,7 @@ const PackagesPage = () => {
                       value={formData.discount2}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                     />
                   </div>
                   <div>
@@ -619,7 +615,7 @@ const PackagesPage = () => {
                       value={formData.discount3}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                     />
                   </div>
                 </div>
@@ -636,7 +632,7 @@ const PackagesPage = () => {
                       name="reservationPrice"
                       value={formData.reservationPrice}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                     />
                   </div>
                   <div>
@@ -646,7 +642,7 @@ const PackagesPage = () => {
                       name="reservationDiscount2"
                       value={formData.reservationDiscount2}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                     />
                   </div>
                   <div>
@@ -656,7 +652,7 @@ const PackagesPage = () => {
                       name="reservationDiscount3"
                       value={formData.reservationDiscount3}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500"
+                      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                     />
                   </div>
                 </div>
@@ -671,7 +667,7 @@ const PackagesPage = () => {
                   onChange={handleInputChange}
                   rows={4}
                   placeholder="1 Seri Çekimi&#10;40+ editli fotoğraf&#10;Profesyonel düzenleme"
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500 resize-none"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25 resize-none"
                 />
               </div>
 
@@ -698,7 +694,7 @@ const PackagesPage = () => {
                   id="isActive"
                   checked={formData.isActive}
                   onChange={handleInputChange}
-                  className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-amber-500 focus:ring-amber-500"
+                  className="w-4 h-4 shrink-0 rounded accent-amber-500 cursor-pointer"
                 />
                 <label htmlFor="isActive" className="text-sm text-gray-300">Paket aktif</label>
               </div>
@@ -706,7 +702,7 @@ const PackagesPage = () => {
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
                 <Button variant="ghost" onClick={closeModal}>
-                  İptal
+                  Vazgeç
                 </Button>
                 <Button type="submit" variant="primary" icon={Save} loading={isSubmitting}>
                   {editingId ? 'Güncelle' : 'Oluştur'}
@@ -714,7 +710,7 @@ const PackagesPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       <ConfirmDeleteModal

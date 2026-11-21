@@ -1,344 +1,37 @@
-import { useState } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Camera,
-  Play,
-  ArrowRight,
-} from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import SectionHeader from "./ui/SectionHeader";
-import Reveal from "./ui/Reveal";
+import ShowcaseGallery from "./ShowcaseGallery";
+import { galleryItems } from "../data/gallery";
+import { buttonClass } from "../lib/siteUi";
 
-const getVimeoThumbnail = (videoId: string) =>
-  `https://vumbnail.com/${videoId}.jpg`;
+// Ana sayfada gösterilen seçki: ilk 6 video + seçilmiş 6 fotoğraf (tamamı /galeri'de)
+const HOME_PHOTOS = new Set(["/gallery/44.webp", "/gallery/45.webp", "/gallery/46.webp", "/gallery/47.webp", "/gallery/48.webp", "/gallery/49.webp"]);
 
-const galleryItems = [
-  {
-    id: 1,
-    type: "video",
-    vimeoId: "1194518379",
-    thumbnail: "",
-    title: "Ritmika Cup 2026",
-    category: "Video",
-  },
-  {
-    id: 2,
-    type: "video",
-    vimeoId: "1194514858",
-    thumbnail: "",
-    title: "Ritmika Cup 2026",
-    category: "Video",
-  },
-  {
-    id: 3,
-    type: "video",
-    vimeoId: "1194513032",
-    thumbnail: "",
-    title: "Ritmika Cup 2026",
-    category: "Video",
-  },
-  {
-    id: 4,
-    type: "video",
-    vimeoId: "1194506839",
-    thumbnail: "",
-    title: "Ritmika Cup 2026",
-    category: "Video",
-  },
-  {
-    id: 5,
-    type: "video",
-    vimeoId: "1194510802",
-    thumbnail: "",
-    title: "Ritmika Cup 2026",
-    category: "Video",
-  },
-  {
-    id: 6,
-    type: "video",
-    vimeoId: "1194522756",
-    thumbnail: "",
-    title: "Ritmika Cup 2026",
-    category: "Video",
-  },
-  {
-    id: 7,
-    type: "photo",
-    src: "/gallery/44.webp",
-    thumbnail: "/gallery/44.webp",
-    title: "Ritmika Cup 2026",
-    category: "Fotoğraf",
-  },
-  {
-    id: 8,
-    type: "photo",
-    src: "/gallery/45.webp",
-    thumbnail: "/gallery/45.webp",
-    title: "Ritmika Cup 2026",
-    category: "Fotoğraf",
-  },
-  {
-    id: 9,
-    type: "photo",
-    src: "/gallery/46.webp",
-    thumbnail: "/gallery/46.webp",
-    title: "Ritmika Cup 2026",
-    category: "Fotoğraf",
-  },
-  {
-    id: 10,
-    type: "photo",
-    src: "/gallery/47.webp",
-    thumbnail: "/gallery/47.webp",
-    title: "Ritmika Cup 2026",
-    category: "Fotoğraf",
-  },
-  {
-    id: 11,
-    type: "photo",
-    src: "/gallery/48.webp",
-    thumbnail: "/gallery/48.webp",
-    title: "Ritmika Cup 2026",
-    category: "Fotoğraf",
-  },
-  {
-    id: 12,
-    type: "photo",
-    src: "/gallery/49.webp",
-    thumbnail: "/gallery/49.webp",
-    title: "Ritmika Cup 2026",
-    category: "Fotoğraf",
-  },
+const homeItems = [
+  ...galleryItems.filter((item) => item.type === "video").slice(0, 6),
+  ...galleryItems.filter((item) => item.type === "photo" && item.src && HOME_PHOTOS.has(item.src)),
 ];
-
-const getItemThumbnail = (item: (typeof galleryItems)[0]) => {
-  if (item.type === "video" && item.vimeoId) {
-    return item.thumbnail || getVimeoThumbnail(item.vimeoId);
-  }
-  return item.thumbnail;
-};
-
-// Veri tarafında kategori Türkçe değer olarak duruyor; sadece etiket çevrilir
-const CATEGORY_KEY: Record<string, string> = {
-  all: "home.gallery.all",
-  Fotoğraf: "home.gallery.photo",
-  Video: "home.gallery.video",
-};
 
 const Gallery = () => {
   const { t } = useTranslation();
-  const categoryLabel = (c: string) => (CATEGORY_KEY[c] ? t(CATEGORY_KEY[c]) : c);
-  const [selectedImage, setSelectedImage] = useState<number | null>(null);
-  const [filter, setFilter] = useState<string>("all");
-
-  const categories = ["all", "Fotoğraf", "Video"];
-
-  const allFilteredItems =
-    filter === "all"
-      ? galleryItems
-      : galleryItems.filter((item) => item.category === filter);
-
-  const filteredItems = allFilteredItems.slice(0, 12);
-
-  const openLightbox = (index: number) => {
-    setSelectedImage(index);
-    document.body.style.overflow = "hidden";
-  };
-
-  const closeLightbox = () => {
-    setSelectedImage(null);
-    document.body.style.overflow = "auto";
-  };
-
-  const goToPrevious = () => {
-    if (selectedImage !== null) {
-      setSelectedImage(
-        selectedImage === 0 ? filteredItems.length - 1 : selectedImage - 1,
-      );
-    }
-  };
-
-  const goToNext = () => {
-    if (selectedImage !== null) {
-      setSelectedImage(
-        selectedImage === filteredItems.length - 1 ? 0 : selectedImage + 1,
-      );
-    }
-  };
-
-  const gallerySection = (
-    <section id="galeri" className="relative py-24 bg-black">
-      <div className="container mx-auto px-4">
-        <SectionHeader
-          eyebrow={t("home.gallery.eyebrow")}
-          icon={Camera}
-          title={t("home.gallery.title")}
-          description={t("home.gallery.description")}
-          className="mb-12"
-        />
-
-        {/* Filter Buttons */}
-        <Reveal>
-          <div className="flex flex-wrap justify-center gap-2 mb-10">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setFilter(category)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                  filter === category
-                    ? "bg-emerald-500 text-white scale-105 shadow-lg shadow-emerald-500/40"
-                    : "bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-800"
-                }`}
-              >
-                {categoryLabel(category)}
-              </button>
-            ))}
-          </div>
-        </Reveal>
-
-        {/* Gallery Grid — uniform aspect-square */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-          {filteredItems.map((item, index) => (
-            <Reveal key={item.id} delay={index * 0.06}>
-              <div
-                className="group relative aspect-square overflow-hidden rounded-2xl cursor-pointer bg-zinc-900 border border-zinc-800/50 hover:border-emerald-500/40 transition-colors"
-                onClick={() => openLightbox(index)}
-              >
-                <img
-                  src={getItemThumbnail(item)}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-
-                {item.type === "video" && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-emerald-500/40 rounded-full blur-xl group-hover:bg-emerald-400/60 transition-colors" />
-                      <div className="relative w-16 h-16 rounded-full bg-emerald-500/95 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-[0_0_30px_rgba(16,185,129,0.5)]">
-                        <Play className="w-7 h-7 text-white fill-white ml-1" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                  <p className="text-xs text-emerald-400 font-semibold uppercase tracking-wider mb-1">
-                    {categoryLabel(item.category)}
-                  </p>
-                  <h3 className="text-white font-semibold">{item.title}</h3>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-
-        {allFilteredItems.length > 0 && (
-          <Reveal delay={0.2}>
-            <div className="text-center mt-10">
-              <LocalizedLink
-                to="/galeri"
-                className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 group"
-              >
-                {t("home.gallery.viewAll")}
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </LocalizedLink>
-            </div>
-          </Reveal>
-        )}
-      </div>
-    </section>
-  );
-
-  const lightbox = createPortal(
-    <AnimatePresence>
-      {selectedImage !== null && (
-        <motion.div
-          key="gallery-lightbox"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-            <button
-              className="absolute top-6 right-6 z-50 p-3 text-white hover:text-emerald-400 bg-zinc-900/80 hover:bg-zinc-800 rounded-full transition-all"
-              onClick={closeLightbox}
-            >
-              <X className="w-8 h-8" />
-            </button>
-
-            <button
-              className="absolute left-4 z-50 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                goToPrevious();
-              }}
-            >
-              <ChevronLeft className="w-8 h-8" />
-            </button>
-            <button
-              className="absolute right-4 z-50 p-3 text-white/80 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 rounded-full transition-all"
-              onClick={(e) => {
-                e.stopPropagation();
-                goToNext();
-              }}
-            >
-              <ChevronRight className="w-8 h-8" />
-            </button>
-
-            <motion.div
-              key={selectedImage}
-              initial={{ scale: 0.96, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="w-full max-w-[95vw] lg:max-w-[85vw] px-2 sm:px-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {filteredItems[selectedImage].type === "video" &&
-              filteredItems[selectedImage].vimeoId ? (
-                <div className="relative w-full h-[70vh] lg:h-[85vh]">
-                  <iframe
-                    className="absolute inset-0 w-full h-full rounded-lg"
-                    src={`https://player.vimeo.com/video/${filteredItems[selectedImage].vimeoId}?autoplay=1&title=0&byline=0&portrait=0`}
-                    title={filteredItems[selectedImage].title}
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              ) : (
-                <img
-                  src={filteredItems[selectedImage].src}
-                  alt={filteredItems[selectedImage].title}
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg mx-auto"
-                />
-              )}
-              <div className="text-center mt-4">
-                <p className="text-emerald-400 text-sm">
-                  {categoryLabel(filteredItems[selectedImage].category)}
-                </p>
-                <h3 className="text-white text-xl font-semibold mt-1">
-                  {filteredItems[selectedImage].title}
-                </h3>
-              </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body,
-  );
 
   return (
-    <>
-      {gallerySection}
-      {lightbox}
-    </>
+    <section id="galeri" className="py-24 bg-black scroll-mt-20">
+      <div className="container mx-auto px-4">
+        <SectionHeader title={t("home.gallery.title")} description={t("home.gallery.description")} className="mb-10" />
+
+        <ShowcaseGallery items={homeItems} />
+
+        <div className="text-center mt-10">
+          <LocalizedLink to="/galeri" className={buttonClass("secondary", "lg")}>
+            {t("home.gallery.viewAll")}
+            <ArrowRight className="w-4 h-4" aria-hidden />
+          </LocalizedLink>
+        </div>
+      </div>
+    </section>
   );
 };
 

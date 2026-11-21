@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import SEO from "../components/SEO";
-import Reveal from "../components/ui/Reveal";
-import { ProductCard } from "../components/Products";
+import PageHero from "../components/ui/PageHero";
+import { ProductGrid } from "../components/Products";
 import { useShowcase } from "../hooks/useShowcase";
 
 const ProductsPage = () => {
@@ -15,62 +15,20 @@ const ProductsPage = () => {
         keywords={t("pages.products.seoKeywords")}
       />
 
-      {/* Hero */}
-      <section className="relative py-32 pb-44 overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src="/products/product.jpeg"
-            alt={t("pages.products.heroAlt")}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-linear-to-b from-black/85 via-black/75 to-black/65" />
-        </div>
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-grid-dark opacity-40 pointer-events-none"
-        />
-        <div
-          aria-hidden
-          className="absolute -bottom-20 left-1/3 w-[28rem] h-[28rem] bg-emerald-600/[0.06] rounded-full blur-3xl pointer-events-none"
-        />
+      <PageHero
+        image="/products/product.jpeg"
+        imageAlt={t("pages.products.heroAlt")}
+        title={<span className="text-gradient-brand">{t("pages.products.title")}</span>}
+        intro={t("pages.products.intro")}
+      />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <Reveal delay={0.1}>
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-                <span className="text-gradient-brand">{t("pages.products.title")}</span>
-              </h1>
-            </Reveal>
-            <Reveal delay={0.2}>
-              <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">
-                {t("pages.products.intro")}
-              </p>
-            </Reveal>
-          </div>
-        </div>
-
-        {/* Alt fade to-[#09090b] sabit — sonraki bölüm bg-zinc-950 olmak zorunda */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 h-32 md:h-44 z-[5] bg-linear-to-b from-transparent to-[#09090b] pointer-events-none"
-        />
-      </section>
-
-      <section className="py-20 bg-zinc-950">
+      <section className="pb-20">
         <div className="container mx-auto px-4">
-          <div className={`grid grid-cols-1 gap-8 items-stretch mx-auto ${products.length > 1 ? "md:grid-cols-2 max-w-3xl" : "max-w-sm"}`}>
-            {products.map((product, i) => (
-              <Reveal key={product.slug} delay={i * 0.08} className="h-full">
-                <ProductCard product={product} />
-              </Reveal>
-            ))}
-          </div>
+          <ProductGrid items={products} />
 
-          <Reveal delay={0.2}>
-            <p className="text-center text-sm text-zinc-500 mt-10 max-w-xl mx-auto">
-              {onSale.length > 0 ? t("pages.shop.listNote") : t("pages.products.notYet")}
-            </p>
-          </Reveal>
+          <p className="text-center text-sm text-zinc-400 mt-10 max-w-xl mx-auto">
+            {onSale.length > 0 ? t("pages.shop.listNote") : t("pages.products.notYet")}
+          </p>
         </div>
       </section>
     </div>

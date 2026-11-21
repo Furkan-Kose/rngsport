@@ -1,9 +1,10 @@
-import type { LucideIcon } from "lucide-react";
 import Reveal from "./Reveal";
+import { cx, sectionTitleClass } from "../../lib/siteUi";
 
 interface SectionHeaderProps {
+  /** Başlığın üstündeki kısa etiket. Yalnızca başlığın söylemediği bir bilgi
+      taşıyorsa verilir ("Paketlerimiz" üstüne "Fiyatlandırma" yazılmaz). */
   eyebrow?: string;
-  icon?: LucideIcon;
   title: React.ReactNode;
   description?: React.ReactNode;
   gradient?: boolean;
@@ -13,55 +14,26 @@ interface SectionHeaderProps {
 
 const SectionHeader = ({
   eyebrow,
-  icon: Icon,
   title,
   description,
   gradient = false,
   align = "center",
-  className = "",
+  className = "mb-12",
 }: SectionHeaderProps) => {
-  const alignWrap = align === "center" ? "text-center mx-auto" : "text-left";
-  const eyebrowJustify = align === "center" ? "justify-center" : "justify-start";
+  const centered = align === "center";
 
   return (
-    <div className={`${alignWrap} ${className}`}>
-      {eyebrow && (
-        <Reveal>
-          <div
-            className={`inline-flex items-center gap-3 ${eyebrowJustify} mb-4`}
-          >
-            <span className="hidden sm:block w-8 h-px bg-emerald-500/50" />
-            {Icon && <Icon className="w-4 h-4 text-emerald-400" />}
-            <span className="text-emerald-400 font-semibold uppercase tracking-[0.18em] text-xs sm:text-sm">
-              {eyebrow}
-            </span>
-            <span className="hidden sm:block w-8 h-px bg-emerald-500/50" />
-          </div>
-        </Reveal>
-      )}
+    <Reveal className={cx(centered ? "text-center mx-auto" : "text-left", className)}>
+      {eyebrow && <p className="text-sm font-semibold text-emerald-400 mb-3">{eyebrow}</p>}
 
-      <Reveal delay={0.08}>
-        <h2
-          className={`text-3xl sm:text-5xl font-bold leading-tight mb-5 ${
-            gradient ? "text-gradient-brand" : "text-gray-100"
-          }`}
-        >
-          {title}
-        </h2>
-      </Reveal>
+      <h2 className={cx(sectionTitleClass, "leading-tight", gradient && "text-gradient-brand")}>{title}</h2>
 
       {description && (
-        <Reveal delay={0.16}>
-          <p
-            className={`text-gray-400 text-base sm:text-lg max-w-2xl ${
-              align === "center" ? "mx-auto" : ""
-            }`}
-          >
-            {description}
-          </p>
-        </Reveal>
+        <p className={cx("mt-4 text-zinc-400 text-base sm:text-lg max-w-2xl", centered && "mx-auto")}>
+          {description}
+        </p>
       )}
-    </div>
+    </Reveal>
   );
 };
 

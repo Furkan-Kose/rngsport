@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useTournaments } from '../../lib/tournaments';
-import { Loader2, Plus, Trash2, X, Package as PackageIcon, Save } from 'lucide-react';
+import { Loader2, Package as PackageIcon, Plus, Save, Trash2, X, Zap } from 'lucide-react';
 import api from '../../lib/api';
-import { SkeletonRows } from './ui';
+import { ModalBackdrop, SkeletonRows } from './ui';
 import { APPARATUSES } from '../../constants/apparatuses';
+import { notifyError } from '../../lib/adminErrors';
+import { formatMoney } from '../../lib/adminFormat';
 
 interface PackageOption {
   id: string;
@@ -125,7 +127,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
     api
       .get('/api/packages')
       .then(({ data }) => setPackages(data))
-      .catch((err) => console.error('Paketler alınamadı:', err))
+      .catch((err) => notifyError(err, 'Paketler yüklenemedi'))
       .finally(() => setIsLoadingPackages(false));
   }, [isOpen]);
 
@@ -181,8 +183,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
     0,
   );
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(price);
+  const formatPrice = formatMoney;
 
   const addRow = () => {
     setItems((prev) => [
@@ -296,8 +297,8 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-3 sm:p-4 z-50">
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+    <ModalBackdrop onClose={onClose}>
+      <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="p-4 sm:p-6 border-b border-gray-700 flex items-center justify-between sticky top-0 bg-gray-800 z-10">
           <h2 className="text-lg sm:text-xl font-semibold text-white">
             {mode === 'edit' ? 'Rezervasyonu Düzenle' : 'Yeni Rezervasyon'}
@@ -327,7 +328,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
               value={form.tournamentId}
               onChange={(e) => setForm((p) => ({ ...p, tournamentId: e.target.value }))}
               required
-              className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+              className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
             >
               <option value="">Yarışma seçin</option>
               {tournaments.map((t) => (
@@ -352,7 +353,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                   name="athleteName"
                   value={form.athleteName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
 
@@ -365,7 +366,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                   name="clubName"
                   value={form.clubName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
 
@@ -379,7 +380,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                   value={form.birthYear}
                   onChange={handleChange}
                   placeholder="2015"
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
 
@@ -393,7 +394,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                   value={form.customerPhone}
                   onChange={handleChange}
                   placeholder="0532 123 45 67"
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
 
@@ -407,7 +408,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                   value={form.customerEmail}
                   onChange={handleChange}
                   placeholder="ornek@gmail.com"
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
 
@@ -418,7 +419,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                     name="status"
                     value={form.status}
                     onChange={handleChange}
-                    className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   >
                     {STATUS_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -437,7 +438,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                   onChange={handleChange}
                   rows={2}
                   placeholder="Ek not"
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25 resize-none"
                 />
               </div>
             </div>
@@ -463,7 +464,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                 <SkeletonRows rows={3} />
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 bg-gray-900/30 border border-dashed border-gray-700 rounded-lg">
+              <div className="text-center py-6 text-gray-400 bg-gray-900/30 border border-dashed border-gray-700 rounded-lg">
                 <PackageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Henüz paket eklenmedi.</p>
               </div>
@@ -478,11 +479,11 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                       className="grid md:grid-cols-12 gap-2 p-3 bg-gray-900/50 border border-gray-700 rounded-lg"
                     >
                       <div className="md:col-span-5">
-                        <label className="text-[11px] text-gray-500 mb-1 block">Paket</label>
+                        <label className="text-xs text-gray-400 mb-1 block">Paket</label>
                         <select
                           value={it.packageId}
                           onChange={(e) => updateRow(it.rowId, { packageId: e.target.value })}
-                          className="w-full px-2.5 py-2 bg-gray-800 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:border-violet-500"
+                          className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                         >
                           <option value="">Paket seçin</option>
                           {packages.map((p) => (
@@ -494,7 +495,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                       </div>
 
                       <div className="md:col-span-3">
-                        <label className="text-[11px] text-gray-500 mb-1 block">Seri</label>
+                        <label className="text-xs text-gray-400 mb-1 block">Seri</label>
                         <select
                           value={it.seriesCount}
                           onChange={(e) =>
@@ -503,7 +504,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                             })
                           }
                           disabled={!it.packageId}
-                          className="w-full px-2.5 py-2 bg-gray-800 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:border-violet-500 disabled:opacity-50"
+                          className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                         >
                           <option value={1}>
                             1 Seri{pkg ? ` — ${formatPrice(pkg.reservationPrice)}` : ''}
@@ -518,7 +519,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                       </div>
 
                       <div className="md:col-span-2">
-                        <label className="text-[11px] text-gray-500 mb-1 block">Adet</label>
+                        <label className="text-xs text-gray-400 mb-1 block">Adet</label>
                         <input
                           type="number"
                           min={1}
@@ -530,13 +531,13 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                             })
                           }
                           disabled={!it.packageId}
-                          className="w-full px-2.5 py-2 bg-gray-800 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:border-violet-500 disabled:opacity-50"
+                          className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                         />
                       </div>
 
                       <div className="md:col-span-2 flex items-center justify-between md:justify-end gap-2 md:flex-col md:items-end md:gap-1">
                         <div className="md:self-end">
-                          <label className="text-[11px] text-gray-500 block md:text-right">Tutar</label>
+                          <label className="text-xs text-gray-400 block md:text-right">Tutar</label>
                           <span className="text-sm font-semibold text-violet-300 block md:text-right">
                             {formatPrice(lineTotal)}
                           </span>
@@ -544,7 +545,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                         <button
                           type="button"
                           onClick={() => removeRow(it.rowId)}
-                          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                           aria-label="Sil"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -558,20 +559,20 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                             type="checkbox"
                             checked={it.priority}
                             onChange={(e) => updateRow(it.rowId, { priority: e.target.checked })}
-                            className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
+                            className="w-4 h-4 shrink-0 rounded accent-amber-500 cursor-pointer"
                           />
                           <span className="text-xs text-gray-300">
-                            ⚡ <strong className="text-amber-300">Öncelikli</strong>{' '}
-                            <span className="text-gray-500">(+{formatPrice(pkg.priorityFee)} / seri)</span>
+                            <Zap className="inline w-3.5 h-3.5 text-amber-300 -mt-0.5" /> <strong className="text-amber-300">Öncelikli</strong>{' '}
+                            <span className="text-gray-400">(+{formatPrice(pkg.priorityFee)} / seri)</span>
                           </span>
                         </label>
                       )}
 
                       {/* Alet seçimi */}
                       <div className="md:col-span-12 mt-1">
-                        <label className="text-[11px] text-gray-500 mb-1.5 block">
+                        <label className="text-xs text-gray-400 mb-1.5 block">
                           Aletler <span className="text-red-400">*</span>
-                          <span className="text-gray-600 ml-1">
+                          <span className="text-gray-400 ml-1">
                             ({it.apparatuses.length} / {it.seriesCount} seçildi)
                           </span>
                         </label>
@@ -586,7 +587,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
                                 type="button"
                                 disabled={!it.packageId || slotsFull}
                                 onClick={() => toggleApparatusOnRow(it.rowId, a.slug)}
-                                className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                                   active
                                     ? 'bg-violet-500/20 border-violet-500 text-violet-300'
                                     : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
@@ -610,7 +611,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
             <div>
               <p className="text-xs text-gray-400">Toplam Tutar</p>
               <p className="text-2xl font-bold text-violet-400">{formatPrice(totalPrice)}</p>
-              <p className="text-[11px] text-gray-500 mt-0.5">
+              <p className="text-xs text-gray-400 mt-0.5">
                 Müşterinin sadakat indirimi varsa kayıtta otomatik düşülür
               </p>
             </div>
@@ -626,7 +627,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-gray-950 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -644,7 +645,7 @@ const ReservationFormModal = ({ isOpen, mode, initialData, defaultTournamentId, 
           </div>
         </form>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

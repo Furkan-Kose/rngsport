@@ -1,162 +1,125 @@
-import { Instagram, Mail, Phone, ShieldCheck } from "lucide-react";
+import { Instagram, Mail, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
-import { useLocalizedPath } from "../lib/localePath";
+import WhatsAppIcon from "./ui/WhatsAppIcon";
+import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappUrl } from "../lib/contact";
+
+const linkClass = "text-zinc-400 hover:text-emerald-400 transition-colors";
 
 const Footer = () => {
   const { t } = useTranslation();
-  const localize = useLocalizedPath();
-
-  const socialLinks = [
-    {
-      label: "Instagram",
-      href: "https://www.instagram.com/range.media",
-      icon: Instagram,
-      external: true,
-    },
-    { label: t("common.footer.email"), href: "mailto:range.media0@gmail.com", icon: Mail },
-    // Telefon hattı yalnızca WhatsApp için kullanılıyor
-    { label: t("common.footer.phone"), href: "https://wa.me/905512217635", icon: Phone, external: true },
-  ];
 
   const navLinks = [
-    { name: t("common.nav.home"), href: localize("/#") },
-    { name: t("common.nav.about"), href: localize("/hakkimizda") },
-    { name: t("common.nav.gallery"), href: localize("/galeri") },
-    { name: t("common.nav.awards"), href: localize("/odul-torenleri") },
-    { name: t("common.nav.products"), href: localize("/urunler") },
-    { name: t("common.nav.packages"), href: localize("/paketler") },
+    { name: t("common.nav.packages"), to: "/paketler" },
+    { name: t("common.nav.reserve"), to: "/rezervasyon" },
+    { name: t("common.nav.gallery"), to: "/galeri" },
+    { name: t("common.nav.awards"), to: "/odul-torenleri" },
+    { name: t("common.nav.products"), to: "/urunler" },
+    { name: t("common.nav.about"), to: "/hakkimizda" },
+  ];
+
+  const legalLinks = [
+    { name: t("common.legalLinks.privacy"), to: "/gizlilik-ve-guvenlik-politikasi" },
+    { name: t("common.legalLinks.kvkk"), to: "/kvkk-aydinlatma-metni" },
+    { name: t("common.legalLinks.distanceSales"), to: "/mesafeli-satis-sozlesmesi" },
+    { name: t("common.legalLinks.refund"), to: "/iptal-ve-iade-kosullari" },
   ];
 
   return (
-    <footer id="contact" className="relative pt-16 pb-10">
-      {/* Animated gradient top edge */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-emerald-500/50 to-transparent" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-px bg-emerald-400/60 blur-[2px]" />
-
+    <footer className="bg-black border-t border-zinc-800 pt-14 pb-10">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Logo & About */}
-          <div className="md:col-span-2">
-            <a href="#home" className="flex items-center gap-3 mb-6 group">
-              <img
-                src="/logo-web.png"
-                alt="RNG Sport"
-                className="h-16 w-auto transition-transform duration-300 group-hover:scale-105"
-              />
-            </a>
-            <p className="text-gray-400 max-w-md mb-6 leading-relaxed">
-              {t("common.footer.about")}
-            </p>
-            <div className="flex gap-3">
-              {socialLinks.map(({ label, href, icon: Icon, external }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  title={label}
-                  {...(external && {
-                    target: "_blank",
-                    rel: "noopener noreferrer",
-                  })}
-                  className="w-10 h-10 rounded-full bg-zinc-900/70 backdrop-blur border border-white/10 shadow-lg flex items-center justify-center text-gray-400 hover:text-emerald-400 hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_18px_rgba(16,185,129,0.35)] hover:scale-110 transition-all duration-300"
-                >
-                  <Icon className="w-5 h-5" />
-                </a>
-              ))}
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          <div className="sm:col-span-2">
+            <LocalizedLink to="/" className="inline-block mb-5" aria-label={t("common.nav.home")}>
+              <img src="/logo-web.png" alt="RNG Sport" className="h-14 w-auto" />
+            </LocalizedLink>
+            <p className="text-zinc-400 max-w-md">{t("common.footer.about")}</p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-bold text-gray-100 mb-6 flex items-center gap-2">
-              <span className="w-1 h-4 rounded-full bg-emerald-500" />
-              {t("common.footer.quickLinks")}
-            </h4>
-            <ul className="space-y-3">
+          <nav aria-label={t("common.footer.quickLinks")}>
+            <h2 className="font-semibold text-zinc-100 mb-4">{t("common.footer.quickLinks")}</h2>
+            <ul className="space-y-2.5">
               {navLinks.map((link) => (
-                <li key={link.name}>
-                  <a
-                    href={link.href}
-                    className="text-gray-400 hover:text-emerald-400 hover:translate-x-1 inline-block transition-all duration-300"
-                  >
+                <li key={link.to}>
+                  <LocalizedLink to={link.to} className={linkClass}>
                     {link.name}
-                  </a>
+                  </LocalizedLink>
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
 
-          {/* Contact */}
           <div>
-            <h4 className="font-bold text-gray-100 mb-6 flex items-center gap-2">
-              <span className="w-1 h-4 rounded-full bg-emerald-500" />
-              {t("common.footer.contact")}
-            </h4>
-            <ul className="space-y-3 text-gray-400">
+            <h2 className="font-semibold text-zinc-100 mb-4">{t("common.footer.contact")}</h2>
+            <ul className="space-y-2.5">
               <li>
-                <a href="https://wa.me/905512217635" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">
-                  <span className="block text-xs text-gray-500">{t("common.footer.phone")}</span>
-                  +90 (551) 221 76 35
+                <a
+                  href={whatsappUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${linkClass} inline-flex items-center gap-2.5`}
+                >
+                  <WhatsAppIcon className="w-4 h-4 shrink-0" />
+                  <span>
+                    <span className="sr-only">{t("common.footer.phone")}: </span>
+                    {WHATSAPP_DISPLAY}
+                  </span>
                 </a>
               </li>
-              <li>{t("common.footer.location")}</li>
+              <li>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className={`${linkClass} inline-flex items-center gap-2.5 break-all`}
+                >
+                  <Mail className="w-4 h-4 shrink-0" aria-hidden />
+                  {CONTACT_EMAIL}
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.instagram.com/range.media"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${linkClass} inline-flex items-center gap-2.5`}
+                >
+                  <Instagram className="w-4 h-4 shrink-0" aria-hidden />
+                  Instagram
+                </a>
+              </li>
+              <li className="text-zinc-400">{t("common.footer.location")}</li>
             </ul>
           </div>
         </div>
 
-        {/* Secure payment + logos */}
-        <div className="mt-12 flex flex-col items-center gap-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-medium text-emerald-300">
+        <div className="mt-12 pt-8 border-t border-zinc-800 flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <span className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" aria-hidden />
               {t("common.footer.securePayment")}
             </span>
+            <img src="/footerLogo.png" alt={t("common.footer.paymentLogosAlt")} className="h-8 opacity-80" />
           </div>
-          <img
-            src="/footerLogo.png"
-            alt={t("common.footer.paymentLogosAlt")}
-            className="h-10 opacity-70 hover:opacity-100 transition-opacity"
-          />
+          <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+            {legalLinks.map((link) => (
+              <li key={link.to}>
+                <LocalizedLink to={link.to} className={linkClass}>
+                  {link.name}
+                </LocalizedLink>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-8 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <p className="mt-6 text-center lg:text-left text-sm text-zinc-400">
           <a
             href="https://rangemedia.com.tr"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-gray-400 hover:text-emerald-400 transition-colors"
+            className="hover:text-emerald-400 transition-colors"
           >
             {t("common.footer.copyright")}
           </a>
-          <div className="flex flex-col md:flex-row gap-2 md:gap-6 text-sm text-gray-400">
-            <LocalizedLink
-              to="/gizlilik-ve-guvenlik-politikasi"
-              className="hover:text-emerald-400 transition-colors"
-            >
-              {t("common.legalLinks.privacy")}
-            </LocalizedLink>
-            <LocalizedLink
-              to="/kvkk-aydinlatma-metni"
-              className="hover:text-emerald-400 transition-colors"
-            >
-              {t("common.legalLinks.kvkk")}
-            </LocalizedLink>
-            <LocalizedLink
-              to="/mesafeli-satis-sozlesmesi"
-              className="hover:text-emerald-400 transition-colors"
-            >
-              {t("common.legalLinks.distanceSales")}
-            </LocalizedLink>
-            <LocalizedLink
-              to="/iptal-ve-iade-kosullari"
-              className="hover:text-emerald-400 transition-colors"
-            >
-              {t("common.legalLinks.refund")}
-            </LocalizedLink>
-          </div>
-        </div>
+        </p>
       </div>
     </footer>
   );

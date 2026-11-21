@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, ArrowRight, Check, Maximize2, X } from "lucide-react";
 import type { ShopPoseOptions } from "../../lib/shop";
+import { backdropClass, useDialog } from "../ui/Modal";
+import { Button } from "../ui/kit";
+import { cardTone, cx, iconButtonClass } from "../../lib/siteUi";
 
 // Sipariş adımları: 1 Alet · 2 Poz · 3 Bilgiler. Tamamlanan adıma tıklanıp geri dönülebilir.
 export const StepIndicator = ({ step, maxStep, onStep }: { step: number; maxStep: number; onStep: (s: 1 | 2 | 3) => void }) => {
@@ -21,24 +24,25 @@ export const StepIndicator = ({ step, maxStep, onStep }: { step: number; maxStep
               type="button"
               disabled={!reachable}
               onClick={() => onStep(n)}
-              className={`flex items-center gap-2 text-sm font-medium ${
-                active ? "text-white" : done ? "text-emerald-400 hover:text-emerald-300" : "text-zinc-500"
+              aria-current={active ? "step" : undefined}
+              className={`flex items-center gap-2 min-h-10 text-sm font-medium ${
+                active ? "text-white" : done ? "text-emerald-400 hover:text-emerald-300" : "text-zinc-400"
               } disabled:cursor-default`}
             >
               <span
                 className={`w-7 h-7 rounded-full flex items-center justify-center border text-xs ${
                   active
-                    ? "bg-emerald-500 border-emerald-400 text-white"
+                    ? "bg-emerald-500 border-emerald-400 text-zinc-950"
                     : done
                       ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
-                      : "bg-zinc-800 border-zinc-700 text-zinc-500"
+                      : "bg-zinc-800 border-zinc-700 text-zinc-400"
                 }`}
               >
                 {done ? <Check className="w-4 h-4" /> : n}
               </span>
               {label}
             </button>
-            {i < steps.length - 1 && <span className="w-6 sm:w-10 h-px bg-zinc-700" />}
+            {i < steps.length - 1 && <span aria-hidden className="w-6 sm:w-10 h-px bg-zinc-700" />}
           </li>
         );
       })}
@@ -63,12 +67,7 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
   const [zoom, setZoom] = useState<string | null>(null);
   const current = options.apparatuses.find((a) => a.slug === apparatus);
 
-  useEffect(() => {
-    if (!zoom) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setZoom(null);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [zoom]);
+  const zoomRef = useDialog(zoom !== null, () => setZoom(null));
 
   if (step === 1) {
     return (
@@ -84,22 +83,23 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
                 key={a.slug}
                 type="button"
                 onClick={() => onApparatus(a.slug)}
-                className={`flex items-center justify-between gap-3 text-left rounded-2xl border px-5 py-5 transition-all ${
-                  selected
-                    ? "border-emerald-400 bg-emerald-500/10 ring-2 ring-emerald-500/40"
-                    : "border-zinc-800 bg-zinc-900/60 hover:border-emerald-500/50 hover:bg-zinc-900"
-                }`}
+                aria-pressed={selected}
+                className={cx(
+                  cardTone(selected ? "accent" : "default"),
+                  "flex items-center justify-between gap-3 text-left px-5 py-5 transition-colors",
+                  selected ? "bg-emerald-500/10" : "hover:border-zinc-600",
+                )}
               >
                 <span>
                   <span className="block text-lg font-semibold text-white">{t(`common.apparatus.${a.slug}`)}</span>
-                  <span className="block text-xs text-zinc-400 mt-0.5">
+                  <span className="block text-sm text-zinc-400 mt-0.5">
                     {t("pages.shop.checkout.steps.poseCount", { count: a.poses.length })}
                   </span>
                 </span>
                 {selected ? (
                   <Check className="w-5 h-5 text-emerald-400 shrink-0" />
                 ) : (
-                  <ArrowRight className="w-5 h-5 text-zinc-500 shrink-0" />
+                  <ArrowRight className="w-5 h-5 text-zinc-400 shrink-0" />
                 )}
               </button>
             );
@@ -122,11 +122,13 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
           return (
             <div
               key={pose.no}
-              className={`relative rounded-2xl overflow-hidden border bg-zinc-900/60 transition-all ${
-                selected ? "border-emerald-400 ring-2 ring-emerald-500/50" : "border-zinc-800 hover:border-emerald-500/50"
-              }`}
+              className={cx(
+                cardTone(selected ? "accent" : "default"),
+                "relative overflow-hidden transition-colors",
+                selected ? "ring-2 ring-emerald-500/50" : "hover:border-zinc-600",
+              )}
             >
-              <button type="button" onClick={() => onPose(pose.no)} className="block w-full text-left">
+              <button type="button" aria-pressed={selected} onClick={() => onPose(pose.no)} className="block w-full text-left rounded-2xl">
                 <div className="aspect-3/4 bg-zinc-800">
                   <img src={pose.image} alt={pose.label ?? ""} loading="lazy" className="w-full h-full object-cover" />
                 </div>
@@ -137,7 +139,7 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
                   </span>
                   <span
                     className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                      selected ? "bg-emerald-500 border-emerald-400 text-white" : "border-zinc-600"
+                      selected ? "bg-emerald-500 border-emerald-400 text-zinc-950" : "border-zinc-600"
                     }`}
                   >
                     {selected && <Check className="w-4 h-4" />}
@@ -147,7 +149,7 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
               <button
                 type="button"
                 onClick={() => setZoom(pose.image)}
-                className="absolute top-2 right-2 p-2 rounded-lg bg-black/60 text-white hover:bg-black/80"
+                className="absolute top-2 right-2 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-black/70 text-white hover:bg-black"
                 aria-label={t("pages.shop.checkout.steps.zoom")}
               >
                 <Maximize2 className="w-4 h-4" />
@@ -158,26 +160,28 @@ const PosePicker = ({ options, step, apparatus, poseNo, onApparatus, onPose, onB
       </div>
 
       <div className="flex items-center justify-between gap-3 mt-8">
-        <button type="button" onClick={onBack} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium">
-          <ArrowLeft className="w-4 h-4" />
+        <Button variant="secondary" size="lg" icon={ArrowLeft} onClick={onBack}>
           {t("pages.shop.checkout.steps.back")}
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={!poseNo}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white font-semibold"
-        >
+        </Button>
+        <Button size="lg" onClick={onNext} disabled={!poseNo}>
           {t("pages.shop.checkout.steps.next")}
-          <ArrowRight className="w-4 h-4" />
-        </button>
+          <ArrowRight className="w-4 h-4" aria-hidden />
+        </Button>
       </div>
 
       {zoom &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4" onClick={() => setZoom(null)}>
-            <button className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 text-white" aria-label={t("pages.shop.promo.close")}>
-              <X className="w-6 h-6" />
+          <div
+            ref={zoomRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("pages.shop.checkout.steps.zoom")}
+            tabIndex={-1}
+            className={cx(backdropClass, "bg-black/90 flex items-center justify-center p-4 outline-none")}
+            onClick={() => setZoom(null)}
+          >
+            <button type="button" className={iconButtonClass("secondary", "absolute top-4 right-4")} aria-label={t("common.close")}>
+              <X className="w-6 h-6" aria-hidden />
             </button>
             <img src={zoom} alt="" className="max-w-full max-h-[90vh] object-contain rounded-xl" />
           </div>,

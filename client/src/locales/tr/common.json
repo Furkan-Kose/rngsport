@@ -78,5 +78,7 @@
   "retry": "Tekrar dene",
   "required": "zorunlu",
   "optional": "opsiyonel",
-  "total": "Toplam"
+  "total": "Toplam",
+  "previous": "Önceki",
+  "next": "Sonraki"
 }

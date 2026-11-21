@@ -3,10 +3,10 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, ImagePlus, Loader2, Pencil, Plus, Save, ShoppingBag, Star, Trash2, X } from 'lucide-react';
 import api from '../../lib/api';
-import { formatTL } from '../../lib/loyalty';
+import { formatMoney as formatTL } from '../../lib/adminFormat';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
-import { Button, EmptyState, PageHeader, Panel, SkeletonGrid } from '../../components/admin/ui';
+import { Button, EmptyState, ModalBackdrop, PageHeader, Panel, SkeletonGrid } from '../../components/admin/ui';
 import { APPARATUSES, getApparatusLabel } from '../../constants/apparatuses';
 
 interface FieldDef {
@@ -117,7 +117,7 @@ const toFieldKey = (label: string) =>
     .slice(0, 30);
 
 const inputClass =
-  'w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
+  'w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25';
 const labelClass = 'block text-sm font-medium text-gray-300 mb-1';
 
 // Sunucu formatı { en: { name, ..., fields: { key: label } } } ↔ form formatı { en: { name, "field:key": label } }
@@ -432,7 +432,7 @@ const ShopProductsPage = () => {
               </div>
               <div className="p-4 flex-1 flex flex-col">
                 <h2 className="font-semibold text-white">{p.name}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">/urunler/{p.slug}</p>
+                <p className="text-xs text-gray-400 mt-0.5">/urunler/{p.slug}</p>
                 <p className="text-lg font-bold text-amber-400 mt-2">{p.price != null ? formatTL(p.price) : 'Fiyat girilmedi'}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {p.customFields.length} kişiselleştirme alanı · {p.orderCount} sipariş · sıra {p.sortOrder}
@@ -469,8 +469,8 @@ const ShopProductsPage = () => {
 
       {/* Form */}
       {formOpen && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl my-8">
+        <ModalBackdrop onClose={() => setFormOpen(false)} top>
+          <form onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl my-8">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
               <h2 className="text-lg font-semibold text-white">{editing ? 'Ürünü Düzenle' : 'Yeni Ürün'}</h2>
               <button type="button" onClick={() => setFormOpen(false)} className="text-gray-400 hover:text-white">
@@ -507,7 +507,7 @@ const ShopProductsPage = () => {
                   <label className={labelClass}>Açıklama (detay sayfası; paragrafları boş satırla ayırın)</label>
                   <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={5} className={inputClass} />
                   {['sporcu-figuru', 'isikli-cimnastik-harfi'].includes(form.slug) && (
-                    <p className="text-xs text-gray-500 mt-1">Bu ürünün detay sayfasında sitedeki hazır tanıtım metni gösterilir.</p>
+                    <p className="text-xs text-gray-400 mt-1">Bu ürünün detay sayfasında sitedeki hazır tanıtım metni gösterilir.</p>
                   )}
                 </div>
               </div>
@@ -519,7 +519,7 @@ const ShopProductsPage = () => {
                   {form.imageUrl ? (
                     <img src={form.imageUrl} alt="" className="w-24 h-28 object-cover rounded-lg border border-gray-600" />
                   ) : (
-                    <div className="w-24 h-28 rounded-lg border border-dashed border-gray-600 flex items-center justify-center text-gray-500 text-xs">Yok</div>
+                    <div className="w-24 h-28 rounded-lg border border-dashed border-gray-600 flex items-center justify-center text-gray-400 text-xs">Yok</div>
                   )}
                   <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-sm text-white cursor-pointer">
                     {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
@@ -538,13 +538,13 @@ const ShopProductsPage = () => {
               {/* Ek fotoğraflar: detay sayfasında kapaktan sonra kaydırmalı */}
               <div>
                 <label className={labelClass}>
-                  Ek fotoğraflar <span className="text-gray-500 font-normal">({form.extraImages.length}/{MAX_EXTRA_IMAGES} · detay sayfasında kaydırmalı galeri)</span>
+                  Ek fotoğraflar <span className="text-gray-400 font-normal">({form.extraImages.length}/{MAX_EXTRA_IMAGES} · detay sayfasında kaydırmalı galeri)</span>
                 </label>
                 <div className="flex flex-wrap gap-3">
                   {form.extraImages.map((img, i) => (
                     <div key={img.key} className="relative w-24">
                       <img src={img.url} alt="" className="w-24 h-28 object-cover rounded-lg border border-gray-600" />
-                      <span className="absolute top-1 left-1 text-[10px] px-1.5 rounded bg-black/70 text-white">{i + 2}</span>
+                      <span className="absolute top-1 left-1 text-xs px-1.5 rounded bg-black/70 text-white">{i + 2}</span>
                       <div className="flex justify-between mt-1">
                         <button type="button" title="Sola al" onClick={() => moveExtra(i, -1)} disabled={i === 0} className="p-1 text-gray-400 hover:text-white disabled:opacity-30">
                           <ChevronLeft className="w-4 h-4" />
@@ -579,7 +579,7 @@ const ShopProductsPage = () => {
                     </label>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Birden fazla dosyayı aynı anda seçebilirsiniz. Okla sırayı değiştirin, ★ ile kapak yapın. Kaydet'e basınca geçerli olur.</p>
+                <p className="text-xs text-gray-400 mt-1">Birden fazla dosyayı aynı anda seçebilirsiniz. Okla sırayı değiştirin, ★ ile kapak yapın. Kaydet'e basınca geçerli olur.</p>
               </div>
 
               {/* Kişiselleştirme alanları */}
@@ -587,7 +587,7 @@ const ShopProductsPage = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="text-sm font-medium text-white">Kişiselleştirme alanları</h3>
-                    <p className="text-xs text-gray-500">Müşterinin sipariş verirken dolduracağı bilgiler (en fazla 10).</p>
+                    <p className="text-xs text-gray-400">Müşterinin sipariş verirken dolduracağı bilgiler (en fazla 10).</p>
                   </div>
                   <button
                     type="button"
@@ -620,7 +620,7 @@ const ShopProductsPage = () => {
                       </button>
                     </div>
                   ))}
-                  {form.customFields.length === 0 && <p className="text-xs text-gray-500">Alan yok — müşteri sadece adres girer.</p>}
+                  {form.customFields.length === 0 && <p className="text-xs text-gray-400">Alan yok — müşteri sadece adres girer.</p>}
                 </div>
               </div>
 
@@ -629,7 +629,7 @@ const ShopProductsPage = () => {
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                   <div>
                     <h3 className="text-sm font-medium text-white">Alet ve poz seçimi</h3>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-400">
                       Müşteri sipariş verirken önce aleti, sonra o aletin pozlarından birini seçer. Fotoğrafı olmayan poz ve hiç fotoğrafı olmayan alet müşteriye gösterilmez.
                     </p>
                   </div>
@@ -737,7 +737,7 @@ const ShopProductsPage = () => {
               </Button>
             </div>
           </form>
-        </div>
+        </ModalBackdrop>
       )}
 
       <ConfirmDeleteModal

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, RotateCcw, Save, X } from 'lucide-react';
 import api from '../../lib/api';
 import { trackTimes, type ShootTrack, type TrackTimestamps } from '../../lib/shooting';
+import { ModalBackdrop } from './ui';
 
 export interface ShootingEntry extends TrackTimestamps {
   id: string;
@@ -116,8 +117,8 @@ const ShootingTimeEditModal = ({
   const handleReset = () => submit(() => ({ action: 'reset' }));
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <ModalBackdrop onClose={onClose}>
+      <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-5 border-b border-gray-700 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Saatleri Düzenle</h2>
@@ -149,7 +150,7 @@ const ShootingTimeEditModal = ({
                 value={expectedTime}
                 onChange={(e) => setExpectedTime(e.target.value)}
                 placeholder="Örn: 14:23"
-                className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
               />
             </div>
           )}
@@ -166,7 +167,7 @@ const ShootingTimeEditModal = ({
                   step="1"
                   value={times[track]?.startedAt ?? ''}
                   onChange={(e) => setField(track, 'startedAt', e.target.value)}
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
               <div>
@@ -176,7 +177,7 @@ const ShootingTimeEditModal = ({
                   step="1"
                   value={times[track]?.endedAt ?? ''}
                   onChange={(e) => setField(track, 'endedAt', e.target.value)}
-                  className="w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
             </div>
@@ -206,7 +207,7 @@ const ShootingTimeEditModal = ({
             type="button"
             onClick={handleSave}
             disabled={isSubmitting}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -217,7 +218,7 @@ const ShootingTimeEditModal = ({
           </button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

@@ -1,9 +1,11 @@
 import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Ürün detay galerisi (e-ticaret gibi): kaydırma (parmakla), oklar, altta küçük resimler.
 // Tek fotoğrafta düz resim olarak görünür.
 const ProductImageCarousel = ({ images, alt }: { images: string[]; alt: string }) => {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
   const touchX = useRef<number | null>(null);
   const list = images.filter(Boolean);
@@ -11,13 +13,13 @@ const ProductImageCarousel = ({ images, alt }: { images: string[]; alt: string }
   const go = (i: number) => setIndex((i + count) % count);
 
   if (count <= 1) {
-    return <img src={list[0]} alt={alt} className="relative w-full rounded-2xl shadow-2xl" />;
+    return <img src={list[0]} alt={alt} className="relative w-full rounded-2xl" />;
   }
 
   return (
     <div className="relative">
       <div
-        className="relative overflow-hidden rounded-2xl shadow-2xl bg-zinc-900 select-none"
+        className="relative overflow-hidden rounded-2xl bg-zinc-900 select-none"
         onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
         onTouchEnd={(e) => {
           if (touchX.current === null) return;
@@ -44,17 +46,17 @@ const ProductImageCarousel = ({ images, alt }: { images: string[]; alt: string }
 
         <button
           type="button"
-          aria-label="Önceki"
+          aria-label={t("common.previous")}
           onClick={() => go(index - 1)}
-          className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
+          className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         <button
           type="button"
-          aria-label="Sonraki"
+          aria-label={t("common.next")}
           onClick={() => go(index + 1)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -64,13 +66,13 @@ const ProductImageCarousel = ({ images, alt }: { images: string[]; alt: string }
       </div>
 
       {/* Küçük resimler: kaydırılabilir ama kaydırma çubuğu gizli */}
-      <div className="flex gap-2 mt-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
         {list.map((src, i) => (
           <button
             key={src}
             type="button"
             onClick={() => setIndex(i)}
-            aria-label={`${i + 1}`}
+            aria-label={`${alt} ${i + 1} / ${count}`}
             aria-current={i === index}
             className={`shrink-0 w-16 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
               i === index ? "border-emerald-400" : "border-transparent opacity-60 hover:opacity-100"

@@ -31,13 +31,37 @@
       "photoPending": "Fotoğraflar hazırlanıyor",
       "videoPending": "Video hazırlanıyor",
       "reelsPending": "Reels videosu hazırlanıyor"
+    },
+    "newReservation": "Yeni rezervasyon",
+    "confirmDeleteText": "{{name}} için yapılan rezervasyon silinecek. Bu işlem geri alınamaz.",
+    "statusLabel": {
+      "reservation": {
+        "PENDING": "Stantta ödenecek",
+        "CONFIRMED": "Onaylandı · stantta ödenecek"
+      }
+    },
+    "statusHelp": {
+      "reservation": {
+        "PENDING": "Rezervasyonunuz alındı. Ödemeyi yarışma günü standımızda yaparsınız.",
+        "CONFIRMED": "Rezervasyonunuz onaylandı. Ödemeyi yarışma günü standımızda yaparsınız.",
+        "PAID": "Ödemeniz alındı. Dosyalar hazır olduğunda e-postayla haber vereceğiz.",
+        "DELIVERED": "Dosyalarınız galerinizde.",
+        "CANCELLED": "Bu rezervasyon iptal edildi."
+      },
+      "order": {
+        "PENDING": "Ödeme tamamlanmadı. Sepetten yeniden ödeyebilirsiniz.",
+        "PAID": "Ödemeniz alındı. Dosyalar hazır olduğunda e-postayla haber vereceğiz.",
+        "DELIVERED": "Dosyalarınız galerinizde.",
+        "FAILED": "Ödeme alınamadı.",
+        "CANCELLED": "Bu sipariş iptal edildi."
+      }
     }
   },
   "password": {
     "title": "Şifre Değiştir",
     "subtitle": "Hesap şifrenizi güncelleyin",
-    "current": "Mevcut şifreniz",
-    "next": "Yeni şifre (en az 8 karakter)",
+    "current": "Mevcut şifre",
+    "next": "Yeni şifre",
     "confirm": "Yeni şifre tekrar",
     "tooShort": "Yeni şifre en az 8 karakter olmalı",
     "mismatch": "Yeni şifreler eşleşmiyor",
@@ -65,7 +89,8 @@
     "cancel": "Vazgeç",
     "athlete": "Sporcu",
     "updated": "Bilgileriniz güncellendi",
-    "updateFail": "Güncellenemedi"
+    "updateFail": "Güncellenemedi",
+    "title": "Hesap Bilgileri"
   },
   "loyalty": {
     "title": "Sadakat Puanım",
@@ -85,11 +110,11 @@
   },
   "claim": {
     "linked": "Bu kayıt <1>{{email}}</1> hesabınıza tanımlandı. Fotoğraflarınız hazır olduğunda galerinizde görünecek.",
-    "linkedCta": "Giriş yap ve galerine git",
+    "linkedCta": "Giriş yapın ve galerinize gidin",
     "expired": "<1>{{email}}</1> için hesabınız hazır. Şifrenizi belirlemek için şifremi unuttum adımını kullanın.",
     "expiredCta": "Şifremi belirle",
     "dismissed": "Sorun değil — <1>{{email}}</1> adresine gönderdiğimiz e-postadaki bağlantıdan şifrenizi istediğiniz zaman belirleyebilirsiniz.",
-    "title": "Hesabını tamamla",
+    "title": "Hesabınızı tamamlayın",
     "text": "Fotoğraflarınız bu hesaba yüklenecek. Bir şifre belirleyin, hemen girelim.",
     "creating": "Oluşturuluyor...",
     "create": "Hesabımı Oluştur",

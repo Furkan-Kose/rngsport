@@ -159,16 +159,16 @@ const DownloadHistory = ({ userId }: { userId: string }) => {
                     <span className="text-gray-400 truncate max-w-56">{line.fileName}</span>
                   )}
                   {line.album && <span className="text-gray-400">{line.album}</span>}
-                  <span className="text-gray-500">
+                  <span className="text-gray-400">
                     {line.fileCount} dosya{line.totalSize > 0 && ` · ${formatFileSize(line.totalSize)}`}
                   </span>
                   {line.preview && (
-                    <span className="px-1.5 py-0.5 text-[11px] rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-300">
+                    <span className="px-1.5 py-0.5 text-xs rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-300">
                       Küçük boyut
                     </span>
                   )}
                   {line.viaShare && (
-                    <span className="px-1.5 py-0.5 text-[11px] rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300">
+                    <span className="px-1.5 py-0.5 text-xs rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300">
                       Paylaşım linkinden
                     </span>
                   )}
@@ -176,7 +176,7 @@ const DownloadHistory = ({ userId }: { userId: string }) => {
               ))}
             </ul>
           )}
-          <p className="text-xs text-gray-500 mt-3">
+          <p className="text-xs text-gray-400 mt-3">
             Kayıt, indirmenin başladığını gösterir. Dosyalar doğrudan depodan indiği için bitip bitmediği
             görülmez. {summary && summary.total > 200 && 'Son 200 kayıt gösteriliyor.'}
           </p>

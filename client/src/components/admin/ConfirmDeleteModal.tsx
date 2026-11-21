@@ -1,5 +1,6 @@
 import { CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { ModalBackdrop } from './ui';
 
 interface Props {
   open: boolean;
@@ -35,8 +36,8 @@ const ConfirmDeleteModal = ({
   const danger = tone === 'danger';
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-60">
-      <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-md p-6">
+    <ModalBackdrop onClose={onCancel} busy={isDeleting} dismissOnBackdrop zClass="z-[60]">
+      <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md p-6">
         <div className="text-center">
           <div
             className={`w-16 h-16 rounded-full border-2 flex items-center justify-center mx-auto mb-4 ${
@@ -61,7 +62,7 @@ const ConfirmDeleteModal = ({
               onClick={onConfirm}
               disabled={isDeleting}
               className={`flex-1 px-4 py-2.5 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${
-                danger ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'
+                danger ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-400'
               }`}
             >
               {isDeleting ? (
@@ -76,7 +77,7 @@ const ConfirmDeleteModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

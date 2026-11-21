@@ -1,46 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --animate-float: float 7s ease-in-out infinite;
-  --animate-float-slow: float 11s ease-in-out infinite;
-  --animate-gradient-shift: gradient-shift 8s ease-in-out infinite;
-  --animate-glow-pulse: glow-pulse 3.2s ease-in-out infinite;
-  --animate-shimmer: shimmer 3.5s linear infinite;
-  --animate-shimmer-slow: shimmer 6s linear infinite;
-  --animate-spin-slow: spin 14s linear infinite;
-  --animate-fade-in: fade-in 0.8s ease-out both;
-  --animate-scroll-cue: scroll-cue 2s ease-in-out infinite;
+  /* Yazı tipi: Onest (Latin + Türkçe + Kiril), main.tsx'te @fontsource ile yüklenir */
+  --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Site zemini (zinc-950 ile aynı); çapraz geçişlerde siyahla dönüşümlü kullanılır */
+  --color-surface: #09090b;
+
+  /* Pencere (Modal, lightbox) açılışı — framer yerine CSS: çıkış animasyonu gerekmiyor */
+  --animate-dialog-in: dialog-in 0.2s ease-out both;
+  --animate-fade-in: fade-in 0.2s ease-out both;
 }
 
-@keyframes float {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(0, -16px, 0); }
-}
-
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35), 0 0 24px 4px rgba(16, 185, 129, 0.25); }
-  50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0), 0 0 36px 8px rgba(16, 185, 129, 0.45); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translate3d(0, 12px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
-}
-
-@keyframes scroll-cue {
-  0% { transform: translateY(-4px); opacity: 0; }
-  30% { opacity: 1; }
-  100% { transform: translateY(8px); opacity: 0; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 html {
@@ -52,14 +32,38 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle grid background — used in hero/about hero overlays */
-.bg-grid-dark {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 35%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 35%, transparent 80%);
+/* Müşteri sitesi (MainLayout): gövde metni ve başlık ayarları */
+.site {
+  line-height: 1.6;
+  /* Tarayıcının kendi çizdiği parçalar (açılır liste, kaydırma çubuğu, tarih seçici) koyu tema kullansın */
+  color-scheme: dark;
+}
+/* Açılır liste seçenekleri: açık zeminde açık gri yazı çıkıyordu */
+.site select option,
+.site select optgroup {
+  background-color: #18181b;
+  color: #fafafa;
+}
+.site h1,
+.site h2,
+.site h3 {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* Klavye odağı: sitedeki her tıklanabilir öğede aynı halka. Form alanları kendi
+   halkasını çizer (lib/siteUi.ts inputClass), bu yüzden burada hariç tutulur. */
+@layer base {
+  .site :focus-visible:not(input, select, textarea) {
+    outline: 2px solid var(--color-emerald-400);
+    outline-offset: 2px;
+  }
+}
+
+/* Altta sabit bir çubuk açıkken (seçim çubuğu, sepet özeti) WhatsApp düğmesi üstüne
+   binmesin: çubuk lib/bottomBar.ts ile body'ye işaret koyar. */
+body[data-bottom-bar] .wp-float {
+  bottom: 6rem;
 }
 
 /* Arka plan gibi duran video: dort kenar da section rengine eriyor (md+).
@@ -95,53 +99,14 @@ body {
   }
 }
 
-/* Soft noise overlay for depth */
-.bg-noise {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
-  background-size: 160px 160px;
-}
-
-/* Brand gradient text — animated (single-hue emerald/teal) */
+/* Marka gradyan yazısı (yeşil tonları). Sabit: aynı ekranda birden çok kayan yazı
+   dikkat dağıtıyordu. */
 .text-gradient-brand {
-  background-image: linear-gradient(
-    100deg,
-    #10b981 0%,
-    #6ee7b7 35%,
-    #ffffff 55%,
-    #6ee7b7 75%,
-    #10b981 100%
-  );
-  background-size: 200% auto;
+  background-image: linear-gradient(100deg, #10b981 0%, #6ee7b7 55%, #a7f3d0 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: gradient-shift 9s ease-in-out infinite;
-}
-
-/* Animated gradient border helper — wrap an inner solid element */
-.border-glow-shimmer {
-  background-image: linear-gradient(
-    115deg,
-    rgba(16, 185, 129, 0.0) 0%,
-    rgba(16, 185, 129, 0.5) 25%,
-    rgba(110, 231, 183, 0.55) 50%,
-    rgba(16, 185, 129, 0.5) 75%,
-    rgba(16, 185, 129, 0.0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 4.5s linear infinite;
-}
-
-/* Decorative conic ring — used in Process step circles */
-.ring-conic {
-  background: conic-gradient(
-    from 0deg,
-    rgba(16, 185, 129, 0) 0deg,
-    rgba(16, 185, 129, 0.75) 120deg,
-    rgba(52, 211, 153, 0.6) 200deg,
-    rgba(16, 185, 129, 0) 360deg
-  );
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -156,39 +121,202 @@ body {
 }
 
 .Toastify__toast--error {
-  background: linear-gradient(
-    135deg,
-    #450a0a,
-    #7f1d1d,
-    #be123c
-  ) !important;
+  background: #7f1d1d !important;
   color: #fff !important;
 }
 
 .Toastify__toast--success {
-  background: linear-gradient(
-    135deg,
-    #022c22,
-    #065f46,
-    #0f766e
-  ) !important;
+  background: #065f46 !important;
   color: #ecfdf5 !important;
 }
 
 .Toastify__toast--info {
-  background: linear-gradient(
-    135deg,
-    #020617,
-    #1e3a8a,
-    #2563eb
-  ) !important;
-  color: #eff6ff !important;
+  background: #27272a !important;
+  color: #fafafa !important;
+}
+
+/* ------------------------------------------------------------------
+   Admin paneli temaları (lib/adminTheme.ts). Panelde zemin her zaman gray-*, vurgu her
+   zaman amber-* sınıflarıyla yazılır; tema bu iki paletin değişkenlerini değiştirir.
+   Varsayılan tema ("gray") hiçbir şey tanımlamaz. Öznitelik yalnızca panel açıkken
+   <html>'de bulunur, müşteri sitesini etkilemez.
+   ------------------------------------------------------------------ */
+html[data-admin-theme] {
+  /* Yerel açılır liste, tarih seçici ve kaydırma çubuğu koyu çizilsin */
+  color-scheme: dark;
+}
+html[data-admin-theme] select option,
+html[data-admin-theme] select optgroup {
+  background-color: var(--color-gray-800);
+  color: #fff;
+}
+
+/* ---- Zeminler: yalnızca gri (nötr) değişkenleri. Koyu Gri varsayılan, blok yok. ---- */
+
+/* Siyah */
+html[data-admin-theme="black"] {
+  --color-gray-950: #000000;
+  --color-gray-900: #050506;
+  --color-gray-800: #18181b;
+  --color-gray-700: #27272a;
+  --color-gray-600: #3f3f46;
+  --color-gray-500: #71717a;
+  --color-gray-400: #a1a1aa;
+  --color-gray-300: #d4d4d8;
+  --color-gray-200: #e4e4e7;
+  --color-gray-100: #f4f4f5;
+}
+
+/* Kömür: nötr (mavimsi olmayan) koyu gri */
+html[data-admin-theme="charcoal"] {
+  --color-gray-950: #0a0a0a;
+  --color-gray-900: #141414;
+  --color-gray-800: #212121;
+  --color-gray-700: #333333;
+  --color-gray-600: #4a4a4a;
+  --color-gray-500: #737373;
+  --color-gray-400: #a3a3a3;
+  --color-gray-300: #d4d4d4;
+  --color-gray-200: #e5e5e5;
+  --color-gray-100: #f5f5f5;
+}
+
+/* Lacivert */
+html[data-admin-theme="navy"] {
+  --color-gray-950: #020617;
+  --color-gray-900: #0b1120;
+  --color-gray-800: #1e293b;
+  --color-gray-700: #334155;
+  --color-gray-600: #475569;
+  --color-gray-500: #64748b;
+  --color-gray-400: #94a3b8;
+  --color-gray-300: #cbd5e1;
+  --color-gray-200: #e2e8f0;
+  --color-gray-100: #f1f5f9;
+}
+
+/* Grafit: soğuk, hafif mavimsi koyu gri */
+html[data-admin-theme="graphite"] {
+  --color-gray-950: #010409;
+  --color-gray-900: #0d1117;
+  --color-gray-800: #161b22;
+  --color-gray-700: #30363d;
+  --color-gray-600: #484f58;
+  --color-gray-500: #6e7681;
+  --color-gray-400: #9198a1;
+  --color-gray-300: #c9d1d9;
+  --color-gray-200: #e6edf3;
+  --color-gray-100: #f0f6fc;
+}
+
+/* Kahve: sıcak, hafif kahverengimsi koyu gri */
+html[data-admin-theme="coffee"] {
+  --color-gray-950: #0c0a09;
+  --color-gray-900: #161311;
+  --color-gray-800: #231f1c;
+  --color-gray-700: #3a332e;
+  --color-gray-600: #544b44;
+  --color-gray-500: #7d736b;
+  --color-gray-400: #aba29a;
+  --color-gray-300: #d6d0ca;
+  --color-gray-200: #e8e4df;
+  --color-gray-100: #f6f4f1;
+}
+
+/* ---- Vurgular: yalnızca amber değişkenleri. Amber varsayılan, blok yok. ---- */
+
+/* Yeşil */
+html[data-admin-accent="green"] {
+  --color-amber-100: #d1fae5;
+  --color-amber-200: #a7f3d0;
+  --color-amber-300: #6ee7b7;
+  --color-amber-400: #34d399;
+  --color-amber-500: #10b981;
+  --color-amber-600: #059669;
+  --color-amber-700: #047857;
+}
+
+/* Mavi */
+html[data-admin-accent="blue"] {
+  --color-amber-100: #e0f2fe;
+  --color-amber-200: #bae6fd;
+  --color-amber-300: #7dd3fc;
+  --color-amber-400: #38bdf8;
+  --color-amber-500: #0ea5e9;
+  --color-amber-600: #0284c7;
+  --color-amber-700: #0369a1;
+}
+
+/* Mor */
+html[data-admin-accent="violet"] {
+  --color-amber-100: #ede9fe;
+  --color-amber-200: #ddd6fe;
+  --color-amber-300: #c4b5fd;
+  --color-amber-400: #a78bfa;
+  --color-amber-500: #8b5cf6;
+  --color-amber-600: #7c3aed;
+  --color-amber-700: #6d28d9;
+}
+
+/* Turkuaz */
+html[data-admin-accent="teal"] {
+  --color-amber-100: #ccfbf1;
+  --color-amber-200: #99f6e4;
+  --color-amber-300: #5eead4;
+  --color-amber-400: #2dd4bf;
+  --color-amber-500: #14b8a6;
+  --color-amber-600: #0d9488;
+  --color-amber-700: #0f766e;
+}
+
+/* Gül */
+html[data-admin-accent="rose"] {
+  --color-amber-100: #ffe4e6;
+  --color-amber-200: #fecdd3;
+  --color-amber-300: #fda4af;
+  --color-amber-400: #fb7185;
+  --color-amber-500: #f43f5e;
+  --color-amber-600: #e11d48;
+  --color-amber-700: #be123c;
+}
+
+/* Turuncu */
+html[data-admin-accent="orange"] {
+  --color-amber-100: #ffedd5;
+  --color-amber-200: #fed7aa;
+  --color-amber-300: #fdba74;
+  --color-amber-400: #fb923c;
+  --color-amber-500: #f97316;
+  --color-amber-600: #ea580c;
+  --color-amber-700: #c2410c;
+}
+
+/* İndigo (bir kademe açık: düğmede koyu yazı okunsun) */
+html[data-admin-accent="indigo"] {
+  --color-amber-100: #eef2ff;
+  --color-amber-200: #e0e7ff;
+  --color-amber-300: #c7d2fe;
+  --color-amber-400: #a5b4fc;
+  --color-amber-500: #818cf8;
+  --color-amber-600: #6366f1;
+  --color-amber-700: #4f46e5;
+}
+
+/* Pembe */
+html[data-admin-accent="pink"] {
+  --color-amber-100: #fce7f3;
+  --color-amber-200: #fbcfe8;
+  --color-amber-300: #f9a8d4;
+  --color-amber-400: #f472b6;
+  --color-amber-500: #ec4899;
+  --color-amber-600: #db2777;
+  --color-amber-700: #be185d;
 }
 
 /* Admin menüsü: sığmazsa ince, koyu kaydırma çubuğu (varsayılan beyaz çubuk yerine) */
 .admin-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #4b5563 transparent;
+  scrollbar-color: var(--color-gray-600) transparent;
 }
 .admin-scroll::-webkit-scrollbar {
   width: 6px;
@@ -197,7 +325,7 @@ body {
   background: transparent;
 }
 .admin-scroll::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: var(--color-gray-600);
   border-radius: 9999px;
 }
 

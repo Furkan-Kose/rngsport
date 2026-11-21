@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "../components/LocalizedLink";
-import { motion } from "framer-motion";
-import { ArrowLeft, Award, Calendar, Images, Loader2, MapPin } from "lucide-react";
+import { Award, Calendar, Images, MapPin } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../lib/api";
 import SEO from "../components/SEO";
@@ -18,6 +17,8 @@ import { DownloadHint, SaveToPhotosModal, SelectionBar } from "../components/Med
 import { useMediaSelection } from "../hooks/useMediaSelection";
 import { CheckSquare } from "lucide-react";
 import type { AwardCeremony, AwardPhoto, Pagination } from "../lib/awardCeremonies";
+import { Button, EmptyState, PageHeader, Skeleton } from "../components/ui/kit";
+import { buttonClass, containerClass, cx, pageClass, widthGrid } from "../lib/siteUi";
 
 const AwardCeremonyDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -108,99 +109,87 @@ const AwardCeremonyDetailPage = () => {
   const hasMore = pagination ? pagination.page < pagination.totalPages : false;
 
   return (
-    <div className={`min-h-screen bg-zinc-950 pt-28 ${selection.active ? "pb-56" : "pb-16"}`}>
+    <div className={cx(pageClass, selection.active && "pb-56")}>
       <SEO
         title={ceremony?.title || t("pages.awards.detailFallbackTitle")}
         description={ceremony?.description || t("pages.awards.detailDescription")}
       />
 
-      <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10">
-        <LocalizedLink
-          to="/odul-torenleri"
-          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-emerald-400 transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t("pages.awards.back")}
-        </LocalizedLink>
-
+      <div className={containerClass}>
+        <div className={widthGrid}>
         {isLoading ? (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-24">
+            {Array.from({ length: 8 }, (_, i) => (
+              <Skeleton key={i} className="aspect-square" />
+            ))}
           </div>
         ) : notFound || !ceremony ? (
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-12 text-center">
-            <Award className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-            <h1 className="text-lg font-semibold text-white mb-2">{t("pages.awards.notFoundTitle")}</h1>
-            <p className="text-sm text-zinc-500">{t("pages.awards.notFoundText")}</p>
-          </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          <EmptyState
+            icon={Award}
+            title={t("pages.awards.notFoundTitle")}
+            description={t("pages.awards.notFoundText")}
+            className="max-w-lg mx-auto mt-10"
           >
-            {/* Başlık */}
-            <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
-              <div className="flex items-start gap-4 min-w-0">
-                <div className="w-14 h-14 shrink-0 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                  <Award className="w-7 h-7 text-emerald-400" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-2xl md:text-3xl font-bold text-gradient-brand">{ceremony.title}</h1>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-400 mt-1">
+            <LocalizedLink to="/odul-torenleri" className={buttonClass("primary")}>
+              {t("pages.awards.back")}
+            </LocalizedLink>
+          </EmptyState>
+        ) : (
+          <>
+            <PageHeader
+              backTo="/odul-torenleri"
+              backLabel={t("pages.awards.back")}
+              title={ceremony.title}
+              subtitle={
+                <>
+                  <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {ceremony.date && (
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-emerald-500/70" />
+                      <span className="inline-flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" aria-hidden />
                         {ceremony.date}
                       </span>
                     )}
                     {ceremony.location && (
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-emerald-500/70" />
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4" aria-hidden />
                         {ceremony.location}
                       </span>
                     )}
                     {pagination && <span>{t("pages.media.files", { count: pagination.total })}</span>}
-                  </div>
+                  </span>
                   {ceremony.description && (
-                    <p className="text-zinc-400 mt-3 max-w-2xl whitespace-pre-line">{ceremony.description}</p>
+                    <span className="block mt-3 max-w-2xl whitespace-pre-line">{ceremony.description}</span>
                   )}
-                </div>
-              </div>
-              {photos.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                {!selection.active && (
-                <button
-                onClick={selection.start}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm font-medium transition-all duration-300"
-              >
-                <CheckSquare className="w-4 h-4" />
-                {t("pages.media.select.start")}
-              </button>
-                )}
-                <DownloadAllButtons
-                  sizes={downloadSizes}
-                  progress={zip.progress}
-                  
-                  onStart={handleDownloadAll}
-                  primaryClassName="flex items-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold transition-all duration-300"
-                />
-                </div>
-              )}
-            </div>
+                </>
+              }
+              actions={
+                photos.length > 0 && (
+                  <>
+                    {!selection.active && (
+                      <Button variant="secondary" icon={CheckSquare} onClick={selection.start}>
+                        {t("pages.media.select.start")}
+                      </Button>
+                    )}
+                    <DownloadAllButtons
+                      sizes={downloadSizes}
+                      progress={zip.progress}
+                      onStart={handleDownloadAll}
+                      primaryClassName={buttonClass("primary")}
+                    />
+                  </>
+                )
+              }
+            />
 
             {photos.length > 0 && <DownloadHint />}
 
             {photos.length === 0 ? (
-              <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-12 text-center">
-                <Images className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                <h2 className="text-lg font-semibold text-white mb-2">{t("pages.awards.noPhotosTitle")}</h2>
-                <p className="text-sm text-zinc-500 max-w-md mx-auto">
-                  {t("pages.awards.noPhotosText")}
-                </p>
-              </div>
+              <EmptyState
+                icon={Images}
+                title={t("pages.awards.noPhotosTitle")}
+                description={t("pages.awards.noPhotosText")}
+              />
             ) : (
               <>
                 <MediaGrid
@@ -214,20 +203,16 @@ const AwardCeremonyDetailPage = () => {
                 />
                 {hasMore && (
                   <div className="flex justify-center mt-8">
-                    <button
-                      onClick={loadMore}
-                      disabled={isLoadingMore}
-                      className="px-6 py-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 font-medium transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                    <Button variant="secondary" size="lg" loading={isLoadingMore} onClick={loadMore}>
                       {t("pages.media.loadMore")}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </>
             )}
-          </motion.div>
+          </>
         )}
+        </div>
       </div>
 
       <MediaLightbox

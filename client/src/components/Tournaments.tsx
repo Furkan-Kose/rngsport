@@ -1,46 +1,41 @@
-import {
-  MapPin,
-  Calendar,
-  ArrowRight,
-  CalendarCheck,
-  CheckCircle2,
-  Clock,
-} from "lucide-react";
+import { MapPin, Calendar, ArrowRight, CalendarCheck, CheckCircle2, Clock } from "lucide-react";
 import SectionHeader from "./ui/SectionHeader";
 import Reveal from "./ui/Reveal";
+import { Pill } from "./ui/kit";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
-import { useTournaments, type TournamentStatus } from "../lib/tournaments";
+import { useTournaments, type Tournament } from "../lib/tournaments";
+import { buttonClass, cardTone, cx } from "../lib/siteUi";
 
-const StatusBadge = ({ status }: { status: TournamentStatus }) => {
+const isBookable = (t: Tournament) => t.bookingOpen && t.status !== "finished";
+
+/** Rezervasyona açık olanlar en üstte, sonra devam eden / yaklaşanlar, en altta tamamlananlar
+    (en yenisi önce). Hepsi gösterilir. */
+const orderForCalendar = (list: Tournament[]) => {
+  const bookable = list.filter(isBookable);
+  const active = list.filter((t) => !isBookable(t) && t.status !== "finished");
+  const finished = list.filter((t) => t.status === "finished").reverse();
+  return [...bookable, ...active, ...finished];
+};
+
+const StatusPill = ({ tournament }: { tournament: Tournament }) => {
   const { t } = useTranslation();
-  if (status === "ongoing") {
+  if (isBookable(tournament)) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-semibold uppercase tracking-wider">
-        <span className="relative flex w-1.5 h-1.5">
-          <span className="animate-ping absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-emerald-400" />
-        </span>
-        {t("home.tournaments.active")}
-      </span>
+      <Pill tone="success" icon={CalendarCheck}>
+        {t("home.tournaments.bookingOpen")}
+      </Pill>
     );
   }
-
-  if (status === "upcoming") {
+  if (tournament.status === "ongoing") return <Pill tone="success">{t("home.tournaments.active")}</Pill>;
+  if (tournament.status === "upcoming") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-semibold uppercase tracking-wider">
-        <Clock className="w-3 h-3" />
+      <Pill tone="warning" icon={Clock}>
         {t("home.tournaments.soon")}
-      </span>
+      </Pill>
     );
   }
-
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-700/40 border border-zinc-600/50 text-zinc-400 text-[10px] font-semibold uppercase tracking-wider">
-      <CheckCircle2 className="w-3 h-3" />
-      {t("home.tournaments.finished")}
-    </span>
-  );
+  return <Pill icon={CheckCircle2}>{t("home.tournaments.finished")}</Pill>;
 };
 
 const Tournaments = () => {
@@ -51,115 +46,60 @@ const Tournaments = () => {
   if (tournaments.length === 0) return null;
 
   return (
-    <section id="tournament" className="relative py-24 bg-black">
+    <section id="tournament" className="py-24 bg-black scroll-mt-20">
       <div className="container mx-auto px-4">
-        <SectionHeader
-          eyebrow={t("home.tournaments.eyebrow")}
-          icon={CalendarCheck}
-          title={t("home.tournaments.title")}
-          description={t("home.tournaments.description")}
-          className="mb-16"
-        />
+        <SectionHeader title={t("home.tournaments.title")} description={t("home.tournaments.description")} />
 
-        <div className="max-w-4xl mx-auto space-y-4">
-          {tournaments.map((tournament, index) => {
-            // Rezervasyona açık yarışma da vurgulanır (buton + yeşil çerçeve)
-            const isActive = tournament.status === "ongoing" || tournament.bookingOpen;
+        <ul className="max-w-4xl mx-auto space-y-3">
+          {orderForCalendar(tournaments).map((tournament, index) => {
+            const bookable = isBookable(tournament);
+            const finished = tournament.status === "finished";
             return (
-            <Reveal key={tournament.id} delay={index * 0.1}>
-              <div
-                className={`group relative rounded-2xl p-px bg-linear-to-r transition-all duration-500 ${
-                  isActive
-                    ? "from-emerald-500/70 via-emerald-400/50 to-emerald-500/70"
-                    : "from-emerald-500/30 via-zinc-700/20 to-emerald-500/30 hover:from-emerald-500/60 hover:via-emerald-400/40 hover:to-emerald-500/60"
-                }`}
-              >
-                <div
-                  className={`relative bg-zinc-900/80 backdrop-blur-xl rounded-2xl p-5 md:p-6 shadow-lg overflow-hidden ${
-                    isActive ? "ring-1 ring-emerald-400/40" : ""
-                  }`}
+              <Reveal key={tournament.id} delay={index * 0.05}>
+                <li
+                  className={cx(
+                    cardTone(bookable ? "soft" : "default"),
+                    "p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4",
+                    finished && "opacity-60",
+                  )}
                 >
-                  {/* glow — aktif turnuvada her zaman açık, diğerlerinde hover'da */}
-                  <div
-                    className={`absolute -inset-px rounded-2xl transition-opacity duration-500 pointer-events-none ${
-                      isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                    }`}
-                  >
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl" />
-                  </div>
-
-                  <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3 md:gap-4">
-                      {tournament.flag && (
-                        <img
-                          src={tournament.flag}
-                          alt={tournament.flagAlt || tournament.location}
-                          className="w-9 h-6 md:w-10 md:h-7 rounded-[3px] object-cover shadow-md ring-1 ring-white/15 shrink-0 mt-1"
-                        />
-                      )}
-                      <div className="min-w-0">
-                        <div className="flex flex-col-reverse items-start gap-1.5 mb-2 md:flex-row md:items-center md:gap-2">
-                          <h3
-                            className={`text-base md:text-lg font-bold leading-snug transition-colors ${
-                              isActive
-                                ? "text-emerald-400"
-                                : "text-gray-100 group-hover:text-emerald-400"
-                            }`}
-                          >
-                            {tournament.name}
-                          </h3>
-                          {tournament.bookingOpen && tournament.status !== "finished" ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10px] font-semibold uppercase tracking-wider">
-                              <CalendarCheck className="w-3 h-3" />
-                              {t("home.tournaments.bookingOpen")}
-                            </span>
-                          ) : (
-                            <StatusBadge status={tournament.status} />
-                          )}
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-gray-400 text-sm">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4 text-emerald-500/70" />
-                            {tournament.date}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4 text-emerald-500/70" />
-                            {tournament.location}
-                          </div>
-                        </div>
+                  <div className="flex items-start gap-4 min-w-0">
+                    {tournament.flag && (
+                      <img
+                        src={tournament.flag}
+                        alt={tournament.flagAlt || tournament.location}
+                        className="w-10 h-7 rounded-sm object-cover ring-1 ring-white/15 shrink-0 mt-0.5"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-1.5">
+                        <h3 className="text-base md:text-lg font-semibold text-zinc-100">{tournament.name}</h3>
+                        <StatusPill tournament={tournament} />
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-zinc-400 text-sm">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4" aria-hidden />
+                          {tournament.date}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4" aria-hidden />
+                          {tournament.location}
+                        </span>
                       </div>
                     </div>
-
-                    {tournament.bookingOpen && tournament.status !== "finished" && (
-                      <LocalizedLink
-                        to="/rezervasyon"
-                        className="flex items-center justify-center md:justify-start gap-2 text-emerald-400 font-semibold hover:gap-4 transition-all whitespace-nowrap"
-                      >
-                        {t("home.tournaments.reserve")}
-                        <ArrowRight className="w-4 h-4" />
-                      </LocalizedLink>
-                    )}
-
-                    {tournament.status === "upcoming" && !tournament.bookingOpen && (
-                      <span className="flex items-center justify-center md:justify-start gap-2 text-amber-400/80 font-medium whitespace-nowrap">
-                        <Clock className="w-4 h-4" />
-                        {t("home.tournaments.soon")}
-                      </span>
-                    )}
-
-                    {tournament.status === "finished" && (
-                      <span className="flex items-center justify-center md:justify-start gap-2 text-zinc-500 font-medium whitespace-nowrap">
-                        <CheckCircle2 className="w-4 h-4" />
-                        {t("home.tournaments.finished")}
-                      </span>
-                    )}
                   </div>
-                </div>
-              </div>
-            </Reveal>
+
+                  {bookable && (
+                    <LocalizedLink to="/rezervasyon" className={buttonClass("primary", "md", "shrink-0")}>
+                      {t("home.tournaments.reserve")}
+                      <ArrowRight className="w-4 h-4" aria-hidden />
+                    </LocalizedLink>
+                  )}
+                </li>
+              </Reveal>
             );
           })}
-        </div>
+        </ul>
       </div>
     </section>
   );

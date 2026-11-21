@@ -32,13 +32,37 @@
       "photoPending": "Photos in progress",
       "videoPending": "Video in progress",
       "reelsPending": "Reels video in progress"
+    },
+    "newReservation": "New booking",
+    "confirmDeleteText": "The booking for {{name}} will be deleted. This cannot be undone.",
+    "statusLabel": {
+      "reservation": {
+        "PENDING": "Pay at the stand",
+        "CONFIRMED": "Confirmed · pay at the stand"
+      }
+    },
+    "statusHelp": {
+      "reservation": {
+        "PENDING": "Your booking is received. You pay at our stand on competition day.",
+        "CONFIRMED": "Your booking is confirmed. You pay at our stand on competition day.",
+        "PAID": "Payment received. We will email you when the files are ready.",
+        "DELIVERED": "Your files are in your gallery.",
+        "CANCELLED": "This booking was cancelled."
+      },
+      "order": {
+        "PENDING": "Payment not completed. You can pay again from the cart.",
+        "PAID": "Payment received. We will email you when the files are ready.",
+        "DELIVERED": "Your files are in your gallery.",
+        "FAILED": "The payment could not be taken.",
+        "CANCELLED": "This order was cancelled."
+      }
     }
   },
   "password": {
     "title": "Change Password",
     "subtitle": "Update your account password",
     "current": "Current password",
-    "next": "New password (at least 8 characters)",
+    "next": "New password",
     "confirm": "Confirm new password",
     "tooShort": "New password must be at least 8 characters",
     "mismatch": "New passwords do not match",
@@ -66,7 +90,8 @@
     "cancel": "Cancel",
     "athlete": "Athlete",
     "updated": "Your details have been updated",
-    "updateFail": "Could not update"
+    "updateFail": "Could not update",
+    "title": "Account Details"
   },
   "loyalty": {
     "title": "My Loyalty Points",

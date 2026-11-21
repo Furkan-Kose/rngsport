@@ -497,7 +497,7 @@ export const deleteReservation = async (req, res) => {
 export const getReservationStats = async (req, res) => {
   // Dashboard yarışma seçicisi: ?tournamentId= (boş/all = tümü)
   const tw = tournamentWhere(req.query.tournamentId);
-  const [total, confirmed, pending, paid, recentReservations, revenue, confirmedRevenue, paidRevenue] =
+  const [total, confirmed, pending, paid, recentReservations, revenue, confirmedRevenue, paidRevenue, awaitingDelivery, byStatus] =
     await Promise.all([
       prisma.reservation.count({ where: tw }),
       prisma.reservation.count({ where: { ...tw, status: "CONFIRMED" } }),
@@ -526,6 +526,10 @@ export const getReservationStats = async (req, res) => {
         where: { ...tw, status: { in: ["PAID", "DELIVERED"] } },
         _sum: { totalPrice: true },
       }),
+      // Ödendi ama henüz teslim edilmedi (ana sayfadaki "teslim bekleyen")
+      prisma.reservation.count({ where: { ...tw, status: "PAID" } }),
+      // Ana sayfadaki "Durumlar" kartı: her durumun sayısı
+      prisma.reservation.groupBy({ by: ["status"], where: tw, _count: true }),
     ]);
 
   res.json({
@@ -533,6 +537,8 @@ export const getReservationStats = async (req, res) => {
     confirmed,
     pending,
     paid,
+    awaitingDelivery,
+    statusCounts: Object.fromEntries(byStatus.map((g) => [g.status, g._count])),
     revenue: revenue._sum.totalPrice || 0,
     confirmedRevenue: confirmedRevenue._sum.totalPrice || 0,
     paidRevenue: paidRevenue._sum.totalPrice || 0,

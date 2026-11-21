@@ -5,6 +5,7 @@ import api from '../../lib/api';
 import StatusBadge from '../../lib/orderStatus';
 import ShopStatusBadge from './ShopStatusBadge';
 import type { ShopStatus } from '../../lib/shop';
+import { formatMoney } from '../../lib/adminFormat';
 
 /**
  * Hızlı arama (Ctrl/⌘+K): sporcu, kulüp, telefon ya da e-posta ile paket siparişleri,
@@ -49,7 +50,7 @@ interface Item {
   right?: React.ReactNode;
 }
 
-const formatPrice = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
+const formatPrice = formatMoney;
 
 const CommandSearch = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const navigate = useNavigate();
@@ -185,7 +186,7 @@ const CommandSearch = ({ open, onClose }: { open: boolean; onClose: () => void }
           {loading ? (
             <Loader2 className="w-5 h-5 text-amber-400 animate-spin shrink-0" />
           ) : (
-            <Search className="w-5 h-5 text-gray-500 shrink-0" />
+            <Search className="w-5 h-5 text-gray-400 shrink-0" />
           )}
           <input
             ref={inputRef}
@@ -203,7 +204,7 @@ const CommandSearch = ({ open, onClose }: { open: boolean; onClose: () => void }
 
         <div className="max-h-[60vh] overflow-y-auto">
           {q.trim().length < 2 ? (
-            <p className="px-4 py-8 text-center text-sm text-gray-500">
+            <p className="px-4 py-8 text-center text-sm text-gray-400">
               En az 2 harf yazın. Paket siparişleri, rezervasyonlar, ürün siparişleri ve müşterilerde aranır.
             </p>
           ) : !loading && flat.length === 0 && results ? (
@@ -211,7 +212,7 @@ const CommandSearch = ({ open, onClose }: { open: boolean; onClose: () => void }
           ) : (
             groups.map((group) => (
               <div key={group.title} className="py-2">
-                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
                   <group.icon className="w-3.5 h-3.5" />
                   {group.title}
                 </p>
@@ -241,7 +242,7 @@ const CommandSearch = ({ open, onClose }: { open: boolean; onClose: () => void }
           )}
         </div>
 
-        <div className="hidden sm:flex items-center gap-4 px-4 py-2 border-t border-gray-700 text-[11px] text-gray-500">
+        <div className="hidden sm:flex items-center gap-4 px-4 py-2 border-t border-gray-700 text-xs text-gray-400">
           <span>↑↓ seç</span>
           <span>Enter aç</span>
           <span>Esc kapat</span>

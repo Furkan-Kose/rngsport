@@ -109,7 +109,7 @@ const MediaUploader = ({ presign, confirm, label, target, onUploaded, renderFiel
                 : 'border-gray-600 hover:border-amber-500/50 bg-gray-900/30'
             }`}
           >
-            <Upload className={`w-5 h-5 ${isDragging ? 'text-amber-400' : 'text-gray-500'}`} />
+            <Upload className={`w-5 h-5 ${isDragging ? 'text-amber-400' : 'text-gray-400'}`} />
             <p className="text-sm text-gray-400 text-center">
               {isDragging ? (
                 <span className="text-amber-400 font-medium">Dosyaları bırakın</span>
@@ -130,7 +130,7 @@ const MediaUploader = ({ presign, confirm, label, target, onUploaded, renderFiel
           ({formatFileSize(totalSelectedSize)})
           <button
             onClick={clearSelection}
-            className="ml-3 text-gray-500 hover:text-red-400 transition-colors"
+            className="ml-3 text-gray-400 hover:text-red-400 transition-colors"
           >
             <X className="w-4 h-4 inline" /> Temizle
           </button>

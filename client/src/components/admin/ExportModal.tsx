@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, FileSpreadsheet, X } from 'lucide-react';
+import { Check, Download, FileSpreadsheet, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../lib/api';
-import { Button } from './ui';
+import { Button, ModalBackdrop } from './ui';
 
 /**
  * Excel indirme penceresi: sütun seçimi + filtreler.
@@ -62,7 +62,7 @@ const fileNameFrom = (header: string | undefined, fallback: string) => {
 };
 
 const inputClass =
-  'w-full h-10 px-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
+  'w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25';
 
 const ExportModal = ({
   open,
@@ -168,10 +168,10 @@ const ExportModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto" onClick={onClose}>
+    <ModalBackdrop onClose={onClose} dismissOnBackdrop>
       <div
-        className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-2xl my-4 max-h-[92vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-2xl my-4 max-h-[92vh] flex flex-col"
+       
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -205,7 +205,7 @@ const ExportModal = ({
                       />
                       <span>
                         {field.label}
-                        {field.hint && <span className="block text-xs text-gray-500">{field.hint}</span>}
+                        {field.hint && <span className="block text-xs text-gray-400">{field.hint}</span>}
                       </span>
                     </label>
                   );
@@ -242,7 +242,7 @@ const ExportModal = ({
               <h3 className="text-sm font-semibold text-gray-300">
                 Sütunlar{' '}
                 {columns && (
-                  <span className="text-gray-500 font-normal">
+                  <span className="text-gray-400 font-normal">
                     ({selected.size}/{columns.length})
                   </span>
                 )}
@@ -267,7 +267,7 @@ const ExportModal = ({
                     <button
                       type="button"
                       onClick={() => toggleGroup(cols)}
-                      className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-300 mb-1.5"
+                      className="text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-gray-300 mb-1.5"
                       title="Bu gruptakilerin hepsini seç / kaldır"
                     >
                       {group}
@@ -283,11 +283,11 @@ const ExportModal = ({
                             aria-pressed={on}
                             className={`h-8 px-3 rounded-lg text-sm border transition-colors ${
                               on
-                                ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300'
+                                ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
                                 : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:text-gray-200'
                             }`}
                           >
-                            {on ? '✓ ' : ''}
+                            {on && <Check className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />}
                             {col.label}
                           </button>
                         );
@@ -310,7 +310,7 @@ const ExportModal = ({
           </Button>
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

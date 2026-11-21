@@ -11,6 +11,7 @@ import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import {
   Button,
   EmptyState,
+  FilterTabs,
   IconButton,
   SkeletonRows,
   SortableTh,
@@ -23,6 +24,7 @@ import {
   Toolbar,
 } from '../../components/admin/ui';
 import { tableBodyClass, tableHeadRowClass } from '../../lib/adminUi';
+import { notifyError } from '../../lib/adminErrors';
 
 interface UserRow extends CustomerUser {
   _count: {
@@ -56,11 +58,22 @@ const errorMessage = (err: unknown) =>
   'Bir hata oluştu';
 
 
+/** Galeri süzgeci (?gallery=) — ana sayfadaki "Galeri" satırı bu sekmelere bağlanır */
+type GalleryFilter = '' | 'with' | 'downloaded' | 'notDownloaded' | 'unclaimed';
+const GALLERY_TABS: { key: GalleryFilter; label: string }[] = [
+  { key: '', label: 'Tümü' },
+  { key: 'with', label: 'Galerisi olan' },
+  { key: 'downloaded', label: 'İndirdi' },
+  { key: 'notDownloaded', label: 'Henüz indirmedi' },
+  { key: 'unclaimed', label: 'Hesabına girmemiş' },
+];
+
 const UsersPage = () => {
   // Sekme, arama, sayfa ve sıralama adres çubuğunda (galeriye girip geri dönünce kaybolmasın)
-  const [url, setUrl] = useUrlState({ tab: 'customers', q: '', page: '1', sort: '', dir: 'desc' });
+  const [url, setUrl] = useUrlState({ tab: 'customers', q: '', page: '1', sort: '', dir: 'desc', gallery: '' });
   const tab: Tab = url.tab === 'staff' ? 'staff' : 'customers';
   const setTab = (next: Tab) => setUrl({ tab: next, page: '1' });
+  const galleryFilter: GalleryFilter = GALLERY_TABS.some((t) => t.key === url.gallery) ? (url.gallery as GalleryFilter) : '';
   const [users, setUsers] = useState<UserRow[]>([]);
   const [stats, setStats] = useState<CustomerStats | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
@@ -88,6 +101,7 @@ const UsersPage = () => {
       if (searchQuery) {
         params.append('search', searchQuery);
       }
+      if (galleryFilter) params.append('gallery', galleryFilter);
       if (url.sort) {
         params.append('sort', url.sort);
         params.append('dir', url.dir);
@@ -97,18 +111,18 @@ const UsersPage = () => {
       setUsers(data.data);
       setPagination(data.pagination);
     } catch (error) {
-      console.error('Users fetch error:', error);
+      notifyError(error, 'Kullanıcılar yüklenemedi');
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, url.sort, url.dir]);
+  }, [searchQuery, url.sort, url.dir, galleryFilter]);
 
   const fetchStats = useCallback(async () => {
     try {
       const { data } = await api.get('/api/users/stats');
       setStats(data);
     } catch (error) {
-      console.error('Stats fetch error:', error);
+      notifyError(error, 'Kullanıcı özeti yüklenemedi');
     }
   }, []);
 
@@ -202,7 +216,8 @@ const UsersPage = () => {
         </div>
       )}
 
-      {/* Arama + ekle */}
+      {/* Arama + ekle; galeri süzgeci kendi satırında */}
+      <div className="space-y-3">
       <Toolbar className="lg:justify-between">
         <SearchInput value={searchInput} onChange={setSearchInput} placeholder="İsim, e-posta veya telefon ara..." />
         <Button
@@ -216,12 +231,18 @@ const UsersPage = () => {
           Müşteri Ekle
         </Button>
       </Toolbar>
+      <FilterTabs<GalleryFilter>
+        tabs={GALLERY_TABS}
+        value={galleryFilter}
+        onChange={(key) => setUrl({ gallery: key, page: '1' })}
+      />
+      </div>
 
       {/* Tablo */}
       {isLoading ? (
         <SkeletonRows />
       ) : users.length === 0 ? (
-        <EmptyState icon={Users} title={searchQuery ? 'Arama sonucu bulunamadı' : 'Henüz kayıtlı kullanıcı yok'} />
+        <EmptyState icon={Users} title={searchQuery ? 'Arama sonucu bulunamadı' : galleryFilter ? 'Bu süzgece uyan müşteri yok' : 'Henüz kayıtlı kullanıcı yok'} />
       ) : (
         <Panel className="overflow-hidden">
           {/* Mobil kartlar */}
@@ -232,7 +253,7 @@ const UsersPage = () => {
                   <Link to={`/admin/users/${user.id}`} className="min-w-0 flex-1">
                     <p className="text-white font-medium truncate">{user.name || '-'}</p>
                     <p className="text-gray-400 text-xs truncate">{user.email || '-'}</p>
-                    {user.phone && <p className="text-gray-500 text-xs mt-0.5">{user.phone}</p>}
+                    {user.phone && <p className="text-gray-400 text-xs mt-0.5">{user.phone}</p>}
                   </Link>
                   <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
                     <Images className="w-3 h-3" />
@@ -241,16 +262,16 @@ const UsersPage = () => {
                 </div>
                 <div className="flex flex-wrap items-center gap-1 mt-2">
                   {!user.hasPassword && (
-                    <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
+                    <span className="px-1.5 py-0.5 text-xs font-medium rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
                       Şifre yok
                     </span>
                   )}
                   {!user.emailVerified && (
-                    <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
+                    <span className="px-1.5 py-0.5 text-xs font-medium rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
                       Doğrulanmadı
                     </span>
                   )}
-                  <span className="text-[11px] text-gray-500">
+                  <span className="text-xs text-gray-400">
                     {user.lastDownloadAt
                       ? `Son indirme ${formatDate(user.lastDownloadAt)}`
                       : user._count.photos > 0
@@ -310,12 +331,12 @@ const UsersPage = () => {
                       {(!user.hasPassword || !user.emailVerified) && (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {!user.hasPassword && (
-                            <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
+                            <span className="px-1.5 py-0.5 text-xs font-medium rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30">
                               Şifre yok
                             </span>
                           )}
                           {!user.emailVerified && (
-                            <span className="px-1.5 py-0.5 text-[11px] font-medium rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
+                            <span className="px-1.5 py-0.5 text-xs font-medium rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
                               Doğrulanmadı
                             </span>
                           )}
@@ -336,7 +357,7 @@ const UsersPage = () => {
                       ) : user._count.photos > 0 ? (
                         <span className="text-red-400/80">İndirmedi</span>
                       ) : (
-                        <span className="text-gray-600">-</span>
+                        <span className="text-gray-400">-</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center text-gray-300 text-sm hidden lg:table-cell">

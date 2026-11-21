@@ -2,8 +2,9 @@ import { useState, type FormEvent } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
 import { useLocalizedNavigate } from "../lib/localePath";
-import { motion } from "framer-motion";
-import { Lock, Mail, Image as ImageIcon, Loader2, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Button, Card, Field, Input } from "./ui/kit";
+import { cx, textLinkClass } from "../lib/siteUi";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -43,10 +44,7 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
   // başka bir sekmede sahiplenilmiş olabilir) — artık şifre sorulmaz.
   const [alreadyExists, setAlreadyExists] = useState(false);
 
-  const wrapper =
-    "mt-8 text-left bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 relative";
-  const topLine =
-    "absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent";
+  const linkClass = cx(textLinkClass, "mt-4 text-emerald-400 hover:text-emerald-300");
 
   if (account.status === "none") return null;
 
@@ -54,49 +52,40 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
   // şifre SORULMAZ — yoksa başkasının e-postasını yazan kişi hesabı ele geçirirdi.
   if (account.status === "linked" || alreadyExists) {
     return (
-      <div className={wrapper}>
-        <div className={topLine} />
-        <p className="text-sm text-zinc-400">
+      <Card className="mt-6">
+        <p className="text-zinc-300">
           <Trans i18nKey="account.claim.linked" values={{ email: account.email }} components={emailTag} />
         </p>
-        <LocalizedLink
-          to="/giris?redirect=/galerim"
-          className="mt-4 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
-        >
+        <LocalizedLink to="/giris?redirect=/galerim" className={linkClass}>
           {t("account.claim.linkedCta")}
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-4 h-4" aria-hidden />
         </LocalizedLink>
-      </div>
+      </Card>
     );
   }
 
   // 24 saatlik sahiplenme penceresi dolmuş — normal şifre sıfırlama akışı devrede.
   if (account.status === "expired") {
     return (
-      <div className={wrapper}>
-        <div className={topLine} />
-        <p className="text-sm text-zinc-400">
+      <Card className="mt-6">
+        <p className="text-zinc-300">
           <Trans i18nKey="account.claim.expired" values={{ email: account.email }} components={emailTag} />
         </p>
-        <LocalizedLink
-          to="/sifremi-unuttum"
-          className="mt-4 inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-medium text-sm transition-colors"
-        >
+        <LocalizedLink to="/sifremi-unuttum" className={linkClass}>
           {t("account.claim.expiredCta")}
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-4 h-4" aria-hidden />
         </LocalizedLink>
-      </div>
+      </Card>
     );
   }
 
   if (dismissed) {
     return (
-      <div className={wrapper}>
-        <div className={topLine} />
-        <p className="text-sm text-zinc-400">
+      <Card className="mt-6">
+        <p className="text-zinc-300">
           <Trans i18nKey="account.claim.dismissed" values={{ email: account.email }} components={emailTag} />
         </p>
-      </div>
+      </Card>
     );
   }
 
@@ -128,93 +117,43 @@ const AccountClaimCard = ({ account, orderId, reservationId }: Props) => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className={wrapper}
-    >
-      <div className={topLine} />
+    <Card className="mt-6">
+      <h2 className="text-lg font-semibold text-white">{t("account.claim.title")}</h2>
+      <p className="mt-1 mb-5 text-sm text-zinc-400">{t("account.claim.text")}</p>
 
-      <div className="flex items-start gap-3 mb-5">
-        <div className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-          <ImageIcon className="w-5 h-5 text-emerald-400" />
-        </div>
-        <div>
-          <h3 className="text-white font-semibold">{t("account.claim.title")}</h3>
-          <p className="text-sm text-zinc-400 mt-1">
-            {t("account.claim.text")}
-          </p>
-        </div>
-      </div>
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <Field label={t("auth.email")} htmlFor="claim-email">
+          <Input id="claim-email" type="email" value={account.email} readOnly autoComplete="username" />
+        </Field>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
-
-        <div>
-          <label className="flex items-center gap-2 text-sm text-zinc-400 mb-2">
-            <Mail className="w-4 h-4" />
-            {t("auth.email")}
-          </label>
-          <input
-            type="email"
-            value={account.email}
-            readOnly
-            disabled
-            className="w-full px-4 py-3 bg-zinc-800/30 border border-zinc-800 rounded-xl text-zinc-400 cursor-not-allowed"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="claim-password"
-            className="flex items-center gap-2 text-sm text-zinc-400 mb-2"
-          >
-            <Lock className="w-4 h-4" />
-            {t("auth.password")} <span className="text-red-400">*</span>
-          </label>
-          <input
+        <Field
+          label={t("auth.password")}
+          htmlFor="claim-password"
+          required
+          error={error || undefined}
+          hint={t("auth.passwordPlaceholder")}
+        >
+          <Input
             type="password"
             id="claim-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors"
-            placeholder={t("auth.passwordPlaceholder")}
             autoComplete="new-password"
-            required
             minLength={8}
+            invalid={!!error}
           />
-        </div>
+        </Field>
 
-        <div className="flex flex-wrap items-center gap-4 pt-1">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 min-w-40 py-3 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                {t("account.claim.creating")}
-              </>
-            ) : (
-              t("account.claim.create")
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDismissed(true)}
-            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <Button type="submit" loading={isSubmitting} className="flex-1 min-w-40">
+            {isSubmitting ? t("account.claim.creating") : t("account.claim.create")}
+          </Button>
+          <Button variant="ghost" onClick={() => setDismissed(true)}>
             {t("account.claim.later")}
-          </button>
+          </Button>
         </div>
       </form>
-    </motion.div>
+    </Card>
   );
 };
 

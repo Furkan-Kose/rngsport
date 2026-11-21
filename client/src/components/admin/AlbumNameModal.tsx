@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import AlbumInput from './AlbumInput';
+import { ModalBackdrop } from './ui';
 
 interface AlbumNameModalProps {
   title: string;
@@ -29,8 +30,8 @@ const AlbumNameModal = ({
   const busy = progress !== null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-gray-800 border border-gray-700 rounded-2xl p-6">
+    <ModalBackdrop onClose={onCancel} busy={busy}>
+      <div className="w-full max-w-md bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-6">
         <div className="flex items-start justify-between gap-3 mb-4">
           <h2 className="text-lg font-semibold text-white">{title}</h2>
           {!busy && (
@@ -48,7 +49,7 @@ const AlbumNameModal = ({
           }}
         >
           <AlbumInput value={value} onChange={setValue} options={options} disabled={busy} autoFocus />
-          <p className="text-xs text-gray-500 mt-2">Boş bırakılırsa dosyalar albümsüz (genel) olur.</p>
+          <p className="text-xs text-gray-400 mt-2">Boş bırakılırsa dosyalar albümsüz (genel) olur.</p>
 
           {busy && (
             <div className="mt-4">
@@ -79,7 +80,7 @@ const AlbumNameModal = ({
             <button
               type="submit"
               disabled={busy}
-              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold disabled:opacity-50 flex items-center gap-2"
             >
               {busy && <Loader2 className="w-4 h-4 animate-spin" />}
               {confirmLabel}
@@ -87,7 +88,7 @@ const AlbumNameModal = ({
           </div>
         </form>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

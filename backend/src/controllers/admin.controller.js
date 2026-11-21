@@ -1,6 +1,9 @@
 import prisma from "../lib/prisma.js";
 import { AppError } from "../utils/errors.js";
 import { ROLES } from "../utils/roles.js";
+import { tournamentWhere } from "../utils/tournaments.js";
+import { matchKey } from "../utils/names.js";
+import { APPARATUSES } from "../utils/apparatuses.js";
 
 /**
  * Admin paneli yardımcı uçları: menü rozetleri + hızlı arama (Ctrl+K).
@@ -126,4 +129,100 @@ export const globalSearch = async (req, res) => {
     }),
   ]);
   res.json({ orders, reservations, shopOrders, users });
+};
+
+// Ana sayfa "Yarışma detayı": paket, alet ve kulüp dağılımı (?tournamentId=<id>|all).
+// Sayılanlar ana sayfadaki para kartlarıyla aynı: onaylanmış / ödenmiş / teslim edilmiş
+// rezervasyonlar + ödenmiş online siparişler (bekleyen rezervasyon ve ödenmemiş sipariş sayılmaz).
+// Tutar indirimli (ödenecek) tutardır: kaydın totalPrice'ı kalemlere liste fiyatı oranında dağıtılır,
+// böylece tablo toplamı = rezervasyon "Toplam tutar" + paket siparişi "Gelir".
+// İki sorgu; toplama JS'te — bir yarışmada en fazla birkaç yüz kayıt var.
+const SUMMARY_ITEM_SELECT = {
+  packageId: true,
+  packageName: true,
+  price: true,
+  seriesCount: true,
+  quantity: true,
+  priority: true,
+  apparatuses: true,
+};
+const SUMMARY_RECORD_SELECT = { athleteName: true, clubName: true, totalPrice: true, discountAmount: true, items: { select: SUMMARY_ITEM_SELECT } };
+
+export const getTournamentSummary = async (req, res) => {
+  const tw = tournamentWhere(req.query.tournamentId);
+  const [reservations, orders] = await Promise.all([
+    prisma.reservation.findMany({ where: { ...tw, status: { in: ["CONFIRMED", "PAID", "DELIVERED"] } }, select: SUMMARY_RECORD_SELECT }),
+    prisma.order.findMany({ where: { ...tw, status: { in: ["PAID", "DELIVERED"] } }, select: SUMMARY_RECORD_SELECT }),
+  ]);
+
+  const packages = new Map(); // slug → satır
+  const apparatusCounts = Object.fromEntries(APPARATUSES.map((a) => [a.slug, 0]));
+  let noApparatus = 0;
+  const clubs = new Map(); // kulüp anahtarı → { name, athletes:Set }
+  let discountTotal = 0; // verilen sadakat indirimi
+  let discountedRecords = 0;
+
+  const add = (records, kind) => {
+    for (const record of records) {
+      if (record.discountAmount > 0) {
+        discountTotal += record.discountAmount;
+        discountedRecords += 1;
+      }
+      // Kulüp: yazım farkı (büyük/küçük harf, Türkçe karakter) aynı kulübü bölmesin
+      const clubName = String(record.clubName ?? "").trim();
+      const clubKey = matchKey(clubName);
+      if (clubKey) {
+        if (!clubs.has(clubKey)) clubs.set(clubKey, { name: clubName, athletes: new Set() });
+        clubs.get(clubKey).athletes.add(matchKey(record.athleteName));
+      }
+      const listTotal = record.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      for (const item of record.items) {
+        if (!packages.has(item.packageId)) {
+          packages.set(item.packageId, {
+            slug: item.packageId,
+            name: item.packageName,
+            reservations: 0,
+            orders: 0,
+            series: 0,
+            priority: 0,
+            amount: 0,
+          });
+        }
+        const row = packages.get(item.packageId);
+        row[kind] += item.quantity;
+        row.series += item.seriesCount * item.quantity;
+        if (item.priority) row.priority += item.quantity;
+        // İndirimli tutardan bu kalemin payı (liste fiyatı oranında)
+        row.amount += listTotal > 0 ? (record.totalPrice * item.price * item.quantity) / listTotal : 0;
+
+        for (const slug of item.apparatuses) {
+          if (slug in apparatusCounts) apparatusCounts[slug] += item.quantity;
+        }
+        noApparatus += Math.max(0, item.seriesCount - item.apparatuses.length) * item.quantity;
+      }
+    }
+  };
+  add(reservations, "reservations");
+  add(orders, "orders");
+
+  const clubList = [...clubs.values()]
+    .map((c) => ({ name: c.name, count: c.athletes.size }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "tr"));
+
+  res.json({
+    packages: [...packages.values()]
+      .map((row) => ({ ...row, amount: Math.round(row.amount) }))
+      .sort(
+      (a, b) => b.reservations + b.orders - (a.reservations + a.orders) || a.name.localeCompare(b.name, "tr"),
+    ),
+    apparatuses: [
+      ...APPARATUSES.map((a) => ({ slug: a.slug, label: a.label, count: apparatusCounts[a.slug] })),
+      ...(noApparatus > 0 ? [{ slug: "none", label: "Seçilmemiş", count: noApparatus }] : []),
+    ],
+    clubs: clubList.slice(0, 8),
+    clubCount: clubList.length,
+    discountTotal: Math.round(discountTotal),
+    discountedRecords,
+    records: reservations.length + orders.length,
+  });
 };

@@ -1,7 +1,8 @@
 {
   "tournament": {
     "label": "Booking for",
-    "choose": "Please choose the competition you are booking for"
+    "choose": "Please choose the competition you are booking for",
+    "short": "Competition"
   },
   "form": {
     "athleteName": "Athlete Full Name",
@@ -28,17 +29,29 @@
     "total": "Total",
     "totalAmount": "Total Amount",
     "errors": {
-      "required": "Please fill in all required fields",
       "noPackage": "Please select at least one package",
       "rowPackage": "Please select a package in every row",
       "apparatus": "Select as many apparatus as routines for each package",
-      "generic": "Something went wrong"
-    }
+      "generic": "Something went wrong",
+      "athleteName": "Enter the athlete's full name",
+      "clubName": "Enter the club name",
+      "birthYear": "Enter the year of birth",
+      "birthYearInvalid": "Enter the year of birth with four digits (e.g. 2015)",
+      "phone": "Enter a phone number",
+      "phoneInvalid": "The phone number looks incomplete",
+      "email": "Enter an email address",
+      "emailInvalid": "The email address does not look valid",
+      "kvkk": "Please accept the privacy notice to continue",
+      "fix": "Please correct the highlighted fields"
+    },
+    "emailHint": "Your photos and videos are uploaded to the account created with this address.",
+    "nameHint": "Write the athlete's name as it appears in the competition entry; we match it on the shooting list."
   },
   "apparatus": {
     "label": "Apparatus",
     "selected": "({{count}} / {{total}} selected)",
-    "pickForPackage": "Select the apparatus for this package"
+    "pickForPackage": "Select the apparatus for this package",
+    "hint": "For each series, choose the apparatus the athlete will use in that routine."
   },
   "priority": {
     "title": "Priority delivery",
@@ -67,23 +80,20 @@
     "lockedTitle": "You already have a booking",
     "lockedText": "Payment for your booking for {{name}} has been received. Please contact us if you need any changes.",
     "viewMine": "View My Booking",
-    "successTitle": "Booking Successful!",
-    "successText": "Your booking has been received. You can pay at our sales desk.",
-    "number": "Booking No: {{id}}",
+    "successTitle": "Your booking is confirmed",
+    "successText": "You can pay at our stand on competition day.",
     "backHome": "Back to Home",
     "home": "Home",
     "editTitle": "Edit Booking",
-    "newTitle": "Booking Form",
+    "newTitle": "Booking",
     "editSubtitle": "Update your existing booking",
-    "newSubtitle": "Select packages and enter your details",
-    "intro": "Choose your package, enter your details and create your account. You can track and update your booking from your account. When your shots are ready, we let you know by email and you can access your photos and videos in your personal gallery.",
+    "intro": "Choose a package and enter the athlete's details. You can follow your booking from your account and change it until payment.",
     "existing": "Your current bookings:",
     "edit": "Edit",
     "paid": "Paid",
     "siblingHint": "You can make a new booking below for a sibling or another athlete.",
     "packages": "Package Selection",
-    "addPackage": "Add Package",
-    "noPackages": "No packages added yet. Click \"Add Package\".",
+    "addPackage": "Add another package",
     "package": "Package",
     "choosePackage": "Select a package",
     "seriesCount": "Number of Routines",
@@ -92,11 +102,17 @@
     "siblingFormHint": "If you are booking for a sibling, change the athlete details.",
     "packagesSelected_one": "{{count}} package selected",
     "packagesSelected_other": "{{count}} packages selected",
-    "payAtVenue": "💡 Complete your booking now and pay at our stand at the venue on competition day.",
+    "payAtVenue": "No payment is taken now; you pay at our stand on competition day.",
     "submitUpdate": "Update Booking",
-    "submitCreate": "Confirm Booking",
+    "submitCreate": "Complete Booking",
     "toastUpdated": "Your booking has been updated",
-    "toastCreated": "Booking created successfully!"
+    "toastCreated": "Booking created successfully!",
+    "amountDue": "Amount to pay at the stand",
+    "numberLabel": "Booking no.",
+    "payAtVenueShort": "Paid at the stand on competition day",
+    "onlineHint": "If you prefer to pay by card now,",
+    "onlineLink": "add the packages to your cart",
+    "removePackage": "Remove package"
   },
   "cart": {
     "seoTitle": "Cart",
@@ -120,6 +136,14 @@
     "orderInfo": "Order Details",
     "toPayment": "Proceed to Payment",
     "payment": "Payment",
-    "pickApparatusFirst": "Select the apparatus for each package before proceeding to payment."
+    "pickApparatusFirst": "Select the apparatus for each package before proceeding to payment.",
+    "remove": "Remove {{name}} from cart",
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "pay": "Complete Payment",
+    "clearTitle": "Empty the cart?",
+    "clearText": "All packages in the cart will be removed.",
+    "reserveHint": "If you prefer to pay at the stand on competition day,",
+    "reserveLink": "make a booking"
   }
 }

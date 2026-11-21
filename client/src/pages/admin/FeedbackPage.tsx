@@ -5,6 +5,7 @@ import api from '../../lib/api';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
 import { Button, EmptyState, FilterTabs, PageHeader, SkeletonRows, Toolbar } from '../../components/admin/ui';
 import { useUrlState } from '../../hooks/useUrlState';
+import { formatDateTime } from '../../lib/adminFormat';
 
 interface Feedback {
   id: string;
@@ -17,8 +18,7 @@ interface Feedback {
   user: { id: string; name: string | null; email: string | null } | null;
 }
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const formatDate = formatDateTime;
 
 const LOCALE_LABEL: Record<string, string> = { tr: 'TR', en: 'EN', ru: 'RU' };
 
@@ -91,7 +91,11 @@ const FeedbackPage = () => {
           <>
             Galerim sayfasının altındaki formdan gelen mesajlar
             {unread > 0 && <span className="ml-2 text-amber-400">· {unread} okunmamış</span>}
-            {average !== null && <span className="ml-2">· Ortalama ★ {average.toFixed(1)}</span>}
+            {average !== null && (
+              <span className="ml-2">
+                · Ortalama puan {average.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} / 5
+              </span>
+            )}
           </>
         }
       />
@@ -124,14 +128,14 @@ const FeedbackPage = () => {
                     {f.user?.name || 'İsimsiz'}
                     {!f.isRead && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">Yeni</span>}
                   </p>
-                  <p className="text-gray-500 text-xs break-all">
+                  <p className="text-gray-400 text-xs break-all">
                     {f.user?.email || 'Hesap silinmiş'} · {formatDate(f.createdAt)} · {LOCALE_LABEL[f.locale] ?? f.locale}
                   </p>
                 </div>
                 {f.rating && (
                   <div className="flex gap-0.5" aria-label={`${f.rating} yıldız`}>
                     {[1, 2, 3, 4, 5].map((n) => (
-                      <Star key={n} className={`w-4 h-4 ${n <= f.rating! ? 'text-amber-400 fill-amber-400' : 'text-gray-600'}`} />
+                      <Star key={n} className={`w-4 h-4 ${n <= f.rating! ? 'text-amber-400 fill-amber-400' : 'text-gray-400'}`} />
                     ))}
                   </div>
                 )}

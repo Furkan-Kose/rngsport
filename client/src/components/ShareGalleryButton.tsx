@@ -1,7 +1,10 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Check, Copy, Link2, Loader2, Share2, X } from "lucide-react";
+import { Check, Copy, Link2, Share2 } from "lucide-react";
+import Modal from "./ui/Modal";
+import WhatsAppIcon from "./ui/WhatsAppIcon";
+import { Alert, Button } from "./ui/kit";
+import { buttonClass } from "../lib/siteUi";
 import api from "../lib/api";
 import { formatDate } from "../lib/format";
 import { useLang, withLang } from "../lib/localePath";
@@ -80,105 +83,71 @@ const ShareGalleryButton = ({ album, className, shares, setShares }: ShareGaller
 
   return (
     <>
-      <button onClick={openModal} className={className}>
-        {current ? <Link2 className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+      <button type="button" onClick={openModal} className={className}>
+        {current ? <Link2 className="w-4 h-4 text-emerald-400" aria-hidden /> : <Share2 className="w-4 h-4" aria-hidden />}
         {current ? t("pages.share.buttonActive") : t("pages.share.button")}
       </button>
 
-      {open &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] bg-black/80 flex items-end sm:items-center justify-center p-4" onClick={() => setOpen(false)}>
-            <div
-              role="dialog"
-              aria-modal="true"
-              className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-start justify-between gap-3 mb-1">
-                <h2 className="text-lg font-bold text-white">{t("pages.share.title")}</h2>
-                <button onClick={() => setOpen(false)} aria-label={t("pages.share.close")} className="text-zinc-500 hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="text-sm text-emerald-400 mb-3">{scopeLabel(album)}</p>
-              <p className="text-sm text-zinc-400 mb-5">{t("pages.share.intro")}</p>
+      <Modal open={open} onClose={() => setOpen(false)} title={t("pages.share.title")} size="sm">
+        <p className="font-medium text-emerald-400 mb-2">{scopeLabel(album)}</p>
+        <p className="text-zinc-400 mb-5">{t("pages.share.intro")}</p>
 
-              {current ? (
-                <>
-                  <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 mb-2">
-                    <span className="flex-1 text-xs text-zinc-300 truncate">{urlOf(current)}</span>
-                  </div>
-                  <p className="text-xs text-zinc-500 mb-4">
-                    {t("pages.share.validUntil", { date: formatDate(current.expiresAt, { day: "numeric", month: "long" }) })} ·{" "}
-                    {t("pages.share.daysLeft", { count: daysLeft(current.expiresAt) })}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
-                    <button
-                      onClick={() => copy(current)}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold"
-                    >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copied ? t("pages.share.copied") : t("pages.share.copy")}
-                    </button>
-                    {typeof navigator.share === "function" ? (
-                      <button
-                        onClick={() => nativeShare(current)}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        {t("pages.share.shareNative")}
-                      </button>
-                    ) : (
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(t("pages.share.whatsappText", { url: urlOf(current) }))}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium"
-                      >
-                        {t("pages.share.whatsapp")}
-                      </a>
-                    )}
-                  </div>
-
-                  {confirmRevoke ? (
-                    <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3">
-                      <p className="text-sm text-zinc-200 mb-3">{t("pages.share.revokeConfirm")}</p>
-                      <div className="flex gap-2">
-                        <button onClick={() => setConfirmRevoke(false)} className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-200 text-sm">
-                          {t("pages.share.cancel")}
-                        </button>
-                        <button
-                          onClick={revoke}
-                          disabled={busy}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold disabled:opacity-50"
-                        >
-                          {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-                          {t("pages.share.revokeYes")}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button onClick={() => setConfirmRevoke(true)} className="w-full text-sm text-red-400 hover:text-red-300 py-2">
-                      {t("pages.share.revoke")}
-                    </button>
-                  )}
-                </>
+        {current ? (
+          <>
+            <p className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-zinc-300 break-all mb-2">
+              {urlOf(current)}
+            </p>
+            <p className="text-sm text-zinc-400 mb-4">
+              {t("pages.share.validUntil", { date: formatDate(current.expiresAt, { day: "numeric", month: "long" }) })} ·{" "}
+              {t("pages.share.daysLeft", { count: daysLeft(current.expiresAt) })}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+              <Button icon={copied ? Check : Copy} onClick={() => copy(current)}>
+                {copied ? t("pages.share.copied") : t("pages.share.copy")}
+              </Button>
+              {typeof navigator.share === "function" ? (
+                <Button variant="secondary" icon={Share2} onClick={() => nativeShare(current)}>
+                  {t("pages.share.shareNative")}
+                </Button>
               ) : (
-                <button
-                  onClick={create}
-                  disabled={busy}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50"
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(t("pages.share.whatsappText", { url: urlOf(current) }))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonClass("secondary")}
                 >
-                  {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-                  {t("pages.share.create")}
-                </button>
+                  <WhatsAppIcon className="w-4 h-4" />
+                  {t("pages.share.whatsapp")}
+                </a>
               )}
-
-              {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
             </div>
-          </div>,
-          document.body
+
+            {confirmRevoke ? (
+              <Alert tone="danger">
+                <p className="mb-3">{t("pages.share.revokeConfirm")}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => setConfirmRevoke(false)}>
+                    {t("pages.share.cancel")}
+                  </Button>
+                  <Button variant="danger" size="sm" loading={busy} onClick={revoke}>
+                    {t("pages.share.revokeYes")}
+                  </Button>
+                </div>
+              </Alert>
+            ) : (
+              <Button variant="danger" className="w-full" onClick={() => setConfirmRevoke(true)}>
+                {t("pages.share.revoke")}
+              </Button>
+            )}
+          </>
+        ) : (
+          <Button icon={Link2} loading={busy} onClick={create} className="w-full">
+            {t("pages.share.create")}
+          </Button>
         )}
+
+        {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
+      </Modal>
     </>
   );
 };
@@ -188,8 +157,8 @@ export const ActiveSharesLine = ({ shares }: { shares: Share[] }) => {
   const { t } = useTranslation();
   if (shares.length === 0) return null;
   return (
-    <p className="text-xs text-emerald-400/90 mb-4 flex items-center gap-1.5">
-      <Link2 className="w-3.5 h-3.5" />
+    <p className="text-sm text-emerald-400 mb-4 flex items-center gap-1.5">
+      <Link2 className="w-4 h-4 shrink-0" aria-hidden />
       {shares
         .map((s) => `${s.album ?? t("pages.share.scopeAll")} · ${t("pages.share.daysLeft", { count: daysLeft(s.expiresAt) })}`)
         .join("  |  ")}

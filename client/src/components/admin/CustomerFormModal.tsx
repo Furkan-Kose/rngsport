@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
 import api from '../../lib/api';
+import { ModalBackdrop } from './ui';
 
 export interface CustomerUser {
   id: string;
@@ -29,7 +30,7 @@ const errorMessage = (err: unknown) =>
   'Bir hata oluştu';
 
 const inputClass =
-  'w-full px-3 py-2.5 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-amber-500';
+  'w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25';
 
 const CustomerFormModal = ({ open, customer, onClose, onSaved }: Props) => {
   const [name, setName] = useState('');
@@ -79,10 +80,10 @@ const CustomerFormModal = ({ open, customer, onClose, onSaved }: Props) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+    <ModalBackdrop onClose={onClose}>
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+        className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
       >
         <div className="p-5 border-b border-gray-700 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">
@@ -121,7 +122,7 @@ const CustomerFormModal = ({ open, customer, onClose, onSaved }: Props) => {
               required
               className={inputClass}
             />
-            <p className="text-[11px] text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 mt-1">
               {emailChanged
                 ? 'Adres değiştiği için e-posta doğrulaması sıfırlanacak.'
                 : 'Müşteri bu adresle giriş yapar; fotoğrafları bu hesaba yüklenir.'}
@@ -179,11 +180,11 @@ const CustomerFormModal = ({ open, customer, onClose, onSaved }: Props) => {
               minLength={8}
               className={inputClass}
             />
-            <p className="text-[11px] text-gray-500 mt-1">En az 8 karakter.</p>
+            <p className="text-xs text-gray-400 mt-1">En az 8 karakter.</p>
           </div>
 
           {!isEdit && (
-            <p className="text-[11px] text-gray-500">
+            <p className="text-xs text-gray-400">
               Şifre boş bırakılırsa hesap şifresiz açılır; müşteriyi detay sayfasındaki
               "Şifre linki gönder" ile davet edebilirsiniz.
             </p>
@@ -202,7 +203,7 @@ const CustomerFormModal = ({ open, customer, onClose, onSaved }: Props) => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -213,7 +214,7 @@ const CustomerFormModal = ({ open, customer, onClose, onSaved }: Props) => {
           </button>
         </div>
       </form>
-    </div>
+    </ModalBackdrop>
   );
 };
 

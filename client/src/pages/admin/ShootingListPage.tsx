@@ -3,8 +3,6 @@ import {
   Camera,
   Folder,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Download,
   Loader2,
   Pencil,
@@ -12,7 +10,6 @@ import {
   Plus,
   RefreshCw,
   RotateCcw,
-  Search,
   Trash2,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -21,6 +18,7 @@ import { getApparatusLabel } from '../../constants/apparatuses';
 import UploadDayModal from '../../components/admin/UploadDayModal';
 import TournamentSelect from '../../components/admin/TournamentSelect';
 import { useTournaments } from '../../lib/tournaments';
+import { ALL_TOURNAMENTS, readStoredTournament, storeTournament } from '../../hooks/useAdminTournament';
 import ShootingTimeEditModal from '../../components/admin/ShootingTimeEditModal';
 import PhotoFolderModal from '../../components/admin/PhotoFolderModal';
 import { useAuth } from '../../context/AuthContext';
@@ -28,7 +26,19 @@ import { TRACK_LABELS, type Track } from '../../lib/roles';
 import { trackTimes, type ShootTrack } from '../../lib/shooting';
 import PriorityBadge from '../../components/PriorityBadge';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
-import { Button, PageHeader, SkeletonRows } from '../../components/admin/ui';
+import {
+  ActionMenu,
+  Button,
+  EmptyState,
+  PageHeader,
+  Pagination as PaginationBar,
+  SearchInput,
+  Segmented,
+  Select,
+  SkeletonRows,
+  Toolbar,
+} from '../../components/admin/ui';
+import { panelClass } from '../../lib/adminUi';
 import ExportModal from '../../components/admin/ExportModal';
 
 interface ShootingItem {
@@ -98,11 +108,11 @@ const ITEMS_PER_PAGE = 10;
 
 const statusBadge = (willBeShot: boolean) =>
   willBeShot ? (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
       Çekilecek
     </span>
   ) : (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
       Çekilmeyecek
     </span>
   );
@@ -159,7 +169,7 @@ const TrackTimer = ({ entry, track, viewTrack, showLabel, busy, onAction, onEdit
   return (
     <div className="flex items-center gap-2">
       {showLabel && (
-        <span className="w-6 shrink-0 text-[10px] font-semibold uppercase text-gray-500">
+        <span className="w-6 shrink-0 text-xs font-semibold uppercase text-gray-400">
           {track === 'photo' ? 'Fo' : 'Vi'}
         </span>
       )}
@@ -168,7 +178,7 @@ const TrackTimer = ({ entry, track, viewTrack, showLabel, busy, onAction, onEdit
           type="button"
           onClick={() => onAction(entry, track, 'start')}
           disabled={busy}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 transition-colors disabled:opacity-50"
         >
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
           Başlat
@@ -180,7 +190,7 @@ const TrackTimer = ({ entry, track, viewTrack, showLabel, busy, onAction, onEdit
             onClick={() => onAction(entry, track, 'end')}
             disabled={busy}
             title="Çekimi bitir (sıradaki sporcuya basınca da kapanır)"
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm shadow-emerald-500/30 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm shadow-emerald-500/30 transition-colors disabled:opacity-50"
           >
             {busy ? (
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -196,14 +206,14 @@ const TrackTimer = ({ entry, track, viewTrack, showLabel, busy, onAction, onEdit
             onClick={() => onAction(entry, track, 'end')}
             disabled={busy}
             title="Bu sporcu çekilmeyecek; süre yalnızca sırayı takip için tutuluyor"
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-semibold bg-violet-600 hover:bg-violet-500 border border-violet-400/60 text-white shadow-sm shadow-violet-500/30 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-400 border border-violet-400/60 text-gray-950 shadow-sm shadow-violet-500/30 transition-colors disabled:opacity-50"
           >
             {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <span className="w-1.5 h-1.5 rounded-full bg-violet-200" />}
             SAHNEDE · {started}
           </button>
         )
       ) : (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-gray-700/50 border border-gray-600 text-gray-300">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-gray-700/50 border border-gray-600 text-gray-300">
           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
           {started} – {ended}
         </span>
@@ -218,7 +228,7 @@ const TrackTimer = ({ entry, track, viewTrack, showLabel, busy, onAction, onEdit
               ? 'Klasör elle düzeltildi — düzenle'
               : 'Kameradaki klasör — yanlışsa düzelt, sonrakiler kendiliğinden kayar'
           }
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold border transition-colors ${
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border transition-colors ${
             entry.photoFolderEdited
               ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30'
               : 'bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20'
@@ -232,7 +242,7 @@ const TrackTimer = ({ entry, track, viewTrack, showLabel, busy, onAction, onEdit
         type="button"
         onClick={() => onEdit(entry)}
         title="Saatleri düzenle"
-        className="p-1 text-gray-500 hover:text-white transition-colors"
+        className="p-1 text-gray-400 hover:text-white transition-colors"
       >
         <Pencil className="w-3 h-3" />
       </button>
@@ -282,7 +292,14 @@ const ShootingListPage = () => {
   // son yüklenen gün); sunucunun seçtiği cevapta gelir. activeDayRef ile aynı nedenle ref'ten okunur.
   const { tournaments } = useTournaments();
   const [tournamentId, setTournamentId] = useState<string | null>(null);
+  // Başka sayfada seçilen yarışma burada da açılır (yalnızca admin; "tümü" burada yok → sunucu seçer)
   const tournamentRef = useRef<string | null>(null);
+  const storedApplied = useRef(false);
+  if (!storedApplied.current) {
+    storedApplied.current = true;
+    const stored = isAdmin ? readStoredTournament()?.id : null;
+    if (stored && stored !== ALL_TOURNAMENTS) tournamentRef.current = stored;
+  }
   const [isLoading, setIsLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -417,6 +434,7 @@ const ShootingListPage = () => {
   // Yarışma değişince o yarışmanın ilk günü açılır
   const handleTournamentChange = (id: string) => {
     if (id === tournamentId) return;
+    storeTournament(id, tournaments);
     tournamentRef.current = id;
     setTournamentId(id);
     setActiveDayId(null);
@@ -551,20 +569,12 @@ const ShootingListPage = () => {
                   className="w-full sm:w-auto"
                 />
                 {/* İz seçici: hangi ekibin gözünden bakıldığı */}
-                <div className="inline-flex h-10 items-center rounded-lg border border-gray-700 bg-gray-800/50 p-0.5">
-                  {(['all', 'photo', 'video'] as Track[]).map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setSelectedTrack(option)}
-                      className={`h-full px-3 rounded-md text-sm font-medium transition-colors ${
-                        track === option ? 'bg-amber-500/20 text-amber-300' : 'text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      {TRACK_LABELS[option]}
-                    </button>
-                  ))}
-                </div>
+                <Segmented<Track>
+                  ariaLabel="Ekip görünümü"
+                  value={track}
+                  onChange={setSelectedTrack}
+                  options={(['all', 'photo', 'video'] as Track[]).map((key) => ({ key, label: TRACK_LABELS[key] }))}
+                />
                 <Button variant="primary" icon={Plus} onClick={openNewDay}>
                   Yeni Gün
                 </Button>
@@ -572,18 +582,23 @@ const ShootingListPage = () => {
             )}
             {isAdmin && activeDay && (
               <>
-                <Button iconOnlyOnMobile icon={RefreshCw} onClick={openReupload}>
-                  Yeniden Yükle
-                </Button>
                 <Button iconOnlyOnMobile icon={Download} onClick={() => setExportOpen(true)}>
                   Excel İndir
                 </Button>
-                <Button iconOnlyOnMobile variant="soft" icon={RotateCcw} onClick={() => setConfirmReset(true)}>
-                  Süreleri Sıfırla
-                </Button>
-                <Button iconOnlyOnMobile variant="danger" icon={Trash2} loading={isClearing} onClick={() => setConfirmDeleteDay(true)}>
-                  Bu Günü Sil
-                </Button>
+                {/* Seyrek ve geri alınamayan işlemler tek menüde: yanlışlıkla basılmasın */}
+                <ActionMenu
+                  items={[
+                    { label: 'Listeyi yeniden yükle', icon: RefreshCw, onClick: openReupload },
+                    { label: 'Süreleri sıfırla', icon: RotateCcw, onClick: () => setConfirmReset(true) },
+                    {
+                      label: 'Bu günü sil',
+                      icon: Trash2,
+                      danger: true,
+                      disabled: isClearing,
+                      onClick: () => setConfirmDeleteDay(true),
+                    },
+                  ]}
+                />
               </>
             )}
           </>
@@ -605,7 +620,7 @@ const ShootingListPage = () => {
             >
               {day.label}
               <span
-                className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                className={`text-xs px-1.5 py-0.5 rounded-full ${
                   day.id === activeDayId
                     ? 'bg-amber-500/20 text-amber-300'
                     : 'bg-gray-700 text-gray-400'
@@ -631,47 +646,40 @@ const ShootingListPage = () => {
         <StatCard label="Tamamlanan" value={stats.done} tone="amber" />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Sporcu veya kulüp ara..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-          />
-        </div>
-        <select
+      {/* Arama + sıralama */}
+      <Toolbar>
+        <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Sporcu veya kulüp ara..." />
+        <Select
+          aria-label="Sıralama"
           value={sortKey}
           onChange={(e) => setSortKey(e.target.value as SortKey)}
-          className="px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+          className="lg:w-64"
         >
-          <option value="position">Excel Sırasına Göre</option>
-          <option value="expected">Beklenen Saate Göre</option>
-          <option value="started">Başlangıç Saatine Göre</option>
-          <option value="name">Sporcu Adına Göre</option>
-        </select>
-      </div>
+          <option value="position">Excel sırasına göre</option>
+          <option value="expected">Beklenen saate göre</option>
+          <option value="started">Başlangıç saatine göre</option>
+          <option value="name">Sporcu adına göre</option>
+        </Select>
+      </Toolbar>
 
       {/* Table */}
       <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
         {isLoading ? (
           <SkeletonRows rows={8} />
         ) : entries.length === 0 ? (
-          <div className="p-12 text-center">
-            <Camera className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">
-              {days.length === 0
+          <EmptyState
+            bare
+            icon={Camera}
+            title={
+              days.length === 0
                 ? isAdmin
                   ? 'Henüz gün eklenmedi. "Yeni Gün" ile ilk Excel\'i yükleyin.'
                   : 'Henüz çekim listesi yüklenmedi.'
                 : searchQuery
-                ? 'Aramayla eşleşen kayıt yok.'
-                : 'Bu günde kayıt yok.'}
-            </p>
-          </div>
+                  ? 'Aramayla eşleşen kayıt yok.'
+                  : 'Bu günde kayıt yok.'
+            }
+          />
         ) : (
           <>
             {/* Mobile cards */}
@@ -695,37 +703,37 @@ const ShootingListPage = () => {
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-gray-500 font-mono text-xs">#{entry.position}</span>
+                        <span className="text-gray-400 font-mono text-xs">#{entry.position}</span>
                         {statusBadge(entry.willBeShot)}
                         {entry.category && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                             {entry.category}
                           </span>
                         )}
                       </div>
                       <p className="text-white font-medium truncate">{entry.athleteName}</p>
                       <p className="text-gray-400 text-xs truncate">{entry.clubName || '—'}</p>
-                      <p className="text-gray-500 text-[11px] mt-0.5">
+                      <p className="text-gray-400 text-xs mt-0.5">
                         {[entry.birthYear, entry.customerPhone].filter(Boolean).join(' • ') || '—'}
                       </p>
                     </div>
 
-                    <div className="mt-3 bg-gray-900/40 rounded-md p-2 text-[11px]">
-                      <p className="text-gray-500 uppercase tracking-wide">Beklenen</p>
-                      <p className={`font-mono mt-0.5 ${entry.expectedTime ? 'text-white' : 'text-gray-600'}`}>
+                    <div className="mt-3 bg-gray-900/40 rounded-lg p-2 text-xs">
+                      <p className="text-gray-400 uppercase tracking-wide">Beklenen</p>
+                      <p className={`font-mono mt-0.5 ${entry.expectedTime ? 'text-white' : 'text-gray-400'}`}>
                         {entry.expectedTime || '—'}
                       </p>
                     </div>
 
-                    <div className="mt-2 bg-gray-900/40 rounded-md p-2 text-[11px]">
-                      <p className="text-gray-500 uppercase tracking-wide mb-1">Çekim</p>
+                    <div className="mt-2 bg-gray-900/40 rounded-lg p-2 text-xs">
+                      <p className="text-gray-400 uppercase tracking-wide mb-1">Çekim</p>
                       <div className="space-y-1">{renderTimers(entry)}</div>
                     </div>
 
-                    <div className="mt-2 bg-gray-900/40 rounded-md p-2 text-[11px]">
-                      <p className="text-gray-500 uppercase tracking-wide">Paket / Seri / Not</p>
+                    <div className="mt-2 bg-gray-900/40 rounded-lg p-2 text-xs">
+                      <p className="text-gray-400 uppercase tracking-wide">Paket / Seri / Not</p>
                       {!hasItems && !hasNotes ? (
-                        <p className="text-gray-600 mt-0.5">—</p>
+                        <p className="text-gray-400 mt-0.5">—</p>
                       ) : (
                         <div className="mt-0.5 space-y-1.5">
                           {hasItems &&
@@ -734,7 +742,7 @@ const ShootingListPage = () => {
                                 <p className="text-gray-300">
                                   <span className="text-white">{it.packageName}</span>
                                   <PriorityBadge show={it.priority} />
-                                  <span className="text-gray-500">
+                                  <span className="text-gray-400">
                                     {' · '}
                                     {it.seriesCount}'li × {it.quantity}
                                   </span>
@@ -744,7 +752,7 @@ const ShootingListPage = () => {
                                     {it.apparatuses.map((slug) => (
                                       <span
                                         key={slug}
-                                        className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/25"
+                                        className="inline-flex items-center px-1.5 py-0 rounded text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/25"
                                       >
                                         {getApparatusLabel(slug)}
                                       </span>
@@ -755,7 +763,7 @@ const ShootingListPage = () => {
                             ))}
                           {hasNotes && (
                             <p
-                              className="text-gray-500 line-clamp-2"
+                              className="text-gray-400 line-clamp-2"
                               title={entry.notes ?? undefined}
                             >
                               <span className="text-gray-400">Not:</span> {entry.notes}
@@ -814,7 +822,7 @@ const ShootingListPage = () => {
                             <p className="text-white font-medium">
                               {entry.athleteName}
                             </p>
-                            <p className="text-gray-500 text-xs">
+                            <p className="text-gray-400 text-xs">
                               {[entry.birthYear, entry.customerPhone]
                                 .filter(Boolean)
                                 .join(' • ') || '—'}
@@ -826,11 +834,11 @@ const ShootingListPage = () => {
                         </td>
                         <td className="px-5 py-3 align-top">
                           {entry.category ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                               {entry.category}
                             </span>
                           ) : (
-                            <span className="text-gray-600 text-sm">—</span>
+                            <span className="text-gray-400 text-sm">—</span>
                           )}
                         </td>
                         <td className="px-5 py-3 align-top">
@@ -842,7 +850,7 @@ const ShootingListPage = () => {
                               {entry.expectedTime}
                             </span>
                           ) : (
-                            <span className="text-gray-600 text-sm">—</span>
+                            <span className="text-gray-400 text-sm">—</span>
                           )}
                         </td>
                         <td className="px-5 py-3 align-top">
@@ -850,7 +858,7 @@ const ShootingListPage = () => {
                         </td>
                         <td className="px-5 py-3 text-sm align-top">
                           {!hasItems && !hasNotes ? (
-                            <span className="text-gray-600">—</span>
+                            <span className="text-gray-400">—</span>
                           ) : (
                             <div className="space-y-1.5">
                               {hasItems &&
@@ -861,7 +869,7 @@ const ShootingListPage = () => {
                                         {it.packageName}
                                       </span>
                                       <PriorityBadge show={it.priority} />
-                                      <span className="text-gray-500">
+                                      <span className="text-gray-400">
                                         {' · '}
                                         {it.seriesCount}'li × {it.quantity}
                                       </span>
@@ -871,7 +879,7 @@ const ShootingListPage = () => {
                                         {it.apparatuses.map((slug) => (
                                           <span
                                             key={slug}
-                                            className="inline-flex items-center px-1.5 py-0 rounded text-[10px] font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/25"
+                                            className="inline-flex items-center px-1.5 py-0 rounded text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/25"
                                           >
                                             {getApparatusLabel(slug)}
                                           </span>
@@ -882,7 +890,7 @@ const ShootingListPage = () => {
                                 ))}
                               {hasNotes && (
                                 <p
-                                  className="text-gray-500 text-xs line-clamp-1"
+                                  className="text-gray-400 text-xs line-clamp-1"
                                   title={entry.notes ?? undefined}
                                 >
                                   <span className="text-gray-400">Not:</span>{' '}
@@ -898,9 +906,12 @@ const ShootingListPage = () => {
                 </tbody>
               </table>
             </div>
-            <PaginationControls
-              pagination={pagination}
-              onPageChange={handlePageChange}
+            <PaginationBar
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              limit={pagination.limit}
+              onChange={handlePageChange}
             />
           </>
         )}
@@ -1012,84 +1023,6 @@ const ShootingListPage = () => {
   );
 };
 
-interface PaginationControlsProps {
-  pagination: Pagination;
-  onPageChange: (page: number) => void;
-}
-
-const PaginationControls = ({
-  pagination,
-  onPageChange,
-}: PaginationControlsProps) => {
-  const { page, totalPages, total } = pagination;
-  if (totalPages <= 1) return null;
-
-  const getPageNumbers = (): (number | string)[] => {
-    const pages: (number | string)[] = [];
-    const showPages = 5;
-    if (totalPages <= showPages) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else if (page <= 3) {
-      for (let i = 1; i <= 4; i++) pages.push(i);
-      pages.push('...');
-      pages.push(totalPages);
-    } else if (page >= totalPages - 2) {
-      pages.push(1);
-      pages.push('...');
-      for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      pages.push('...');
-      for (let i = page - 1; i <= page + 1; i++) pages.push(i);
-      pages.push('...');
-      pages.push(totalPages);
-    }
-    return pages;
-  };
-
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-4 border-t border-gray-700">
-      <div className="text-sm text-gray-400">
-        Toplam <span className="text-white font-medium">{total}</span> kayıt
-      </div>
-      <div className="flex items-center gap-1 flex-wrap">
-        <button
-          onClick={() => onPageChange(page - 1)}
-          disabled={page === 1}
-          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        {getPageNumbers().map((p, i) => (
-          <button
-            key={i}
-            onClick={() => typeof p === 'number' && onPageChange(p)}
-            disabled={p === '...'}
-            className={`min-w-9 h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
-              p === page
-                ? 'bg-amber-500 text-white'
-                : p === '...'
-                ? 'text-gray-500 cursor-default'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700'
-            }`}
-          >
-            {p}
-          </button>
-        ))}
-
-        <button
-          onClick={() => onPageChange(page + 1)}
-          disabled={page === totalPages}
-          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
-  );
-};
-
 interface StatCardProps {
   label: string;
   value: number;
@@ -1104,7 +1037,7 @@ const StatCard = ({ label, value, tone }: StatCardProps) => {
     amber: 'text-amber-400',
   };
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+    <div className={`${panelClass} p-4`}>
       <p className="text-xs text-gray-400 uppercase tracking-wider">{label}</p>
       <p className={`text-2xl font-bold mt-1 ${toneClass[tone]}`}>{value}</p>
     </div>

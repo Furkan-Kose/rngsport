@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "../components/LocalizedLink";
-import { formatNumber } from "../lib/format";
-import { CheckCircle, Package, ArrowRight, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Check, Clock } from "lucide-react";
 import api from "../lib/api";
-import Reveal from "../components/ui/Reveal";
 import SEO from "../components/SEO";
 import AccountClaimCard, { type AccountInfo } from "../components/AccountClaimCard";
 import { useCart } from "../context/CartContext";
 import PriorityBadge from "../components/PriorityBadge";
+import { Alert, Card, Spinner } from "../components/ui/kit";
+import { formatTL } from "../lib/loyalty";
+import { buttonClass, containerClass, cx, innerRowClass, pageClass, widthForm } from "../lib/siteUi";
 
 interface OrderData {
   id: string;
@@ -28,6 +28,9 @@ interface OrderData {
     priority?: boolean;
   }>;
 }
+
+// Ödemesi alınmış sayılan durumlar (teslim edilen sipariş de ödenmiştir)
+const PAID_STATUSES = ["PAID", "DELIVERED"];
 
 const OrderSuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -55,131 +58,88 @@ const OrderSuccessPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
-  return (
-    <div className="min-h-screen bg-zinc-950 pt-28 pb-16 relative overflow-hidden">
-      <SEO noindex title={t("pages.orderSuccess.title")} />
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[32rem] h-[32rem] bg-emerald-600/[0.07] rounded-full blur-3xl" />
-      </div>
+  // "Ödeme başarılı" yalnızca sipariş gerçekten ödenmişse söylenir
+  const paid = !!order && PAID_STATUSES.includes(order.status);
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-lg mx-auto text-center">
+  return (
+    <div className={pageClass}>
+      <SEO noindex title={t("pages.orderSuccess.title")} />
+
+      <div className={containerClass}>
+        <div className={cx(widthForm, "mt-6")}>
           {loading ? (
-            <div className="py-20">
-              <Loader2 className="w-12 h-12 text-emerald-400 animate-spin mx-auto" />
-            </div>
+            <Spinner label={t("common.loading")} />
+          ) : !order ? (
+            <Alert tone="warning" title={t("pages.orderSuccess.notFoundTitle")}>
+              <p>{t("pages.orderSuccess.notFoundText")}</p>
+            </Alert>
           ) : (
             <>
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 180,
-                  damping: 16,
-                  delay: 0.1,
-                }}
-                className="relative mb-8 inline-block"
-              >
-                <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl scale-150 animate-pulse" />
-                <div className="relative w-28 h-28 rounded-full bg-emerald-500/15 border-2 border-emerald-500 flex items-center justify-center mx-auto shadow-[0_0_40px_-4px_rgba(16,185,129,0.7)]">
-                  <CheckCircle className="w-14 h-14 text-emerald-400" />
-                </div>
-              </motion.div>
-
-              <Reveal delay={0.2}>
-                <h1 className="text-4xl font-bold text-gradient-brand mb-4">
-                  {t("pages.orderSuccess.title")}
-                </h1>
-              </Reveal>
-              <Reveal delay={0.3}>
-                <p className="text-zinc-400 mb-8 text-lg">
-                  {t("pages.orderSuccess.text")}
-                </p>
-              </Reveal>
-
-              {order && (
-                <Reveal delay={0.4}>
-                  <div className="relative rounded-2xl p-px bg-linear-to-br from-emerald-500/40 via-zinc-700/20 to-emerald-500/40 mb-8 overflow-hidden">
-                    <div className="relative bg-zinc-950 rounded-2xl p-6 text-left">
-                      <div className="flex items-center gap-3 mb-4">
-                        <Package className="w-5 h-5 text-emerald-400" />
-                        <span className="font-semibold text-white">
-                          {t("pages.orderSuccess.details")}
-                        </span>
-                      </div>
-
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-zinc-500">{t("pages.orderSuccess.orderNo")}</span>
-                          <span className="text-zinc-200 font-mono">
-                            #{order.id.slice(-8).toUpperCase()}
-                          </span>
-                        </div>
-                        {order.tournament && (
-                          <div className="flex justify-between gap-4">
-                            <span className="text-zinc-500 shrink-0">{t("checkout.tournament.label")}</span>
-                            <span className="text-zinc-200 text-right">{order.tournament.name}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-zinc-500">{t("pages.orderSuccess.athlete")}</span>
-                          <span className="text-zinc-200">
-                            {order.athleteName}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-500">{t("pages.orderSuccess.club")}</span>
-                          <span className="text-zinc-200">
-                            {order.clubName}
-                          </span>
-                        </div>
-
-                        <div className="border-t border-zinc-800 pt-3 mt-3">
-                          <p className="text-zinc-500 mb-2">{t("pages.orderSuccess.packages")}</p>
-                          {order.items.map((item, i) => (
-                            <div
-                              key={i}
-                              className="flex justify-between text-zinc-300"
-                            >
-                              <span>
-                                {item.package.name} ({t("common.series", { count: item.seriesCount })})
-                                <PriorityBadge show={item.priority} />
-                              </span>
-                              <span>x{item.quantity}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="border-t border-zinc-800 pt-3 mt-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-zinc-400 font-medium">
-                              {t("pages.orderSuccess.total")}
-                            </span>
-                            <span className="text-xl font-bold text-gradient-brand">
-                              ₺{formatNumber(order.totalPrice)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Reveal>
-              )}
-
-              {order?.account && (
-                <AccountClaimCard account={order.account} orderId={order.id} />
-              )}
-
-              <Reveal delay={0.5}>
-                <LocalizedLink
-                  to="/"
-                  className="mt-8 inline-flex items-center gap-2 py-3 px-6 bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 group"
+              <Card padding="lg" className="text-center">
+                <span
+                  className={cx(
+                    "inline-flex items-center justify-center w-14 h-14 rounded-full mb-4",
+                    paid ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-300",
+                  )}
                 >
+                  {paid ? <Check className="w-7 h-7" aria-hidden /> : <Clock className="w-7 h-7" aria-hidden />}
+                </span>
+                <h1 className="text-2xl font-bold text-white">
+                  {paid ? t("pages.orderSuccess.title") : t("pages.orderSuccess.pendingTitle")}
+                </h1>
+                <p className="mt-2 text-zinc-300">
+                  {paid ? t("pages.orderSuccess.text") : t("pages.orderSuccess.pendingText")}
+                </p>
+
+                <dl className={cx(innerRowClass, "mt-6 divide-y divide-zinc-700/60 text-left text-sm")}>
+                  <div className="flex justify-between gap-4 px-4 py-3">
+                    <dt className="text-zinc-400">{t("pages.orderSuccess.orderNo")}</dt>
+                    <dd className="font-mono font-medium text-zinc-100">#{order.id.slice(-8).toUpperCase()}</dd>
+                  </div>
+                  {order.tournament && (
+                    <div className="flex justify-between gap-4 px-4 py-3">
+                      <dt className="text-zinc-400 shrink-0">{t("checkout.tournament.short")}</dt>
+                      <dd className="text-zinc-100 text-right">{order.tournament.name}</dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between gap-4 px-4 py-3">
+                    <dt className="text-zinc-400">{t("pages.orderSuccess.athlete")}</dt>
+                    <dd className="text-zinc-100 text-right">
+                      {order.athleteName}
+                      <span className="block text-zinc-400">{order.clubName}</span>
+                    </dd>
+                  </div>
+                  <div className="px-4 py-3">
+                    <dt className="text-zinc-400 mb-1.5">{t("pages.orderSuccess.packages")}</dt>
+                    {order.items.map((item, i) => (
+                      <dd key={i} className="flex justify-between gap-4 text-zinc-100">
+                        <span>
+                          {item.package.name} ({t("common.series", { count: item.seriesCount })})
+                          <PriorityBadge show={item.priority} />
+                        </span>
+                        <span>× {item.quantity}</span>
+                      </dd>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center gap-4 px-4 py-3">
+                    <dt className="text-zinc-400">{t("pages.orderSuccess.total")}</dt>
+                    <dd className="text-xl font-bold text-white">{formatTL(order.totalPrice)}</dd>
+                  </div>
+                </dl>
+              </Card>
+
+              {order.account && <AccountClaimCard account={order.account} orderId={order.id} />}
+
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                {!paid && (
+                  <LocalizedLink to="/sepet" className={buttonClass("primary")}>
+                    {t("pages.orderFailed.retry")}
+                  </LocalizedLink>
+                )}
+                <LocalizedLink to="/" className={buttonClass("ghost")}>
                   {t("pages.orderSuccess.backHome")}
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </LocalizedLink>
-              </Reveal>
+              </div>
             </>
           )}
         </div>

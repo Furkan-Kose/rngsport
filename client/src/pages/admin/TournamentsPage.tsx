@@ -5,7 +5,8 @@ import api from '../../lib/api';
 import { invalidateTournaments } from '../../lib/tournaments';
 import TranslationFields, { type Translations } from '../../components/admin/TranslationFields';
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
-import { Button, EmptyState, IconButton, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
+import { Button, EmptyState, IconButton, ModalBackdrop, PageHeader, Panel, SkeletonRows } from '../../components/admin/ui';
+import { notifyError } from '../../lib/adminErrors';
 
 
 interface Tournament {
@@ -101,7 +102,7 @@ const TournamentsPage = () => {
       const { data } = await api.get('/api/tournaments');
       setTournaments(data);
     } catch (error) {
-      console.error('Turnuvalar yüklenemedi:', error);
+      notifyError(error, 'Yarışmalar yüklenemedi');
     } finally {
       setIsLoading(false);
     }
@@ -201,11 +202,11 @@ const TournamentsPage = () => {
       setTournaments((prev) => prev.filter((t) => t.id !== toDelete.id));
       setToDelete(null);
       invalidateTournaments();
-      toast.success('Turnuva silindi');
+      toast.success('Yarışma silindi');
     } catch (error) {
       // Kaydı olan yarışma silinemez (409) — sunucu nedenini yazıyor
       const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message;
-      toast.error(message || 'Turnuva silinemedi');
+      toast.error(message || 'Yarışma silinemedi');
       setToDelete(null);
     } finally {
       setIsDeleting(false);
@@ -215,12 +216,12 @@ const TournamentsPage = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Turnuvalar"
+        title="Yarışmalar"
         icon={Trophy}
-        description="Ana sayfadaki turnuva takvimini yönetin"
+        description="Yarışma takvimi ve hangi yarışmanın rezervasyona açık olduğu"
         actions={
           <Button variant="primary" icon={Plus} onClick={openCreateModal}>
-            Yeni Turnuva
+            Yeni Yarışma
           </Button>
         }
       />
@@ -241,7 +242,7 @@ const TournamentsPage = () => {
           <SkeletonRows rows={4} />
         </Panel>
       ) : tournaments.length === 0 ? (
-        <EmptyState icon={Trophy} title="Henüz turnuva eklenmedi" description="Liste boşken ana sayfada turnuva bölümü gizlenir." />
+        <EmptyState icon={Trophy} title="Henüz yarışma eklenmedi" description="Liste boşken ana sayfada yarışma bölümü gizlenir." />
       ) : (
         <div className="space-y-3">
           {tournaments.map((tournament) => (
@@ -274,7 +275,7 @@ const TournamentsPage = () => {
                       <MapPin className="w-3.5 h-3.5 text-amber-500/70" />
                       {tournament.location}
                     </span>
-                    <span className="text-gray-600">Sıra: {tournament.sortOrder}</span>
+                    <span className="text-gray-400">Sıra: {tournament.sortOrder}</span>
                   </div>
                 </div>
               </div>
@@ -299,11 +300,11 @@ const TournamentsPage = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <ModalBackdrop onClose={closeModal}>
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 sticky top-0 bg-gray-800">
               <h2 className="text-lg font-semibold text-white">
-                {editingId ? 'Turnuvayı Düzenle' : 'Yeni Turnuva'}
+                {editingId ? 'Yarışmayı Düzenle' : 'Yeni Yarışma'}
               </h2>
               <button onClick={closeModal} className="p-1 text-gray-400 hover:text-white transition-colors">
                 <X className="w-5 h-5" />
@@ -318,14 +319,14 @@ const TournamentsPage = () => {
               )}
 
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Turnuva Adı *</label>
+                <label className="block text-sm text-gray-400 mb-1">Yarışma Adı *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
                   required
                   placeholder="International Ritmika Cup 2027"
-                  className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+                  className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                 />
               </div>
 
@@ -338,7 +339,7 @@ const TournamentsPage = () => {
                     onChange={(e) => setFormData((p) => ({ ...p, date: e.target.value }))}
                     required
                     placeholder="18-21 Haziran 2027"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   />
                 </div>
                 <div>
@@ -349,7 +350,7 @@ const TournamentsPage = () => {
                     onChange={(e) => setFormData((p) => ({ ...p, location: e.target.value }))}
                     required
                     placeholder="İstanbul, Türkiye"
-                    className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   />
                 </div>
               </div>
@@ -360,7 +361,7 @@ const TournamentsPage = () => {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   >
                     {STATUS_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -372,7 +373,7 @@ const TournamentsPage = () => {
                   <select
                     value={formData.flag}
                     onChange={(e) => setFormData((p) => ({ ...p, flag: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   >
                     {FLAG_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -385,7 +386,7 @@ const TournamentsPage = () => {
                     type="number"
                     value={formData.sortOrder}
                     onChange={(e) => setFormData((p) => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   />
                 </div>
               </div>
@@ -397,9 +398,9 @@ const TournamentsPage = () => {
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                    className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Ana sayfadaki geri sayım bu tarihe sayar.</p>
+                  <p className="text-xs text-gray-400 mt-1">Ana sayfadaki geri sayım bu tarihe sayar.</p>
                 </div>
                 <label className="flex items-start gap-3 sm:mt-6 cursor-pointer">
                   <input
@@ -410,7 +411,7 @@ const TournamentsPage = () => {
                   />
                   <span>
                     <span className="block text-sm text-white">Rezervasyona açık</span>
-                    <span className="block text-xs text-gray-500">
+                    <span className="block text-xs text-gray-400">
                       Yeni rezervasyon ve paket siparişleri bu yarışmaya kaydedilir.
                     </span>
                   </span>
@@ -420,7 +421,7 @@ const TournamentsPage = () => {
               {/* EN/RU çevirileri — boş alan sitede Türkçe görünür */}
               <TranslationFields
                 fields={[
-                  { key: 'name', label: 'Turnuva Adı', source: formData.name },
+                  { key: 'name', label: 'Yarışma Adı', source: formData.name },
                   { key: 'date', label: 'Tarih', source: formData.date },
                   { key: 'location', label: 'Konum', source: formData.location },
                 ]}
@@ -430,7 +431,7 @@ const TournamentsPage = () => {
 
               <div className="flex gap-3 pt-2">
                 <Button className="flex-1" onClick={closeModal}>
-                  İptal
+                  Vazgeç
                 </Button>
                 <Button type="submit" variant="primary" className="flex-1" icon={Save} loading={isSubmitting}>
                   {editingId ? 'Güncelle' : 'Oluştur'}
@@ -438,12 +439,12 @@ const TournamentsPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
 
       <ConfirmDeleteModal
         open={!!toDelete}
-        title="Turnuva silinsin mi?"
+        title="Yarışma silinsin mi?"
         message={
           <>
             <strong className="text-white">{toDelete?.name}</strong> ana sayfadaki takvimden kalıcı olarak silinecek.

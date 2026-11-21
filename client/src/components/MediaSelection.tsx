@@ -6,6 +6,9 @@ import { toast } from "react-toastify";
 import { canShareFiles, isIOS, isMobileDevice, keepScreenOn } from "../lib/device";
 import { memoryZipLimit } from "../lib/zipDownload";
 import { formatFileSize, isVideoItem, type MediaItem, type MediaQuality } from "../lib/media";
+import { backdropClass, useDialog } from "./ui/Modal";
+import { useBottomBar } from "../lib/bottomBar";
+import { buttonClass, cx, iconButtonClass } from "../lib/siteUi";
 
 // "Seç" modu: müşteri galerisi ve ödül törenleri ortak. Seçilenler ya zip olarak (doğrudan
 // R2'den, tarayıcıda) iner ya da telefonda paylaşım menüsüyle doğrudan galeriye kaydedilir.
@@ -127,16 +130,24 @@ export const SaveToPhotosModal = ({ items, quality, getUrl, onDownloadSingle, on
     }
   };
 
+  const dialogRef = useDialog(true, onClose);
   const total = batches.length;
   const currentCount = batches[index]?.length ?? 0;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-      <div role="dialog" aria-modal="true" className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-6">
-        <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10" aria-label={t("pages.shop.promo.close")}>
-          <X className="w-5 h-5" />
+    <div className={cx(backdropClass, "flex items-end sm:items-center justify-center sm:p-4")}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-photos-title"
+        tabIndex={-1}
+        className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-t-2xl sm:rounded-2xl p-6 outline-none"
+      >
+        <button type="button" onClick={onClose} className={iconButtonClass("ghost", "absolute top-3 right-3")} aria-label={t("common.close")}>
+          <X className="w-5 h-5" aria-hidden />
         </button>
-        <h2 className="text-lg font-bold text-white mb-1 pr-8">{t("pages.media.save.title")}</h2>
+        <h2 id="save-photos-title" className="text-lg font-bold text-white mb-1 pr-10">{t("pages.media.save.title")}</h2>
         <p className="text-sm text-zinc-400 mb-5">
           {isIOS() ? t("pages.media.save.hintIos") : t("pages.media.save.hintAndroid")}
         </p>
@@ -145,7 +156,7 @@ export const SaveToPhotosModal = ({ items, quality, getUrl, onDownloadSingle, on
           <>
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-zinc-300">{t("pages.media.save.round", { n: index + 1, total })}</span>
-              <span className="text-zinc-500">
+              <span className="text-zinc-400">
                 {files ? t("pages.media.save.ready", { count: currentCount }) : t("pages.media.save.preparing", { done: prepared, total: currentCount })}
               </span>
             </div>
@@ -155,7 +166,7 @@ export const SaveToPhotosModal = ({ items, quality, getUrl, onDownloadSingle, on
             {error ? (
               <button
                 onClick={() => setAttempt((a) => a + 1)}
-                className="w-full px-5 py-3 rounded-xl bg-zinc-800 text-zinc-200 font-medium"
+                className={buttonClass("secondary", "lg", "w-full")}
               >
                 {t("pages.media.save.retry")}
               </button>
@@ -163,13 +174,13 @@ export const SaveToPhotosModal = ({ items, quality, getUrl, onDownloadSingle, on
               <button
                 onClick={share}
                 disabled={!files || sharing}
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold"
+                className={buttonClass("primary", "lg", "w-full")}
               >
                 {!files || sharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImageDown className="w-5 h-5" />}
                 {files ? t("pages.media.save.button", { count: currentCount }) : t("pages.media.save.wait")}
               </button>
             )}
-            <p className="text-xs text-zinc-500 mt-3 text-center">{t("pages.media.save.keepOpen")}</p>
+            <p className="text-sm text-zinc-400 mt-3 text-center">{t("pages.media.save.keepOpen")}</p>
           </>
         )}
 
@@ -189,7 +200,7 @@ export const SaveToPhotosModal = ({ items, quality, getUrl, onDownloadSingle, on
                   <span className="truncate text-zinc-400">
                     {item.fileName} · {formatFileSize(item.size)}
                   </span>
-                  <button onClick={() => onDownloadSingle(item, "original")} className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 shrink-0">
+                  <button onClick={() => onDownloadSingle(item, "original")} className={buttonClass("link", "sm", "shrink-0")}>
                     <Download className="w-4 h-4" />
                     {t("pages.media.download")}
                   </button>
@@ -200,7 +211,7 @@ export const SaveToPhotosModal = ({ items, quality, getUrl, onDownloadSingle, on
         )}
 
         {done && (
-          <button onClick={onClose} className="w-full mt-5 px-5 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium">
+          <button onClick={onClose} className={buttonClass("secondary", "lg", "w-full mt-5")}>
             {t("pages.media.save.close")}
           </button>
         )}
@@ -252,22 +263,24 @@ export const SelectionBar = ({
   const canSave = canShareFiles();
   // Telefonda tarayıcı zip'i bellek sınırlı: büyük seçimde zip yerine galeriye kaydet önerilir
   const zipTooBigHere = !("showSaveFilePicker" in window) && totalBytes > memoryZipLimit();
+  // WhatsApp düğmesi çubuğun üstüne kaysın (indirme düğmesini kapatmasın)
+  useBottomBar(true);
 
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 z-40 p-3 sm:p-4 pointer-events-none">
-        <div className="pointer-events-auto max-w-3xl mx-auto bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 rounded-2xl shadow-2xl p-3 sm:p-4">
+        <div className="pointer-events-auto max-w-3xl mx-auto bg-zinc-900 border border-zinc-700 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <p className="text-sm text-white font-medium">
               {t("pages.media.select.count", { count })}
               {count > 0 && <span className="text-zinc-400 font-normal"> · {formatFileSize(totalBytes)}</span>}
             </p>
             <div className="flex items-center gap-1">
-              <button onClick={count === items.length ? onClear : onSelectAll} className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-200 bg-zinc-800 hover:bg-zinc-700">
+              <button onClick={count === items.length ? onClear : onSelectAll} className={buttonClass("secondary", "sm")}>
                 {count === items.length ? t("pages.media.select.clear") : t("pages.media.select.all")}
               </button>
-              <button onClick={onExit} className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10" aria-label={t("pages.media.select.exit")}>
-                <X className="w-5 h-5" />
+              <button type="button" onClick={onExit} className={iconButtonClass("ghost", "w-10 h-10")} aria-label={t("pages.media.select.exit")}>
+                <X className="w-5 h-5" aria-hidden />
               </button>
             </div>
           </div>
@@ -278,7 +291,7 @@ export const SelectionBar = ({
               <button
                 disabled={count === 0}
                 onClick={() => setSaving(true)}
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white text-sm font-semibold"
+                className={buttonClass("primary", "lg")}
               >
                 <ImageDown className="w-4 h-4" />
                 {t("pages.media.select.saveToGallery")}
@@ -286,7 +299,7 @@ export const SelectionBar = ({
               <button
                 disabled={count === 0 || zipRunning || zipTooBigHere}
                 onClick={() => onZip(selectedItems.map((i) => i.id), effectiveQuality)}
-                className="self-center inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 underline underline-offset-4 disabled:opacity-40 disabled:no-underline"
+                className={buttonClass("ghost", "md", "self-center underline underline-offset-4 disabled:no-underline")}
               >
                 {zipRunning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {zipRunning && zipProgress?.total
@@ -298,7 +311,7 @@ export const SelectionBar = ({
             <button
               disabled={count === 0 || zipRunning || zipTooBigHere}
               onClick={() => onZip(selectedItems.map((i) => i.id), effectiveQuality)}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white text-sm font-semibold"
+              className={buttonClass("primary", "lg", "w-full")}
             >
               {zipRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : effectiveQuality === "preview" ? <Shrink className="w-4 h-4" /> : <FolderDown className="w-4 h-4" />}
               {zipRunning && zipProgress?.total
@@ -308,22 +321,22 @@ export const SelectionBar = ({
           )}
 
           {anyPreview && (
-            <label className="mt-2 flex items-center justify-center gap-2 text-xs text-zinc-400 cursor-pointer">
+            <label className="mt-2 flex items-center justify-center gap-2 min-h-10 text-sm text-zinc-300 cursor-pointer">
               <input
                 type="checkbox"
                 checked={quality === "preview"}
                 onChange={(e) => setQuality(e.target.checked ? "preview" : "original")}
-                className="accent-emerald-500"
+                className="w-5 h-5 accent-emerald-500"
               />
               {t("pages.media.select.smallQuality")}
             </label>
           )}
           {zipTooBigHere && count > 0 && (
-            <p className="text-xs text-amber-300 mt-2">
+            <p className="text-sm text-amber-300 mt-2">
               {canSave ? t("pages.media.select.tooBigPhone") : t("pages.media.select.tooBigBrowser", { size: formatFileSize(memoryZipLimit()) })}
             </p>
           )}
-          {hasMore && <p className="text-xs text-zinc-500 mt-2">{t("pages.media.select.loadedOnly")}</p>}
+          {hasMore && <p className="text-sm text-zinc-400 mt-2">{t("pages.media.select.loadedOnly")}</p>}
         </div>
       </div>
 
@@ -345,5 +358,5 @@ export const SelectionBar = ({
 export const DownloadHint = () => {
   const { t } = useTranslation();
   if (!isMobileDevice()) return null;
-  return <p className="text-xs text-zinc-400 mb-4">{isIOS() ? t("pages.media.hint.ios") : t("pages.media.hint.android")}</p>;
+  return <p className="text-sm text-zinc-400 mb-4">{isIOS() ? t("pages.media.hint.ios") : t("pages.media.hint.android")}</p>;
 };

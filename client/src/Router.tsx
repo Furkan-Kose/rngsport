@@ -29,6 +29,7 @@ import AwardCeremoniesPage from "./pages/AwardCeremoniesPage";
 import AwardCeremonyDetailPage from "./pages/AwardCeremonyDetailPage";
 import SharedGalleryPage from "./pages/SharedGalleryPage";
 import CustomerGalleryPreviewPage from "./pages/CustomerGalleryPreviewPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 import { SHOOTING_LIST_ROLES } from "./lib/roles";
 
@@ -56,6 +57,7 @@ const LoyaltyPage = lazy(() => import("./pages/admin/LoyaltyPage"));
 const ShopProductsPage = lazy(() => import("./pages/admin/ShopProductsPage"));
 const ShopOrdersPage = lazy(() => import("./pages/admin/ShopOrdersPage"));
 const FeedbackPage = lazy(() => import("./pages/admin/FeedbackPage"));
+const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 
 // Admin parçası yüklenirken (lazy) gösterilen boş koyu ekran
 const adminFallback = <div className="min-h-screen bg-gray-900" />;
@@ -135,6 +137,7 @@ const publicRoutes = (lang: Lang) => {
           { path: "mesafeli-satis-sozlesmesi", element: <MesafeliSatis /> },
           { path: "iptal-ve-iade-kosullari", element: <IadeKosullari /> },
           { path: "gizlilik-ve-guvenlik-politikasi", element: <GizlilikPolitikasi /> },
+          { path: "*", element: <NotFoundPage /> },
         ],
       },
     ],
@@ -234,6 +237,11 @@ export const router = createBrowserRouter([
       {
         path: "/admin/shooting-list",
         element: <ShootingListPage />,
+      },
+      // Ayarlar (tema, şifre): personel de açabilir, bu yüzden bu grupta
+      {
+        path: "/admin/settings",
+        element: <SettingsPage />,
       },
     ],
   },

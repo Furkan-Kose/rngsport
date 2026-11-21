@@ -20,7 +20,7 @@ const TournamentSelect = ({ tournaments, value, onChange, allowAll = true, class
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-10 w-full sm:w-auto max-w-full pl-9 pr-8 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500 truncate"
+      className="w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25 sm:w-auto max-w-full pl-9 pr-8 truncate"
     >
       {allowAll && <option value={ALL_TOURNAMENTS}>Tüm yarışmalar</option>}
       {tournaments.map((t) => (

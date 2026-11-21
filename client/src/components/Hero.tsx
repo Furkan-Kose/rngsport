@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles, Calendar, ChevronDown } from "lucide-react";
+import { ArrowRight, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import LocalizedLink from "./LocalizedLink";
+import { buttonClass } from "../lib/siteUi";
 
 // Dikey (1080x1920) ve yatay (1920x1080) iki ayri kurgu var; esik overlay'lerin
 // kullandigi md kirilimiyla ayni tutuluyor.
@@ -96,18 +97,6 @@ const Hero = () => {
         <div className="absolute inset-0 bg-black/60 md:hidden" />
       </div>
 
-      {/* Decorative grid overlay (right side, very subtle) */}
-      <div
-        aria-hidden
-        className="absolute inset-y-0 right-0 w-1/2 bg-grid-dark opacity-40 hidden md:block"
-      />
-
-      {/* Single subtle ambient emerald glow */}
-      <div
-        aria-hidden
-        className="absolute -bottom-32 right-1/4 w-[32rem] h-[32rem] bg-emerald-500/[0.06] rounded-full blur-3xl pointer-events-none"
-      />
-
       {/* Content */}
       <motion.div
         variants={containerVariants}
@@ -116,24 +105,10 @@ const Hero = () => {
         className="container mx-auto px-6 md:px-4 relative z-10 pt-20"
       >
         <div className="max-w-4xl text-center md:text-left">
-          {/* Badge - all screens */}
-          {/* <motion.div variants={itemVariants}>
-            <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/40 backdrop-blur-sm rounded-full px-4 py-1.5 mb-6 shadow-[0_0_24px_-8px_rgba(16,185,129,0.6)]">
-              <span className="relative flex w-2 h-2">
-                <span className="animate-ping absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400" />
-              </span>
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-300 text-sm font-medium">
-                RNG Sport
-              </span>
-            </div>
-          </motion.div> */}
-
           {/* Heading */}
           <motion.h1
             variants={itemVariants}
-            className="text-[2rem] leading-[1.2] md:text-5xl lg:text-6xl font-display font-bold text-white md:text-gray-100 md:leading-tight mb-5 md:mb-6"
+            className="text-4xl leading-[1.15] md:text-6xl lg:text-7xl font-display font-bold text-white mb-5 md:mb-6"
           >
             {t("home.hero.titleLine1")}
             <span className="block text-gradient-brand">{t("home.hero.titleLine2")}</span>
@@ -142,7 +117,7 @@ const Hero = () => {
           {/* Description */}
           <motion.p
             variants={itemVariants}
-            className="text-gray-300 md:text-gray-400 text-base md:text-xl max-w-md md:max-w-xl mx-auto md:mx-0 mb-8 md:mb-10"
+            className="text-zinc-200 text-base md:text-xl max-w-md md:max-w-xl mx-auto md:mx-0 mb-8 md:mb-10"
           >
             {t("home.hero.description")}
           </motion.p>
@@ -150,26 +125,19 @@ const Hero = () => {
           {/* Buttons */}
           <motion.div
             variants={itemVariants}
-            className="flex flex-row justify-center md:justify-start gap-3 md:gap-4"
+            className="flex flex-wrap justify-center md:justify-start gap-3"
           >
-            <a
-              href="#paketler"
-              className="relative bg-emerald-500 hover:bg-emerald-600 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-colors text-sm md:text-base shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 overflow-hidden"
-            >
-              <span className="absolute inset-0 bg-linear-to-r from-emerald-400 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <Sparkles className="w-4 h-4 md:w-5 md:h-5 relative z-10" />
-              <span className="hidden sm:inline relative z-10">{t("home.hero.packagesPrefix")}</span>
-              <span className="relative z-10">{t("home.hero.packagesWord")}</span>
-              <ArrowRight className="w-4 h-4 md:w-5 md:h-5 transition-transform group-hover:translate-x-1 relative z-10" />
+            {/* İki ödeme yolu da paket kartlarından başlar; bu yüzden ana düğme paketlere iner */}
+            <a href="#paketler" className={buttonClass("primary", "lg")}>
+              {t("home.hero.packages")}
+              <ArrowRight className="w-5 h-5" aria-hidden />
             </a>
             <LocalizedLink
               to="/rezervasyon"
-              className="bg-white/10 md:bg-black/30 hover:bg-emerald-600/15 border border-white/20 md:border-white/10 hover:border-emerald-500/60 text-white px-4 md:px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 group transition-all text-sm md:text-base backdrop-blur-sm"
+              className={buttonClass("secondary", "lg", "bg-black/40")}
             >
-              <Calendar className="w-4 h-4 md:w-5 md:h-5 group-hover:text-emerald-400 transition-colors" />
-              <span className="group-hover:text-emerald-400 transition-colors">
-                {t("home.hero.reservation")}
-              </span>
+              <Calendar className="w-5 h-5" aria-hidden />
+              {t("home.hero.reservation")}
             </LocalizedLink>
           </motion.div>
         </div>
@@ -180,21 +148,6 @@ const Hero = () => {
         aria-hidden
         className="absolute inset-x-0 bottom-0 h-40 md:h-56 z-[5] bg-linear-to-b from-transparent to-[#09090b] pointer-events-none"
       />
-
-      {/* Scroll cue */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
-        className="absolute bottom-32 left-1/2 -translate-x-1/2 z-10 hidden md:flex flex-col items-center gap-2"
-      >
-        <span className="text-xs uppercase tracking-[0.3em] text-gray-500">
-          {t("home.hero.scroll")}
-        </span>
-        <div className="w-6 h-10 rounded-full border-2 border-gray-500/50 flex items-start justify-center p-1.5">
-          <ChevronDown className="w-3 h-3 text-emerald-400 animate-scroll-cue" />
-        </div>
-      </motion.div>
     </section>
   );
 };

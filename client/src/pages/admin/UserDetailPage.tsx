@@ -19,6 +19,8 @@ import UserLoyaltyPanel from '../../components/admin/UserLoyaltyPanel';
 import PriorityBadge from '../../components/PriorityBadge';
 import { Button, EmptyState, PageHeader, Panel, SkeletonPage } from '../../components/admin/ui';
 import PhoneLinks from '../../components/admin/PhoneLinks';
+import { notifyError } from '../../lib/adminErrors';
+import { formatMoney } from '../../lib/adminFormat';
 
 /** Ham OrderItem / ReservationItem satırı (backend include: { items: true }) */
 interface RecordItem {
@@ -81,11 +83,11 @@ const RecordList = ({ title, records }: { title: string; records: CustomerRecord
   <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 sm:p-6">
     <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
       <Calendar className="w-5 h-5 text-amber-500" />
-      {title} <span className="text-gray-500 font-normal">({records.length})</span>
+      {title} <span className="text-gray-400 font-normal">({records.length})</span>
     </h2>
 
     {records.length === 0 ? (
-      <p className="text-sm text-gray-500">Kayıt yok.</p>
+      <p className="text-sm text-gray-400">Kayıt yok.</p>
     ) : (
       <div className="space-y-3">
         {records.map((r) => (
@@ -94,12 +96,12 @@ const RecordList = ({ title, records }: { title: string; records: CustomerRecord
               <div>
                 {r.tournament && <p className="text-xs text-amber-400/80 mb-0.5">{r.tournament.name}</p>}
                 <p className="text-white font-medium">{r.athleteName}</p>
-                <p className="text-sm text-gray-500">{r.clubName}</p>
+                <p className="text-sm text-gray-400">{r.clubName}</p>
               </div>
               <div className="text-right">
                 <StatusBadge status={r.status} />
                 <p className="text-sm text-gray-300 mt-1">
-                  ₺{r.totalPrice.toLocaleString('tr-TR')}
+                  {formatMoney(r.totalPrice)}
                 </p>
               </div>
             </div>
@@ -117,7 +119,7 @@ const RecordList = ({ title, records }: { title: string; records: CustomerRecord
               ))}
             </div>
 
-            <p className="text-xs text-gray-600 mt-2">{formatDate(r.createdAt)}</p>
+            <p className="text-xs text-gray-400 mt-2">{formatDate(r.createdAt)}</p>
           </div>
         ))}
       </div>
@@ -143,7 +145,7 @@ const UserDetailPage = () => {
       const { data } = await api.get(`/api/users/${id}`);
       setUser(data.user);
     } catch (error) {
-      console.error('User fetch error:', error);
+      notifyError(error, 'Kullanıcı yüklenemedi');
       setNotFound(true);
     } finally {
       setIsLoading(false);
@@ -234,14 +236,14 @@ const UserDetailPage = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-2 mt-4 text-sm">
           <p className="flex items-center gap-2 text-gray-300 min-w-0">
-            <Mail className="w-4 h-4 text-gray-500 shrink-0" />
+            <Mail className="w-4 h-4 text-gray-400 shrink-0" />
             <span className="truncate">{user.email || '-'}</span>
           </p>
           <div className="flex items-center gap-2 text-gray-300">
             <PhoneLinks phone={user.phone} />
           </div>
           <p className="flex items-center gap-2 text-gray-400">
-            <Calendar className="w-4 h-4 text-gray-500 shrink-0" />
+            <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
             Kayıt: {formatDate(user.createdAt)}
           </p>
         </div>

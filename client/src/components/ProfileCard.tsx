@@ -1,48 +1,27 @@
 import { useState, type FormEvent } from "react";
-import {
-  User,
-  Mail,
-  Phone,
-  Building2,
-  CalendarDays,
-  Pencil,
-  LogOut,
-  Loader2,
-} from "lucide-react";
+import { Pencil } from "lucide-react";
 import { toast } from "react-toastify";
 import { useTranslation } from "react-i18next";
 
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
+import { Button, Card, Field, Input } from "./ui/kit";
 
-const inputClass =
-  "w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 transition-colors";
-const labelClass = "flex items-center gap-2 text-sm text-zinc-400 mb-2";
-
-const InfoRow = ({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Mail;
-  label: string;
-  value?: string | null;
-}) => (
-  <div className="flex items-center gap-3 text-zinc-300">
-    <Icon className="w-4 h-4 text-emerald-400/70 shrink-0" />
-    <span className="text-sm text-zinc-500 w-24 shrink-0">{label}</span>
-    <span className="text-sm">{value || "—"}</span>
+const InfoRow = ({ label, value }: { label: string; value?: string | null }) => (
+  <div className="flex flex-wrap gap-x-4 gap-y-0.5 py-2.5">
+    <dt className="w-32 shrink-0 text-zinc-400">{label}</dt>
+    <dd className="text-zinc-100 break-all">{value || "—"}</dd>
   </div>
 );
 
 /**
- * Profil kartı — görüntüleme ve düzenleme.
+ * Hesap bilgileri kartı — görüntüleme ve düzenleme.
  *
  * Sporcu bilgileri rezervasyon formunu ön-doldurduğu için kullanıcının bunları
  * kendisi düzeltebilmesi gerekiyor. E-posta buradan değiştirilemez: adres
  * değişimi doğrulama akışı gerektirir (PATCH /api/auth/me de kabul etmiyor).
  */
-const ProfileCard = ({ onLogout }: { onLogout: () => void }) => {
+const ProfileCard = () => {
   const { user, refresh } = useAuth();
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -81,154 +60,88 @@ const ProfileCard = ({ onLogout }: { onLogout: () => void }) => {
   };
 
   return (
-    <div className="relative bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 sm:p-8">
-      <div className="absolute -top-px left-6 right-6 h-px bg-linear-to-r from-transparent via-emerald-500/40 to-transparent" />
-
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-            <User className="w-7 h-7 text-emerald-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gradient-brand">
-              {user?.name || t("account.card.fallbackTitle")}
-            </h1>
-            <p className="text-zinc-500 text-sm">{t("account.card.subtitle")}</p>
-          </div>
+    <Card>
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">{t("account.card.title")}</h2>
+          <p className="text-sm text-zinc-400">{t("account.card.subtitle")}</p>
         </div>
-
-        <div className="flex items-center gap-2">
-          {!isEditing && (
-            <button
-              onClick={openEdit}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-800/60 hover:bg-emerald-500/10 border border-zinc-700/50 hover:border-emerald-500/50 text-zinc-300 hover:text-emerald-400 text-sm transition-all duration-300"
-            >
-              <Pencil className="w-4 h-4" />
-              <span className="hidden sm:inline">{t("account.card.edit")}</span>
-            </button>
-          )}
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-800/60 hover:bg-red-500/10 border border-zinc-700/50 hover:border-red-500/50 text-zinc-300 hover:text-red-400 text-sm transition-all duration-300"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">{t("account.card.logout")}</span>
-          </button>
-        </div>
+        {!isEditing && (
+          <Button variant="secondary" size="sm" icon={Pencil} onClick={openEdit}>
+            {t("account.card.edit")}
+          </Button>
+        )}
       </div>
 
       {isEditing ? (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="p-name" className={labelClass}>
-              <User className="w-4 h-4" />
-              {t("account.card.athleteName")}
-            </label>
-            <input
-              type="text"
+          <Field label={t("account.card.athleteName")} htmlFor="p-name" hint={t("account.card.athleteNameHint")}>
+            <Input
               id="p-name"
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className={inputClass}
               required
               minLength={2}
             />
-            <p className="text-xs text-zinc-600 mt-1.5">
-              {t("account.card.athleteNameHint")}
-            </p>
-          </div>
+          </Field>
 
-          <div>
-            <label htmlFor="p-club" className={labelClass}>
-              <Building2 className="w-4 h-4" />
-              {t("account.card.club")}
-            </label>
-            <input
-              type="text"
+          <Field label={t("account.card.club")} htmlFor="p-club">
+            <Input
               id="p-club"
               value={form.clubName}
               onChange={(e) => setForm((p) => ({ ...p, clubName: e.target.value }))}
-              className={inputClass}
               placeholder={t("account.card.clubPlaceholder")}
             />
+          </Field>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label={t("account.card.birthYear")} htmlFor="p-birth">
+              <Input
+                id="p-birth"
+                value={form.birthYear}
+                onChange={(e) => setForm((p) => ({ ...p, birthYear: e.target.value }))}
+                placeholder="2015"
+                inputMode="numeric"
+                maxLength={4}
+              />
+            </Field>
+
+            <Field label={t("account.card.phone")} htmlFor="p-phone">
+              <Input
+                type="tel"
+                id="p-phone"
+                value={form.phone}
+                onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                placeholder={t("account.card.phonePlaceholder")}
+                inputMode="tel"
+                autoComplete="tel"
+              />
+            </Field>
           </div>
 
-          <div>
-            <label htmlFor="p-birth" className={labelClass}>
-              <CalendarDays className="w-4 h-4" />
-              {t("account.card.birthYear")}
-            </label>
-            <input
-              type="text"
-              id="p-birth"
-              value={form.birthYear}
-              onChange={(e) => setForm((p) => ({ ...p, birthYear: e.target.value }))}
-              className={inputClass}
-              placeholder="2011"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="p-phone" className={labelClass}>
-              <Phone className="w-4 h-4" />
-              {t("account.card.phone")}
-            </label>
-            <input
-              type="tel"
-              id="p-phone"
-              value={form.phone}
-              onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-              className={inputClass}
-              placeholder={t("account.card.phonePlaceholder")}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>
-              <Mail className="w-4 h-4" />
-              {t("account.card.email")}
-            </label>
-            <input
-              type="email"
-              value={user?.email ?? ""}
-              readOnly
-              disabled
-              className="w-full px-4 py-3 bg-zinc-800/30 border border-zinc-800 rounded-xl text-zinc-500 cursor-not-allowed"
-            />
-            <p className="text-xs text-zinc-600 mt-1.5">
-              {t("account.card.emailLocked")}
-            </p>
-          </div>
+          <Field label={t("account.card.email")} htmlFor="p-email" hint={t("account.card.emailLocked")}>
+            <Input id="p-email" type="email" value={user?.email ?? ""} readOnly />
+          </Field>
 
           <div className="flex flex-wrap gap-3 pt-1">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 min-w-40 py-3 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            <Button type="submit" loading={isSubmitting} className="flex-1 min-w-40">
               {isSubmitting ? t("account.card.saving") : t("account.card.save")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              disabled={isSubmitting}
-              className="px-6 py-3 rounded-xl bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 text-zinc-300 text-sm font-medium transition-colors disabled:opacity-50"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => setIsEditing(false)} disabled={isSubmitting}>
               {t("account.card.cancel")}
-            </button>
+            </Button>
           </div>
         </form>
       ) : (
-        <div className="space-y-3">
-          <InfoRow icon={User} label={t("account.card.athlete")} value={user?.name} />
-          <InfoRow icon={Building2} label={t("account.card.club")} value={user?.clubName} />
-          <InfoRow icon={CalendarDays} label={t("account.card.birthYear")} value={user?.birthYear} />
-          <InfoRow icon={Mail} label={t("account.card.email")} value={user?.email} />
-          <InfoRow icon={Phone} label={t("account.card.phone")} value={user?.phone} />
-        </div>
+        <dl className="divide-y divide-zinc-800 text-sm">
+          <InfoRow label={t("account.card.athlete")} value={user?.name} />
+          <InfoRow label={t("account.card.club")} value={user?.clubName} />
+          <InfoRow label={t("account.card.birthYear")} value={user?.birthYear} />
+          <InfoRow label={t("account.card.email")} value={user?.email} />
+          <InfoRow label={t("account.card.phone")} value={user?.phone} />
+        </dl>
       )}
-    </div>
+    </Card>
   );
 };
 

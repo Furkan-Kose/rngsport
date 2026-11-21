@@ -18,7 +18,7 @@ interface TierForm {
 const emptyForm: TierForm = { name: '', minPoints: 100, discountPercent: 5, nameEn: '', nameRu: '' };
 
 const inputClass =
-  'w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-amber-500';
+  'w-full bg-gray-900/50 border rounded-lg text-white placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 px-3 py-2 text-sm border-gray-700 focus:border-amber-500 focus:ring-amber-500/25';
 
 // Sadakat seviyeleri: toplam puan eşiğe ulaşınca yüzde indirim
 const LoyaltyPage = () => {

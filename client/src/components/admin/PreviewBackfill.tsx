@@ -114,7 +114,7 @@ const PreviewBackfill = ({ missing, fetchBatch, save, onDone }: PreviewBackfillP
       ) : (
         <button
           onClick={run}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 text-sm font-semibold transition-colors"
         >
           <ImagePlus className="w-4 h-4" />
           Önizlemeleri oluştur
