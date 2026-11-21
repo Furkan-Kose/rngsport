@@ -26,7 +26,8 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-black border-t border-zinc-800 pt-14 pb-10">
+    <footer className="bg-black border-t border-zinc-800 pt-14 pb-24 sm:pb-10">
+      {/* pb-24 telefonda: sabit WhatsApp butonu (sağ alt) telif satırını örtmesin */}
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           <div className="sm:col-span-2">
@@ -92,12 +93,17 @@ const Footer = () => {
         </div>
 
         <div className="mt-12 pt-8 border-t border-zinc-800 flex flex-col lg:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
+          {/* Ödeme logoları ~340px: telefonda yazının altına iner, ekrandan geniş olmaz */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 max-w-full">
             <span className="inline-flex items-center gap-1.5 text-sm text-zinc-400">
               <ShieldCheck className="w-4 h-4 text-emerald-400" aria-hidden />
               {t("common.footer.securePayment")}
             </span>
-            <img src="/footerLogo.png" alt={t("common.footer.paymentLogosAlt")} className="h-8 opacity-80" />
+            <img
+              src="/footerLogo.png"
+              alt={t("common.footer.paymentLogosAlt")}
+              className="h-8 w-auto max-w-full object-contain opacity-80"
+            />
           </div>
           <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
             {legalLinks.map((link) => (

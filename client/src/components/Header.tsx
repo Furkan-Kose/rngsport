@@ -10,8 +10,12 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { buttonClass, cx, iconButtonClass } from "../lib/siteUi";
 
-const mobileLinkClass =
-  "flex items-center min-h-11 px-3 rounded-xl font-medium text-zinc-200 hover:text-emerald-400 hover:bg-zinc-800/60 transition-colors";
+// Aktif bağlantının rengi ayrı sınıf olarak eklenmez: iki yazı rengi sınıfından zinc kazanır
+const mobileLinkClass = (active = false) =>
+  cx(
+    "flex items-center min-h-11 px-3 rounded-xl font-medium hover:bg-zinc-800/60 transition-colors",
+    active ? "text-emerald-400" : "text-zinc-200 hover:text-emerald-400",
+  );
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -92,18 +96,21 @@ const Header = () => {
             ))}
           </nav>
 
+          {/* Telefonda yalnızca sepet + menü; giriş ve rezervasyon menünün içinde.
+              Gizleme max-sm:hidden ile: buttonClass zaten inline-flex verdiği için düz `hidden` ondan önce
+              üretilip kaybeder ve butonlar sepeti/menüyü ekranın dışına iter. */}
           <div className="flex items-center gap-2">
             <LanguageSwitcher className="hidden md:block" />
 
             <LocalizedLink
               to={isAuthenticated ? accountPath : "/giris"}
-              className={buttonClass("secondary", "sm", "hidden sm:inline-flex")}
+              className={buttonClass("secondary", "sm", "max-sm:hidden")}
             >
               {isAuthenticated ? <User className="w-4 h-4" aria-hidden /> : <LogIn className="w-4 h-4" aria-hidden />}
               <span className="max-w-24 truncate">{isAuthenticated ? accountLabel : t("common.nav.login")}</span>
             </LocalizedLink>
 
-            <LocalizedLink to="/rezervasyon" className={buttonClass("primary", "sm", "hidden sm:inline-flex")}>
+            <LocalizedLink to="/rezervasyon" className={buttonClass("primary", "sm", "max-sm:hidden")}>
               <Calendar className="w-4 h-4" aria-hidden />
               {t("common.nav.reserve")}
             </LocalizedLink>
@@ -158,18 +165,18 @@ const Header = () => {
                     key={link.to}
                     to={link.to}
                     aria-current={isActive(link.to) ? "page" : undefined}
-                    className={cx(mobileLinkClass, isActive(link.to) && "text-emerald-400")}
+                    className={mobileLinkClass(isActive(link.to))}
                   >
                     {link.name}
                   </LocalizedLink>
                 ))}
 
-                <LocalizedLink to="/sepet" className={mobileLinkClass}>
+                <LocalizedLink to="/sepet" className={mobileLinkClass()}>
                   {t("common.nav.cart")}
                   {cartItemCount > 0 && <span className="ml-2 text-emerald-400">({cartItemCount})</span>}
                 </LocalizedLink>
 
-                <LocalizedLink to={isAuthenticated ? accountPath : "/giris"} className={mobileLinkClass}>
+                <LocalizedLink to={isAuthenticated ? accountPath : "/giris"} className={mobileLinkClass()}>
                   {isAuthenticated
                     ? isAdmin
                       ? t("common.nav.adminPanel")
