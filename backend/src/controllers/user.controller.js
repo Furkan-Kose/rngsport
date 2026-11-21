@@ -12,7 +12,7 @@ import {
   sanitizeBirthYear,
 } from "../utils/validators.js";
 import { deleteObject } from "../lib/r2.js";
-import { issueSetPasswordToken } from "../utils/customerAccount.js";
+import { issueSetPasswordToken, latestLocaleFor } from "../utils/customerAccount.js";
 import { sendPasswordResetEmail } from "../lib/mail.js";
 
 // Müşteri satırı. password ASLA doğrudan dönmez — yalnızca hasPassword'e çevrilir.
@@ -65,6 +65,16 @@ const userOrderBy = (req) => {
   }
 };
 
+// Galeri süzgeci (?gallery=): ana sayfadaki "Galeri" satırı ve müşteri listesindeki sekmeler.
+// İndirme = GalleryDownload kaydı (paylaşım linkinden yapılan indirme de galeri sahibine yazılır).
+const GALLERY_FILTERS = {
+  with: { photos: { some: {} } },
+  downloaded: { photos: { some: {} }, galleryDownloads: { some: {} } },
+  notDownloaded: { photos: { some: {} }, galleryDownloads: { none: {} } },
+  // Dosyası yüklenmiş ama hesap hiç sahiplenilmemiş (şifre yok → giriş yapamaz)
+  unclaimed: { photos: { some: {} }, password: null },
+};
+
 export const getAllUsers = async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
@@ -74,6 +84,7 @@ export const getAllUsers = async (req, res) => {
 
   const where = {
     role: ROLES.CUSTOMER,
+    ...(GALLERY_FILTERS[req.query.gallery] ?? {}),
     ...(search && {
       OR: [
         { name: { contains: search, mode: "insensitive" } },
@@ -112,15 +123,26 @@ export const getAllUsers = async (req, res) => {
 export const getCustomerStats = async (_req, res) => {
   const base = { role: ROLES.CUSTOMER };
 
-  const [total, withoutPassword, unverified, withPhotos] = await Promise.all([
+  const [total, withoutPassword, unverified, withPhotos, galleryDownloaded, galleryUnclaimed] = await Promise.all([
     prisma.user.count({ where: base }),
     // Hesabı otomatik açılmış ama müşteri hiç şifre belirlememiş
     prisma.user.count({ where: { ...base, password: null } }),
     prisma.user.count({ where: { ...base, emailVerifiedAt: null } }),
     prisma.user.count({ where: { ...base, photos: { some: {} } } }),
+    prisma.user.count({ where: { ...base, ...GALLERY_FILTERS.downloaded } }),
+    prisma.user.count({ where: { ...base, ...GALLERY_FILTERS.unclaimed } }),
   ]);
 
-  res.json({ total, withoutPassword, unverified, withPhotos });
+  res.json({
+    total,
+    withoutPassword,
+    unverified,
+    withPhotos,
+    // Ana sayfadaki "Galeri" satırı
+    galleryDownloaded,
+    galleryNotDownloaded: withPhotos - galleryDownloaded,
+    galleryUnclaimed,
+  });
 };
 
 // Admin: tek kullanıcı detayı. Galeri sayfasının başlığı ve müşteri detay
@@ -289,25 +311,9 @@ export const sendSetPasswordLink = async (req, res) => {
   }
 
   // Admin paneli Türkçe; mail müşterinin son rezervasyonunun/siparişinin dilinde gider
-  const [lastReservation, lastOrder] = await Promise.all([
-    prisma.reservation.findFirst({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      select: { locale: true, createdAt: true },
-    }),
-    prisma.order.findFirst({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      select: { locale: true, createdAt: true },
-    }),
-  ]);
-  const latest = [lastReservation, lastOrder]
-    .filter(Boolean)
-    .sort((a, b) => b.createdAt - a.createdAt)[0];
-
   sendPasswordResetEmail(user.email, user.name, token, {
     isFirstTime: !user.password,
-    locale: latest?.locale,
+    locale: await latestLocaleFor(user.id),
   });
 
   res.json({

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { toast } from 'react-toastify';
-import { CheckSquare, Eye, EyeOff, FolderInput, Images, Pencil, Trash2, X } from 'lucide-react';
+import { CheckSquare, Eye, EyeOff, FolderInput, Images, Link2, Mail, Pencil, Trash2, X } from 'lucide-react';
 import api from '../../lib/api';
 import MediaUploader from '../../components/admin/MediaUploader';
 import AdminMediaGrid from '../../components/admin/AdminMediaGrid';
@@ -15,12 +15,15 @@ import { canonicalAlbum } from '../../lib/albums';
 const MOVE_CHUNK = 25;
 const DELETE_CHUNK = 2000;
 import ConfirmDeleteModal from '../../components/admin/ConfirmDeleteModal';
+import ShareLinkModal, { type AdminShare } from '../../components/admin/ShareLinkModal';
 import { Button, EmptyState, FilterTabs, PageHeader, SkeletonGrid } from '../../components/admin/ui';
+import { notifyError } from '../../lib/adminErrors';
 
 interface UserInfo {
   id: string;
   name: string | null;
   email: string | null;
+  phone?: string | null;
   _count: { photos: number };
 }
 
@@ -70,13 +73,18 @@ const UserGalleryPage = () => {
   const [visibility, setVisibility] = useState<{ all: boolean; albums: string[] }>({ all: false, albums: [] });
   const [visibilityTarget, setVisibilityTarget] = useState<{ album: string | null; hidden: boolean } | null>(null);
   const [savingVisibility, setSavingVisibility] = useState(false);
+  // Müşteriye galeri linki (girişsiz paylaşım linki): kapsam açık sekme — tüm galeri ya da o albüm
+  const [shareResult, setShareResult] = useState<{ share: AdminShare; url: string; created: boolean } | null>(null);
+  const [creatingShare, setCreatingShare] = useState(false);
+  const [confirmShareMail, setConfirmShareMail] = useState(false);
+  const [mailingShare, setMailingShare] = useState(false);
 
   const fetchUser = useCallback(async () => {
     try {
       const { data } = await api.get(`/api/users/${userId}`);
       setUser(data.user);
     } catch (error) {
-      console.error('User fetch error:', error);
+      notifyError(error, 'Kullanıcı yüklenemedi');
     }
   }, [userId]);
 
@@ -309,6 +317,39 @@ const UserGalleryPage = () => {
     }
   };
 
+  const handleCreateShare = async () => {
+    setCreatingShare(true);
+    try {
+      const { data } = await api.post(`/api/gallery/admin/user/${userId}/shares`, { album: activeAlbum });
+      setShareResult(data);
+    } catch (err) {
+      notifyError(err, 'Link oluşturulamadı');
+    } finally {
+      setCreatingShare(false);
+    }
+  };
+
+  const handleMailShare = async () => {
+    setMailingShare(true);
+    try {
+      const { data } = await api.post(`/api/gallery/admin/user/${userId}/shares/email`, { album: activeAlbum });
+      toast.success(data.message);
+      setConfirmShareMail(false);
+    } catch (err) {
+      notifyError(err, 'Mail gönderilemedi');
+    } finally {
+      setMailingShare(false);
+    }
+  };
+
+  // Gizli kapsam paylaşılamaz (müşteri linkte de boş galeri görürdü)
+  const shareBlocked = visibility.all
+    ? 'Galeri müşteriden gizli — önce galeriyi açın'
+    : isAlbumHidden(activeAlbum)
+      ? 'Bu albüm müşteriden gizli — önce albümü açın'
+      : null;
+  const shareScope = activeAlbum ? `"${activeAlbum}" albümü` : 'tüm galeri';
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -321,6 +362,30 @@ const UserGalleryPage = () => {
             <Button icon={Eye} href={`/galerim/onizleme/${userId}`} target="_blank">
               Müşteri gözüyle gör{visibility.all && <span className="text-amber-400 font-normal">(gizli)</span>}
             </Button>
+            {(pagination?.total ?? 0) > 0 && (
+              <>
+                <Button
+                  icon={Link2}
+                  loading={creatingShare}
+                  disabled={!!shareBlocked}
+                  title={shareBlocked ?? `Müşteriye verilecek girişsiz link (${shareScope})`}
+                  onClick={handleCreateShare}
+                >
+                  {activeAlbum ? 'Albüm linki' : 'Link oluştur'}
+                </Button>
+                <Button
+                  icon={Mail}
+                  disabled={!!shareBlocked || !user?.email}
+                  title={
+                    shareBlocked ??
+                    (user?.email ? `Linki ${user.email} adresine gönder (${shareScope})` : 'Bu hesapta e-posta adresi yok')
+                  }
+                  onClick={() => setConfirmShareMail(true)}
+                >
+                  {activeAlbum ? 'Albüm linkini mail at' : 'Mail ile gönder'}
+                </Button>
+              </>
+            )}
             {(pagination?.total ?? 0) > 0 && (
               <Button variant="danger" icon={Trash2} onClick={() => setConfirmDeleteAll(true)}>
                 {activeAlbum ? 'Bu albümü sil' : 'Tüm dosyaları sil'}
@@ -393,7 +458,7 @@ const UserGalleryPage = () => {
               Yarışma / Albüm (R2'de klasör olur)
             </label>
             <AlbumInput value={albumInput} onChange={setAlbumInput} options={albumOptions} />
-            <p className="text-xs text-gray-500 mt-1.5">
+            <p className="text-xs text-gray-400 mt-1.5">
               Kutuya tıklayınca mevcut albümler ve son yarışmalar listelenir. Boş bırakılırsa "genel".
             </p>
             {(visibility.all || isAlbumHidden(uploadAlbum || null)) && (
@@ -497,7 +562,7 @@ const UserGalleryPage = () => {
                   Sil
                 </Button>
                 <Button size="sm" variant="ghost" icon={X} onClick={exitSelectMode}>
-                  İptal
+                  Vazgeç
                 </Button>
               </>
             )}
@@ -627,6 +692,35 @@ const UserGalleryPage = () => {
           onCancel={() => setRenameFrom(null)}
         />
       )}
+
+      {shareResult && userId && (
+        <ShareLinkModal
+          userId={userId}
+          share={shareResult.share}
+          url={shareResult.url}
+          created={shareResult.created}
+          customerName={user?.name ?? null}
+          customerPhone={user?.phone}
+          onClose={() => setShareResult(null)}
+        />
+      )}
+
+      <ConfirmDeleteModal
+        open={confirmShareMail}
+        tone="confirm"
+        title="Galeri linkini mail at"
+        message={
+          <>
+            <strong className="text-white">{user?.email}</strong> adresine {shareScope} için girişsiz görüntüleme ve
+            indirme linki gönderilecek (30 gün geçerli). Açık bir link varsa aynısı gönderilir.
+          </>
+        }
+        confirmLabel="Gönder"
+        busyLabel="Gönderiliyor…"
+        isDeleting={mailingShare}
+        onConfirm={handleMailShare}
+        onCancel={() => setConfirmShareMail(false)}
+      />
     </div>
   );
 };

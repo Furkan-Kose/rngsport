@@ -27,6 +27,9 @@ import {
   deleteMediaFiles,
 } from "../utils/uploads.js";
 import { presignUpload, presignDownload, copyObject } from "../lib/r2.js";
+import { siteUrl, sendGalleryShareEmail } from "../lib/mail.js";
+import { latestLocaleFor } from "../utils/customerAccount.js";
+import { normalizeLocale } from "../utils/i18n.js";
 
 const sanitizeAlbum = (value) => {
   const trimmed = value ? String(value).trim().slice(0, 100) : "";
@@ -284,31 +287,86 @@ export const getMyShares = async (req, res) => {
   res.json({ data: shares.map(shareView) });
 };
 
-// Müşteri: paylaş — bu kapsamda aktif link varsa AYNISI döner, yoksa 30 günlük yeni link
-export const createMyShare = async (req, res) => {
-  const album = shareAlbum(req.body?.album);
+// Bu kapsamda (tüm galeri / tek albüm) aktif link varsa AYNISI döner, yoksa 30 günlük yeni link.
+// Müşterinin "Paylaş"ı ve admin'in "Link oluştur / Mail ile gönder"i aynı kuralı kullanır:
+// kapsam başına tek aktif link, müşteri Galerim'de "Paylaşım açık" olarak görür.
+// hiddenMessage: gizli kapsamda verilecek hata (admin'e "önce açın" denir; müşteri gizliyi bilmez).
+const findOrCreateShare = async (userId, album, { hiddenMessage = "Paylaşılacak dosya yok" } = {}) => {
   const existing = await prisma.galleryShare.findFirst({
-    where: { userId: req.user.id, album, ...activeShareWhere() },
+    where: { userId, album, ...activeShareWhere() },
     orderBy: { createdAt: "desc" },
   });
-  if (existing) return res.json({ share: shareView(existing), created: false });
+  if (existing) return { share: existing, created: false };
 
-  const hidden = await hiddenFor(req.user.id);
-  const count =
-    hidden.all || (album && hidden.albums.includes(album))
-      ? 0
-      : await prisma.galleryPhoto.count({ where: { userId: req.user.id, ...(album && { album }), ...visibleWhere(hidden) } });
+  const hidden = await hiddenFor(userId);
+  if (hidden.all || (album && hidden.albums.includes(album))) throw new AppError(hiddenMessage, 400);
+  const count = await prisma.galleryPhoto.count({ where: { userId, ...(album && { album }), ...visibleWhere(hidden) } });
   if (count === 0) throw new AppError("Paylaşılacak dosya yok", 400);
 
   const share = await prisma.galleryShare.create({
     data: {
       token: crypto.randomBytes(24).toString("base64url"),
-      userId: req.user.id,
+      userId,
       album,
       expiresAt: new Date(Date.now() + SHARE_DAYS * 24 * 60 * 60 * 1000),
     },
   });
+  return { share, created: true };
+};
+
+// Müşteri: paylaş
+export const createMyShare = async (req, res) => {
+  const { share, created } = await findOrCreateShare(req.user.id, shareAlbum(req.body?.album));
+  if (!created) return res.json({ share: shareView(share), created: false });
   res.status(201).json({ message: "Paylaşım linki oluşturuldu", share: shareView(share), created: true });
+};
+
+// ---------------------------------------------------------------------------
+// Admin: müşteri adına paylaşım linki (galeri sayfasında "Link oluştur" / "Mail ile gönder").
+// Link müşterinin dilinde (son rezervasyon/siparişinin dili) üretilir; mail de o dilde gider.
+// ---------------------------------------------------------------------------
+const ADMIN_SHARE_HIDDEN = "Galeri müşteriden gizli — önce galeriyi açın";
+
+const adminShareContext = async (req) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.params.userId },
+    select: { id: true, name: true, email: true },
+  });
+  if (!user) throw new AppError("Kullanıcı bulunamadı", 404);
+  const album = shareAlbum(req.body?.album);
+  const [result, locale] = await Promise.all([
+    findOrCreateShare(user.id, album, { hiddenMessage: ADMIN_SHARE_HIDDEN }),
+    latestLocaleFor(user.id),
+  ]);
+  const url = siteUrl(normalizeLocale(locale), `/paylasim/${result.share.token}`);
+  return { user, locale, url, ...result };
+};
+
+export const createUserShareAdmin = async (req, res) => {
+  const { share, url, created } = await adminShareContext(req);
+  res.status(created ? 201 : 200).json({ share: shareView(share), url, created });
+};
+
+export const emailUserShareAdmin = async (req, res) => {
+  const { user, share, url, locale, created } = await adminShareContext(req);
+  if (!user.email) throw new AppError("Bu hesapta e-posta adresi yok", 400);
+  const result = await sendGalleryShareEmail(user.email, user.name, url, {
+    album: share.album,
+    expiresAt: share.expiresAt,
+    locale,
+  });
+  if (result === "skipped") throw new AppError("E-posta servisi ayarlı değil (RESEND_API_KEY)", 503);
+  if (result !== "sent") throw new AppError("E-posta gönderilemedi, tekrar deneyin", 502);
+  res.json({ message: `Galeri linki ${user.email} adresine gönderildi`, share: shareView(share), url, created });
+};
+
+export const revokeUserShareAdmin = async (req, res) => {
+  const { count } = await prisma.galleryShare.updateMany({
+    where: { id: req.params.shareId, userId: req.params.userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  if (count === 0) throw new AppError("Paylaşım bulunamadı", 404);
+  res.json({ message: "Paylaşım linki kapatıldı" });
 };
 
 // Müşteri: paylaşımı kapat (link hemen çalışmaz olur)

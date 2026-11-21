@@ -235,3 +235,14 @@ export const syncProfileGaps = async (userId, customer) => {
     console.error("[customerAccount] Profil boşlukları doldurulamadı:", error);
   }
 };
+
+// Müşterinin dili: son rezervasyonunun/siparişinin dili (yoksa undefined → Türkçe).
+// Admin'in tetiklediği mailler (şifre linki, galeri linki) bu dilde gider; admin paneli Türkçe.
+export const latestLocaleFor = async (userId) => {
+  const select = { locale: true, createdAt: true };
+  const [lastReservation, lastOrder] = await Promise.all([
+    prisma.reservation.findFirst({ where: { userId }, orderBy: { createdAt: "desc" }, select }),
+    prisma.order.findFirst({ where: { userId }, orderBy: { createdAt: "desc" }, select }),
+  ]);
+  return [lastReservation, lastOrder].filter(Boolean).sort((a, b) => b.createdAt - a.createdAt)[0]?.locale;
+};

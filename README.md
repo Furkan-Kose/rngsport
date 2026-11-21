@@ -172,7 +172,8 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
 
 ### Yönetim paneli
 
-- **Dashboard:** Paket siparişleri, nakit rezervasyonlar ve ürün siparişleri (hazırlanacak, ödeme bekleyen, kargoda, gelir) tek ekranda; altında son kayıtlar ve son görüşler. Nakit rezervasyonlarda **onaylanan** (tahsil edilecek) ve **ödenen** (teslim edilenler dahil, tahsil edilmiş) tutarlar ayrı gösterilir. Son kayıtlara tıklayınca kaydın detayı açılır.
+- **Ana Sayfa:** Rezervasyon, sipariş, görüş ve galeri özetleri, son kayıtlar ve seçili yarışmanın paket, alet ve kulüp dağılımı.
+- **Ayarlar:** Panel teması ve şifre değiştirme.
 - **Panel genelinde:**
   - Menüde **yeni kayıt rozetleri:** her admin hesabı, bir sayfaya son bakışından beri gelen ödenmiş sipariş, rezervasyon, ürün siparişi ve görüş sayısını görür; sayfaya girince sıfırlanır.
   - **Hızlı arama (Ctrl+K):** Sporcu, kulüp, telefon veya e-postayla paket siparişleri, rezervasyonlar, ürün siparişleri ve müşterilerde aynı anda arar.
@@ -196,7 +197,7 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
   - Öncelik ücreti, sadakat puanı, sıralama, aktif/pasif.
   - R2'ye görsel yükleme.
   - EN/RU çeviriler.
-- **Turnuvalar** (ana sayfa takvimi, rezervasyona açma) ve **Ödül törenleri** (tören oluşturma, sürükle-bırak toplu yükleme). Her ikisi de çeviri sekmeli.
+- **Yarışmalar** (ana sayfa takvimi, rezervasyona açma) ve **Ödül törenleri** (tören oluşturma, sürükle-bırak toplu yükleme). Her ikisi de çeviri sekmeli.
 - **Kullanıcılar:**
   - Müşteri listesi ve müşteri detayı. Listede **son indirme** tarihi görünür; galerisi yüklenip hiç indirmeyenler hemen fark edilir.
   - Müşteriye özel galeri yükleme (fotoğraf ≤50 MB, video ≤1 GB, sayı sınırı yok, tarayıcıdan doğrudan R2'ye):
@@ -204,6 +205,7 @@ Fotoğraf/video paketlerinden **tamamen ayrı** bir mağaza. Sporcunun pozundan 
     - Yükleme **arka planda** sürer. Panelde sayfa değiştirilebilir, ilerleme sağ altta görünür.
   - **Albüm yönetimi:** Dosyalar seçilip başka albüme taşınabilir ya da toplu silinebilir. Albüm adı düzeltilebilir.
   - **Müşteri gözüyle gör:** Admin, müşterinin galerisini müşterinin gördüğü haliyle (gizli albümler hariç) salt okunur açar.
+  - **Galeri linki:** Müşteri için girişsiz paylaşım linki oluşturulup kopyalanabilir ya da e-postayla gönderilebilir.
   - **Galeriyi gizle / aç:** Galerinin tamamı ya da tek bir albüm müşteriden gizlenebilir (ör. yarışmanın fotoğrafları yüklenirken). Gizli kısım müşterinin galerisinde, indirmelerde ve paylaşım linklerinde görünmez; dosyalar silinmez, açılınca geri gelir.
   - **İndirme geçmişi:** Müşterinin neyi, ne zaman indirdiği (tümü, albüm, seçilenler, tek dosya, galeriye kaydet, paylaşım linkinden). IP ya da cihaz bilgisi tutulmaz.
   - Şifre belirleme bağlantısı gönderme, puan düzeltme.

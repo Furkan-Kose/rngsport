@@ -24,6 +24,9 @@ import {
   getRecentAlbums,
   getUserZipManifestAdmin,
   downloadUserPhotoAdmin,
+  createUserShareAdmin,
+  emailUserShareAdmin,
+  revokeUserShareAdmin,
 } from "../controllers/gallery.controller.js";
 import { authMiddleware, requireAdmin } from "../middleware/authMiddleware.js";
 
@@ -52,6 +55,10 @@ router.post("/admin/confirm", authMiddleware, requireAdmin, confirmPhotoUploads)
 router.get("/admin/user/:userId", authMiddleware, requireAdmin, getUserPhotosAdmin);
 router.put("/admin/user/:userId/visibility", authMiddleware, requireAdmin, setGalleryVisibility); // Galeriyi / albümü gizle-aç
 router.get("/admin/user/:userId/downloads", authMiddleware, requireAdmin, getUserDownloadsAdmin);
+// Müşteri adına paylaşım linki: oluştur (kopyala / WhatsApp), müşteriye mail at, kapat
+router.post("/admin/user/:userId/shares", authMiddleware, requireAdmin, createUserShareAdmin);
+router.post("/admin/user/:userId/shares/email", authMiddleware, requireAdmin, emailUserShareAdmin);
+router.delete("/admin/user/:userId/shares/:shareId", authMiddleware, requireAdmin, revokeUserShareAdmin);
 router.get("/admin/albums", authMiddleware, requireAdmin, getRecentAlbums);
 // "Müşteri gözüyle gör" önizlemesi (Galerim sayfası müşterinin verisiyle, salt okunur)
 router.get("/admin/user/:userId/download-manifest", authMiddleware, requireAdmin, getUserZipManifestAdmin);

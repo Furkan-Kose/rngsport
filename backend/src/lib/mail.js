@@ -22,10 +22,12 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 if (resend) console.log(`[mail] Resend hazır, gönderen: ${FROM}`);
 
 // Mail hatası hiçbir API isteğini bozmamalı: asla throw etmez, sadece loglar.
+// Dönüş: "sent" | "skipped" (Resend ayarlı değil) | "failed" — admin'in elle gönderdiği
+// mailler (galeri linki) sonucu kullanıcıya söyleyebilsin diye; diğer çağıranlar yok sayar.
 const sendSafe = async ({ to, subject, html }) => {
   if (!resend) {
     console.warn(`[mail] RESEND_API_KEY tanımlı değil, mail atlandı: "${subject}" → ${to}`);
-    return;
+    return "skipped";
   }
   try {
     // replyTo: resend SDK 6.x camelCase bekliyor
@@ -38,9 +40,12 @@ const sendSafe = async ({ to, subject, html }) => {
     });
     if (error) {
       console.error(`[mail] Gönderim hatası ("${subject}" → ${to}):`, error);
+      return "failed";
     }
+    return "sent";
   } catch (err) {
     console.error(`[mail] Gönderim hatası ("${subject}" → ${to}):`, err);
+    return "failed";
   }
 };
 
@@ -101,6 +106,15 @@ const TEXT = {
       setPassword: "Şifremi Belirle",
       number: "Sipariş No",
     },
+    share: {
+      subject: "Galeriniz hazır",
+      title: "Galeriniz Hazır",
+      body: "Fotoğraf ve videolarınızı aşağıdaki bağlantıdan, giriş yapmadan görüntüleyip indirebilirsiniz.",
+      album: "Albüm",
+      button: "Galerimi Aç",
+      footer: (date) =>
+        `Bu bağlantı ${date} tarihine kadar geçerlidir. Bağlantıya sahip herkes galeriyi görebilir; lütfen yalnızca güvendiğiniz kişilerle paylaşın.`,
+    },
   },
   en: {
     rights: "All rights reserved.",
@@ -153,6 +167,15 @@ const TEXT = {
       afterClaim: " You can already set your password to access your account.",
       setPassword: "Set My Password",
       number: "Order No",
+    },
+    share: {
+      subject: "Your gallery is ready",
+      title: "Your Gallery Is Ready",
+      body: "You can view and download your photos and videos from the link below, without signing in.",
+      album: "Album",
+      button: "Open My Gallery",
+      footer: (date) =>
+        `This link is valid until ${date}. Anyone with the link can see the gallery, so please share it only with people you trust.`,
     },
   },
   ru: {
@@ -207,13 +230,22 @@ const TEXT = {
       setPassword: "Задать пароль",
       number: "Номер заказа",
     },
+    share: {
+      subject: "Ваша галерея готова",
+      title: "Ваша галерея готова",
+      body: "Смотреть и скачивать фото и видео можно по ссылке ниже, без входа в аккаунт.",
+      album: "Альбом",
+      button: "Открыть галерею",
+      footer: (date) =>
+        `Ссылка действует до ${date}. Галерею может открыть любой, у кого есть ссылка, — делитесь ею только с теми, кому доверяете.`,
+    },
   },
 };
 
 const NUMBER_LOCALES = { tr: "tr-TR", en: "en-GB", ru: "ru-RU" };
 
 // Sitenin o dildeki adresi: /galerim → /en/galerim (Türkçe öneksiz)
-const siteUrl = (locale, path) =>
+export const siteUrl = (locale, path) =>
   `${FRONTEND_URL}${locale === "tr" ? "" : `/${locale}`}${path}`;
 
 // Basit, mail istemcisi dostu şablon (inline stil, açık tema)
@@ -629,4 +661,32 @@ export const sendShopOrderStatusEmail = (to, order) => {
   if (order.status === "SHIPPED") return sendShopMail(to, order, "shipped");
   if (order.status === "DELIVERED") return sendShopMail(to, order, "delivered");
   return Promise.resolve();
+};
+
+// Admin'in müşteri galerisi sayfasından gönderdiği girişsiz paylaşım linki (/paylasim/:token).
+// Dönüş sendSafe'inki: admin sonucu görür (gönderildi / servis ayarlı değil / hata).
+export const sendGalleryShareEmail = (to, name, url, { album = null, expiresAt, locale } = {}) => {
+  const lang = normalizeLocale(locale);
+  const t = TEXT[lang];
+  const date = new Date(expiresAt).toLocaleDateString(NUMBER_LOCALES[lang], {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Istanbul",
+  });
+  return sendSafe({
+    to,
+    subject: `${t.share.subject} | RNG Sport`,
+    html: layout(t, {
+      title: t.share.title,
+      bodyHtml: `<p>${t.hello(escapeHtml(name))}</p>${
+        album ? `
+        <p style="margin:0 0 12px;"><strong>${t.share.album}:</strong> ${escapeHtml(album)}</p>` : ""
+      }
+        <p>${t.share.body}</p>`,
+      buttonText: t.share.button,
+      buttonUrl: url,
+      footerNote: t.share.footer(date),
+    }),
+  });
 };
